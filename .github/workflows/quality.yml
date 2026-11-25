@@ -52,6 +52,11 @@ jobs:
         run: bun run build
 
       - name: Start local SSR server for responsive QA
+        env:
+          SUPABASE_URL: https://gpdpfoxpbferjwbppcmb.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_dzcF2ocd47IN3fetmc4TpA_V2SmJK8p
+          VITE_SUPABASE_URL: https://gpdpfoxpbferjwbppcmb.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_dzcF2ocd47IN3fetmc4TpA_V2SmJK8p
         run: |
           (bun run dev -- --host 127.0.0.1 --port 4173 > /tmp/papelemi-vite.log 2>&1 &)
           for attempt in {1..30}; do
