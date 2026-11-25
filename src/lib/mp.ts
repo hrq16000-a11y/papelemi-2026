@@ -1,4 +1,5 @@
 // Mercado Pago via conector Lovable — somente código de servidor pode importar este módulo.
+import type { SupabaseClient } from "@supabase/supabase-js";
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/mercadopago";
 
 export function mpConfigured() {
@@ -43,20 +44,23 @@ type MpPayment = {
 // a atualização é protegida (status pending) para rodar várias vezes sem duplicar efeitos.
 async function confirmApprovedPayment(orderId: string, payment: MpPayment) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: order } = await supabaseAdmin
+  const admin = supabaseAdmin as unknown as SupabaseClient;
+  const { data: order } = await admin
     .from("orders")
     .select("id,total,status")
     .eq("id", orderId)
-    .single();
+    .eq("store_key", "papelemi")
+    .maybeSingle();
   if (!order) return { status: "unknown" as const };
   if (Math.abs(Number(payment.transaction_amount) - Number(order.total)) > 0.01) {
     console.error(`Pagamento ${payment.id} com valor divergente para o pedido ${orderId}`);
     return { status: order.status };
   }
-  const { data: updated } = await supabaseAdmin
+  const { data: updated } = await admin
     .from("orders")
     .update({ status: "paid", mp_payment_id: String(payment.id) })
     .eq("id", orderId)
+    .eq("store_key", "papelemi")
     .eq("status", "pending")
     .select("id");
   return { status: updated?.length ? ("paid" as const) : order.status };

@@ -2,17 +2,18 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clock, Minus, Plus, Sparkles } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
-import { brl, getProduct, type Product } from "@/data/catalog";
+import { brl, type Product } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
 import { aiField } from "@/lib/product-personalization";
+import { getCatalogProduct } from "@/lib/shop.functions";
 const PhraseGenerator = lazy(() => import("@/components/store/PhraseGenerator").then((m) => ({ default: m.PhraseGenerator })));
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ProductGrid } from "@/components/store/ProductCard";
 
 export const Route = createFileRoute("/produto/$slug")({
   validateSearch: (s: Record<string, unknown>): { frase?: string | undefined } => ({ frase: typeof s["frase"] === "string" ? s["frase"].slice(0, 400) : undefined }),
-  loader: ({ params }) => getProduct(params.slug) ?? null,
+  loader: ({ params }) => getCatalogProduct({ data: { slug: params.slug } }),
   head: ({ loaderData: p }) => ({
     meta: p ? [
       { title: `${p.name} — PapeLemi` }, { name: "description", content: p.description },
@@ -26,9 +27,7 @@ export const Route = createFileRoute("/produto/$slug")({
 
 function ProductPage() {
   const loaderP = Route.useLoaderData();
-  const { slug } = Route.useParams();
-  const { getProduct } = useCatalog();
-  const p = getProduct(slug) ?? loaderP;
+  const p = loaderP;
   if (!p) return (
     <div className="mx-auto max-w-xl px-4 py-24 text-center">
       <h1 className="text-4xl">Produto não encontrado</h1>
@@ -128,7 +127,7 @@ function ProductDetail({ p }: { p: Product }) {
             <div className="flex items-center rounded-full border border-border">
               <button type="button" aria-label="Diminuir" onClick={() => setQty(Math.max(p.minQty ?? 1, qty - 1))} className="p-3"><Minus className="size-4" /></button>
               <span className="w-10 text-center">{qty}</span>
-              <button type="button" aria-label="Aumentar" onClick={() => setQty(qty + 1)} className="p-3"><Plus className="size-4" /></button>
+              <button type="button" aria-label="Aumentar" onClick={() => setQty(Math.min(999, qty + 1))} className="p-3"><Plus className="size-4" /></button>
             </div>
             <button className="flex-1 rounded-full bg-primary py-3.5 text-sm font-medium text-primary-foreground shadow-soft transition-transform hover:-translate-y-0.5">Adicionar ao carrinho · {brl((p.promoPrice ?? p.price) * qty)}</button>
           </div>

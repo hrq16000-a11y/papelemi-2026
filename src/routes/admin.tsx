@@ -6,10 +6,11 @@ import { brl, type Product } from "@/data/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   deleteCategory, deleteCoupon, deletePhrase, deleteProduct,
-  getMyRole, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listOrders,
+  getMyRole, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders,
   saveCategory, saveCoupon, savePhrase, saveProduct, setOrderStatus,
 } from "@/lib/shop.functions";
 import { cn } from "@/lib/utils";
+import ShippingAdminPanel from "@/components/admin/ShippingAdminPanel";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [
@@ -24,11 +25,11 @@ const input = "w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm
 const btn = "inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-60";
 const btnGhost = "inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:border-primary disabled:opacity-60";
 
-type Tab = "pedidos" | "produtos" | "categorias" | "frases" | "cupons";
+type Tab = "dashboard" | "pedidos" | "clientes" | "produtos" | "categorias" | "frases" | "cupons" | "fretes" | "seguranca";
 
 function Admin() {
   const [stage, setStage] = useState<"loading" | "login" | "denied" | "ok">("loading");
-  const [tab, setTab] = useState<Tab>("pedidos");
+  const [tab, setTab] = useState<Tab>("dashboard");
 
   useEffect(() => {
     let active = true;
@@ -58,11 +59,15 @@ function Admin() {
   );
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: "dashboard", label: "Visão geral" },
     { id: "pedidos", label: "Pedidos" },
+    { id: "clientes", label: "Clientes" },
     { id: "produtos", label: "Produtos" },
     { id: "categorias", label: "Categorias" },
     { id: "frases", label: "Frases" },
     { id: "cupons", label: "Cupons" },
+    { id: "fretes", label: "Fretes" },
+    { id: "seguranca", label: "Segurança" },
   ];
 
   return (
@@ -80,62 +85,236 @@ function Admin() {
         ))}
       </div>
       <div className="mt-8">
+        {tab === "dashboard" && <DashboardTab onNavigate={setTab} />}
         {tab === "pedidos" && <OrdersTab />}
+        {tab === "clientes" && <CustomersTab />}
         {tab === "produtos" && <ProductsTab />}
         {tab === "categorias" && <CategoriesTab />}
         {tab === "frases" && <PhrasesTab />}
         {tab === "cupons" && <CouponsTab />}
+        {tab === "fretes" && <ShippingAdminPanel />}
+        {tab === "seguranca" && <PasswordTab />}
+      </div>
+    </div>
+  );
+}
+
+type DashboardOrder = Awaited<ReturnType<typeof listOrders>>[number];
+type DashboardProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
+type DashboardCategory = Awaited<ReturnType<typeof listAdminCategories>>[number];
+type DashboardCustomer = Awaited<ReturnType<typeof listCustomers>>["customers"][number];
+
+function DashboardTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
+  const [orders, setOrders] = useState<DashboardOrder[]>([]);
+  const [products, setProducts] = useState<DashboardProduct[]>([]);
+  const [categories, setCategories] = useState<DashboardCategory[]>([]);
+  const [customers, setCustomers] = useState<DashboardCustomer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [nextOrders, nextProducts, nextCategories, nextCustomers] = await Promise.all([
+        listOrders(),
+        listAdminProducts(),
+        listAdminCategories(),
+        listCustomers(),
+      ]);
+      setOrders(nextOrders);
+      setProducts(nextProducts);
+      setCategories(nextCategories);
+      setCustomers(nextCustomers.customers);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível carregar o resumo da loja.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  if (loading) return <div className="flex min-h-48 items-center justify-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
+
+  const pendingOrders = orders.filter((order) => order.status === "pending").length;
+  const publishedProducts = products.filter((product) => product.published).length;
+  const hiddenProducts = products.length - publishedProducts;
+  const stats = [
+    { label: "Encomendas", value: orders.length, detail: "Solicitações registradas" },
+    { label: "Aguardando confirmação", value: pendingOrders, detail: "Pedidos em aberto" },
+    { label: "Produtos publicados", value: publishedProducts, detail: hiddenProducts + " ocultos" },
+    { label: "Categorias", value: categories.length, detail: "Organização do catálogo" },
+    { label: "Clientes identificados", value: customers.length, detail: "Agrupados pelo histórico de pedidos" },
+  ];
+  const shortcuts: { id: Tab; label: string }[] = [
+    { id: "pedidos", label: "Gerenciar encomendas" },
+    { id: "clientes", label: "Consultar clientes" },
+    { id: "produtos", label: "Gerenciar produtos" },
+    { id: "categorias", label: "Gerenciar categorias" },
+    { id: "cupons", label: "Gerenciar cupons" },
+    { id: "frases", label: "Gerenciar frases" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary">Operação da loja</p>
+          <h2 className="mt-1 text-3xl">Visão geral</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Acompanhe encomendas, catálogo e atividade administrativa da PapeLemi.</p>
+        </div>
+        <button type="button" onClick={() => void load()} disabled={refreshing} className={btnGhost}>
+          {refreshing ? <Loader2 className="size-3.5 animate-spin" /> : null}
+          Atualizar dados
+        </button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {stats.map((stat) => (
+          <article key={stat.label} className="rounded-2xl border border-border bg-card p-5">
+            <p className="text-sm text-muted-foreground">{stat.label}</p>
+            <p className="mt-2 text-3xl font-semibold tabular-nums">{stat.value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{stat.detail}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-medium">Encomendas recentes</h3>
+              <p className="text-xs text-muted-foreground">Últimas solicitações recebidas</p>
+            </div>
+            <button type="button" onClick={() => onNavigate("pedidos")} className="text-xs text-primary underline underline-offset-4">Ver pedidos</button>
+          </div>
+          {orders.length === 0 ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma encomenda registrada ainda.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-border">
+              {orders.slice(0, 5).map((order) => (
+                <li key={order.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{order.customer_name || "Cliente"}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString("pt-BR")}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium tabular-nums">{brl(Number(order.total))}</p>
+                    <p className="text-xs text-muted-foreground">{order.status === "pending" ? "Aguardando confirmação" : order.status === "paid" ? "Pago" : order.status === "shipped" ? "Enviado" : order.status === "delivered" ? "Entregue" : order.status === "cancelled" ? "Cancelado" : order.status}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <h3 className="text-lg font-medium">Atalhos de gestão</h3>
+          <p className="text-xs text-muted-foreground">Acesse as rotinas disponíveis no painel.</p>
+          <div className="mt-4 grid gap-2">
+            {shortcuts.map((shortcut) => (
+              <button key={shortcut.id} type="button" onClick={() => onNavigate(shortcut.id)} className="rounded-xl border border-border px-4 py-3 text-left text-sm transition-colors hover:border-primary hover:bg-primary/5">
+                {shortcut.label}
+              </button>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );
 }
 
 function LoginForm() {
-  const [mode, setMode] = useState<"entrar" | "criar">("entrar");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     try {
-      if (mode === "entrar") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) toast.error("E-mail ou senha incorretos");
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
-        if (error) toast.error(error.message);
-        else setSent(true);
-      }
-    } finally { setBusy(false); }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) toast.error("E-mail ou senha incorretos");
+    } finally {
+      setBusy(false);
+    }
   };
-
-  if (sent) return (
-    <div className="mx-auto max-w-md px-4 py-24 text-center">
-      <h1 className="text-4xl">Confirme seu e-mail</h1>
-      <p className="mt-3 text-muted-foreground">Enviamos um link de confirmação para {email}. Depois de confirmar, volte e entre no painel.</p>
-    </div>
-  );
 
   return (
     <div className="mx-auto max-w-md px-4 py-24">
-      <h1 className="text-center text-4xl">Painel da loja</h1>
-      <p className="mt-2 text-center text-sm text-muted-foreground">Acesso exclusivo da equipe PapeLemi.</p>
+      <p className="text-center text-xs uppercase tracking-[0.2em] text-primary">PapeLemi</p>
+      <h1 className="mt-2 text-center text-4xl">Painel administrativo</h1>
+      <p className="mt-2 text-center text-sm text-muted-foreground">Acesso restrito à equipe autorizada.</p>
       <form onSubmit={submit} className="mt-8 space-y-3">
-        <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" aria-label="E-mail" className={input} />
-        <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} placeholder="Senha" aria-label="Senha" className={input} />
+        <input required type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" aria-label="E-mail" className={input} />
+        <input required type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Senha" aria-label="Senha" className={input} />
         <button type="submit" disabled={busy} className={cn(btn, "w-full justify-center py-3 text-sm")}>
-          {busy ? <Loader2 className="size-4 animate-spin" /> : mode === "entrar" ? "Entrar" : "Criar conta"}
+          {busy ? <Loader2 className="size-4 animate-spin" /> : "Entrar"}
         </button>
       </form>
-      <button onClick={() => setMode(mode === "entrar" ? "criar" : "entrar")} className="mt-4 w-full text-center text-xs text-muted-foreground underline">
-        {mode === "entrar" ? "Primeiro acesso? Criar conta" : "Já tenho conta"}
-      </button>
-      <p className="mt-6 text-center text-xs text-muted-foreground"><Link to="/" className="underline">Voltar à loja</Link></p>
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        Contas administrativas são provisionadas pelo proprietário; não há cadastro público neste painel.
+      </p>
+      <p className="mt-4 text-center text-xs text-muted-foreground"><Link to="/" className="underline">Voltar à loja</Link></p>
     </div>
+  );
+}
+
+function PasswordTab() {
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (password.length < 12) {
+      toast.error("Use uma senha com pelo menos 12 caracteres.");
+      return;
+    }
+    if (password !== confirmation) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setPassword("");
+      setConfirmation("");
+      toast.success("Senha atualizada com sucesso.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a senha.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="max-w-2xl rounded-2xl border border-border bg-card p-6">
+      <p className="text-xs uppercase tracking-[0.2em] text-primary">Segurança</p>
+      <h2 className="mt-2 text-2xl">Alterar senha</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Atualize a senha da conta administrativa. Recomendamos uma senha exclusiva, longa e armazenada em um gerenciador de senhas.
+      </p>
+      <form onSubmit={save} className="mt-6 space-y-4">
+        <label className="block text-sm">
+          Nova senha
+          <input required type="password" autoComplete="new-password" minLength={12} value={password} onChange={(e) => setPassword(e.target.value)} className={cn(input, "mt-1")} />
+        </label>
+        <label className="block text-sm">
+          Confirmar nova senha
+          <input required type="password" autoComplete="new-password" minLength={12} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} className={cn(input, "mt-1")} />
+        </label>
+        <button type="submit" disabled={busy} className={btn}>
+          {busy ? <Loader2 className="size-3.5 animate-spin" /> : null}
+          Atualizar senha
+        </button>
+      </form>
+    </section>
   );
 }
 
@@ -183,6 +362,144 @@ function OrdersTab() {
         </li>
       ))}
     </ul>
+  );
+}
+
+// ===== Clientes =====
+
+// Enquanto a tabela CRM canônica da Empório ainda não foi portada, o diretório
+// agrupa os snapshots de clientes existentes nos pedidos da própria PapeLemi.
+type Customer = Awaited<ReturnType<typeof listCustomers>>["customers"][number];
+
+const CUSTOMER_STATUS: Record<string, string> = {
+  pending: "Aguardando confirmação",
+  paid: "Pago",
+  shipped: "Enviado",
+  delivered: "Entregue",
+  cancelled: "Cancelado",
+  no_orders: "Sem pedidos",
+};
+
+function CustomersTab() {
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [truncated, setTruncated] = useState(false);
+  const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const result = await listCustomers();
+      setCustomers(result.customers);
+      setTruncated(result.truncated);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível carregar os clientes.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  if (!customers) {
+    return <div className="flex min-h-48 items-center justify-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
+  }
+
+  const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR");
+  const filtered = customers.filter((customer) =>
+    [customer.name, customer.email, customer.phone].some((value) =>
+      value.toLocaleLowerCase("pt-BR").includes(normalizedSearch),
+    ),
+  );
+
+  return (
+    <section className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary">Relacionamento</p>
+          <h2 className="mt-1 text-3xl">Clientes</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Cadastros persistentes do CRM da PapeLemi, com histórico de pedidos vinculado.
+          </p>
+        </div>
+        <button type="button" onClick={() => void load()} disabled={refreshing} className={btnGhost}>
+          {refreshing ? <Loader2 className="size-3.5 animate-spin" /> : null}
+          Atualizar
+        </button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar por nome, e-mail ou telefone"
+          aria-label="Buscar clientes"
+          className={cn(input, "min-w-0 flex-1 sm:max-w-md")}
+        />
+        <p className="text-xs text-muted-foreground">{filtered.length} de {customers.length} clientes</p>
+      </div>
+
+      {truncated && (
+        <p role="status" className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          O histórico consultado atingiu o limite de 20.000 pedidos. Esta lista pode não incluir clientes mais antigos.
+        </p>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border px-6 py-14 text-center">
+          <p className="font-medium">{customers.length === 0 ? "Nenhum cliente identificado ainda." : "Nenhum cliente encontrado."}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {customers.length === 0 ? "Os contatos aparecerão aqui quando houver encomendas registradas." : "Experimente outro nome, e-mail ou telefone."}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="hidden overflow-x-auto rounded-2xl border border-border bg-card md:block">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Cliente</th>
+                  <th className="px-4 py-3 font-medium">Telefone</th>
+                  <th className="px-4 py-3 font-medium">Pedidos</th>
+                  <th className="px-4 py-3 font-medium">Última encomenda</th>
+                  <th className="px-4 py-3 font-medium">Status recente</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filtered.map((customer) => (
+                  <tr key={customer.id} className="align-top">
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{customer.name || "Cliente sem nome"}</p>
+                      {customer.email ? <a href={`mailto:${customer.email}`} className="text-xs text-muted-foreground underline underline-offset-2">{customer.email}</a> : <span className="text-xs text-muted-foreground">E-mail não informado</span>}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{customer.phone || "—"}</td>
+                    <td className="px-4 py-3 tabular-nums">{customer.ordersCount}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{new Date(customer.lastOrderAt).toLocaleDateString("pt-BR")}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{CUSTOMER_STATUS[customer.lastOrderStatus] ?? customer.lastOrderStatus}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className="grid gap-3 md:hidden">
+            {filtered.map((customer) => (
+              <li key={customer.id} className="rounded-2xl border border-border bg-card p-4">
+                <p className="font-medium">{customer.name || "Cliente sem nome"}</p>
+                {customer.email ? <a href={`mailto:${customer.email}`} className="mt-1 block break-all text-xs text-muted-foreground underline underline-offset-2">{customer.email}</a> : <span className="mt-1 block text-xs text-muted-foreground">E-mail não informado</span>}
+                <p className="mt-2 text-sm text-muted-foreground">{customer.phone || "Telefone não informado"}</p>
+                <div className="mt-3 flex flex-wrap justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                  <span>{customer.ordersCount} pedido(s)</span>
+                  <span>Último: {new Date(customer.lastOrderAt).toLocaleDateString("pt-BR")}</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{CUSTOMER_STATUS[customer.lastOrderStatus] ?? customer.lastOrderStatus}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }
 

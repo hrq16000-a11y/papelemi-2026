@@ -11,7 +11,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<CatalogData>(fallback);
   useEffect(() => {
     getCatalog()
-      .then((d) => { if (d.products.length && d.categories.length) setData(d); })
+      .then((d) => setData(d))
       .catch(() => { /* mantém catálogo local */ });
   }, []);
   return <CatalogCtx.Provider value={data}>{children}</CatalogCtx.Provider>;

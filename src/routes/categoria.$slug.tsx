@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getCategory } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
 import { ProductGrid } from "@/components/store/ProductCard";
+import { getCatalogCategory } from "@/lib/shop.functions";
 
 export const Route = createFileRoute("/categoria/$slug")({
-  loader: ({ params }) => getCategory(params.slug) ?? null,
+  loader: ({ params }) => getCatalogCategory({ data: { slug: params.slug } }),
   head: ({ loaderData }) => ({ meta: loaderData ? [
     { title: `${loaderData.name} — PapeLemi` }, { name: "description", content: loaderData.description },
     { property: "og:title", content: `${loaderData.name} — PapeLemi` }, { property: "og:description", content: loaderData.description },
@@ -15,9 +15,8 @@ export const Route = createFileRoute("/categoria/$slug")({
 
 function CategoryPage() {
   const loaderCat = Route.useLoaderData();
-  const { slug } = Route.useParams();
-  const { getCategory, publishedProducts } = useCatalog();
-  const c = getCategory(slug) ?? loaderCat;
+  const { publishedProducts } = useCatalog();
+  const c = loaderCat;
   if (!c) return (
     <div className="mx-auto max-w-xl px-4 py-24 text-center">
       <h1 className="text-4xl">Categoria não encontrada</h1>

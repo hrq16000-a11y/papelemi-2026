@@ -1,0 +1,202 @@
+name: PapeLemi quality gates
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: papelemi-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Tests, targeted lint and TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Unit tests
+        run: bun run test
+
+      # The repository-wide Prettier baseline is currently noisy; check touched modules without reformatting unrelated pages.
+      - name: Targeted lint
+        run: >-
+          bunx eslint --rule 'prettier/prettier: off'
+          src/lib/cart-storage.ts
+          src/lib/order-integrity.ts
+          src/lib/customer-summary.ts
+          src/lib/cart.tsx
+          src/lib/catalog.repository.server.ts
+          src/lib/shop.functions.ts
+          src/lib/mp.ts
+          src/routes/admin.tsx
+          src/routes/checkout.tsx
+          'src/routes/produto.$slug.tsx'
+          src/test/cart-storage.test.ts
+          src/test/order-integrity.test.ts
+          src/test/customer-summary.test.ts
+
+      - name: TypeScript
+        run: bunx tsc --noEmit -p tsconfig.order-integrity.json
+
+
+
+  validate-papelemi-database:
+    name: Replay PapeLemi migrations and verify tenant schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 3.4.0
+      - name: Start isolated local Supabase
+        run: supabase start
+      - name: Replay versioned migrations without seed data
+        run: supabase db reset --local --no-seed --yes
+      - name: Run database contract tests
+        run: supabase test db
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
+
+  reconstruct-emporio-schema:
+    name: Reconstruct Emporio schema locally (no production access)
+    if: github.ref == 'refs/heads/feat/papelemi-emp-or-core-baseline-01'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout PapeLemi
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check one-time import marker
+        id: marker
+        run: |
+          if [ -f docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout Emporio source
+        if: steps.marker.outputs.run == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: hrq16000-a11y/emporiolelecute-2026
+          ref: main
+          path: emporio
+          fetch-depth: 1
+
+      - name: Install Supabase CLI
+        if: steps.marker.outputs.run == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: 3.4.0
+
+      - name: Update local-only config for current Supabase CLI
+        if: steps.marker.outputs.run == 'true'
+        working-directory: emporio
+        run: sed -i 's/^\[inbucket\]/[local_smtp]/' supabase/config.toml
+
+      - name: Guard cron cleanup for empty local database
+        if: steps.marker.outputs.run == 'true'
+        working-directory: emporio
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("supabase/migrations/20260814154716_b2258712-76bd-49f4-b81e-5854d32e5bd9.sql")
+          sql = path.read_text()
+          replacements = {
+              "SELECT cron.unschedule('submit-sitemap-weekly');":
+                  "SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'submit-sitemap-weekly';",
+              "SELECT cron.unschedule('weekly-sitemap-submission');":
+                  "SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'weekly-sitemap-submission';",
+              "SELECT cron.unschedule('submit-sitemap-12h');":
+                  "SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'submit-sitemap-12h';",
+              "SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'seo-sitemap-auto-resubmit-15m'), schedule := '7 * * * *');":
+                  "SELECT cron.alter_job(jobid, schedule := '7 * * * *') FROM cron.job WHERE jobname = 'seo-sitemap-auto-resubmit-15m';",
+              "SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'telemetry-alert-monitor-15m'), schedule := '23 * * * *');":
+                  "SELECT cron.alter_job(jobid, schedule := '23 * * * *') FROM cron.job WHERE jobname = 'telemetry-alert-monitor-15m';",
+              "SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'instagram-sync-hourly'), schedule := '0 */6 * * *');":
+                  "SELECT cron.alter_job(jobid, schedule := '0 */6 * * *') FROM cron.job WHERE jobname = 'instagram-sync-hourly';",
+              "SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'instagram-bulk-refresh-hourly'), schedule := '17 */6 * * *');":
+                  "SELECT cron.alter_job(jobid, schedule := '17 */6 * * *') FROM cron.job WHERE jobname = 'instagram-bulk-refresh-hourly';",
+          }
+          for old, new in replacements.items():
+              if old not in sql:
+                  raise SystemExit(f"Expected cron statement not found: {old}")
+              sql = sql.replace(old, new)
+          path.write_text(sql)
+
+          seed = Path("supabase/seed.sql")
+          if seed.exists():
+              seed.rename("supabase/seed.sql.disabled")
+          PY
+
+      - name: Start isolated local Supabase
+        if: steps.marker.outputs.run == 'true'
+        working-directory: emporio
+        run: supabase start
+
+      - name: Export schema-only snapshot and generated types
+        if: steps.marker.outputs.run == 'true'
+        working-directory: emporio
+        run: |
+          mkdir -p ../docs/operations/reference
+          supabase db dump --local --schema public -f ../docs/operations/reference/EMPORIO_PUBLIC_SCHEMA_2026-11-25.sql
+          supabase gen types typescript --local --schema public > ../docs/operations/reference/EMPORIO_DATABASE_TYPES_2026-11-25.ts
+
+      - name: Record migration reconstruction metadata
+        if: steps.marker.outputs.run == 'true'
+        working-directory: emporio
+        run: |
+          {
+            echo "# Emporio local migration reconstruction"
+            echo
+            echo "- Source repository: hrq16000-a11y/emporiolelecute-2026"
+            echo "- Source ref: main"
+            echo "- Source SHA: $(git rev-parse HEAD)"
+            echo "- Migration files: $(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)"
+            echo "- Generated from local migrations only; no hosted database was queried."
+            echo "- Local replay only: absent cron jobs were guarded in the temporary checkout; Emporio source migrations were not modified."
+            echo "- No row data, auth users, credentials or secrets are included."
+            echo "- Emporio seed.sql was disabled in the temporary checkout to avoid importing any commercial data."
+          } > ../docs/operations/reference/EMPORIO_SCHEMA_SNAPSHOT_README.md
+
+      - name: Stop local Supabase
+        if: always() && steps.marker.outputs.run == 'true'
+        working-directory: emporio
+        run: supabase stop --no-backup || true
+
+      - name: Commit generated schema reference
+        if: steps.marker.outputs.run == 'true'
+        run: |
+          rm -f docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/operations/reference/ docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md
+          if git diff --cached --quiet; then
+            echo "No schema snapshot changes."
+            exit 0
+          fi
+          git commit -m "chore(db): add reconstructed Emporio schema reference"
+          git push origin "HEAD:$GITHUB_REF_NAME"
