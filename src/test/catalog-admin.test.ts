@@ -77,6 +77,12 @@ describe("catalog administration validation", () => {
     expect(productAdminSchema.safeParse({ ...baseProduct, promoPrice: 49.9 }).success).toBe(true);
   });
 
+  it("defaults categories to active unless explicitly disabled", () => {
+    const result = categoryAdminSchema.parse({ slug: "cadernetas", name: "Cadernetas" });
+    expect(result.active).toBe(true);
+    expect(categoryAdminSchema.parse({ slug: "cadernetas", name: "Cadernetas", active: false }).active).toBe(false);
+  });
+
   it("accepts non-shipping products and nullable package dimensions", () => {
     const result = productAdminSchema.parse({
       ...baseProduct,

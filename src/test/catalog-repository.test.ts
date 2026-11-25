@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { Database } from "@/integrations/supabase/types";
+import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 import { categoryFromRow, productFromRow } from "@/lib/catalog.repository.server";
 
-type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type ProductRow = CatalogLifecycleDatabase["public"]["Tables"]["products"]["Row"];
+type CategoryRow = CatalogLifecycleDatabase["public"]["Tables"]["categories"]["Row"];
 
 const productRow: ProductRow = {
   store_key: "papelemi",
@@ -33,6 +33,7 @@ const productRow: ProductRow = {
     { type: "notes", key: "observacoes", label: "Observações" },
   ],
   min_qty: null,
+  archived_at: null,
 };
 
 const categoryRow: CategoryRow = {
@@ -42,6 +43,8 @@ const categoryRow: CategoryRow = {
   description: "Para guardar cada fase.",
   image: "/images/papelemi/caderneta-ursinho-clean.jpg",
   sort: 1,
+  active: true,
+  archived_at: null,
 };
 
 describe("Supabase catalog mapping", () => {

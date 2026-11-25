@@ -41,6 +41,7 @@ jobs:
           src/lib/customer-summary.ts
           src/lib/cart.tsx
           src/lib/catalog.repository.server.ts
+          src/lib/catalog-lifecycle.types.ts
           src/lib/catalog-validation.ts
           src/lib/shop.functions.ts
           src/lib/mp.ts

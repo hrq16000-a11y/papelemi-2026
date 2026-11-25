@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Loader2, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Archive, Eye, EyeOff, Loader2, LogOut, Pencil, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { brl, type PersonalizationOption } from "@/data/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   deleteCategory, deleteCoupon, deletePhrase, deleteProduct,
   getMyRole, getOrderDetails, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders,
+  archiveCategory, archiveProduct, restoreCategory, restoreProduct, setCategoryActive, setProductPublished,
   saveCategory, saveCoupon, saveCustomer, savePhrase, saveProduct, setOrderStatus,
 } from "@/lib/shop.functions";
 import { cn } from "@/lib/utils";
@@ -846,6 +847,12 @@ function CustomersTab() {
 // ===== Produtos =====
 
 type AdminProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
+type AdminCategory = Awaited<ReturnType<typeof listAdminCategories>>[number];
+const catalogPageSize = 10;
+function CatalogPagination({ page, total, onPage }: { page: number; total: number; onPage: (next: number) => void }) {
+  const pages = Math.max(1, Math.ceil(total / catalogPageSize));
+  return <div className="flex flex-wrap items-center justify-between gap-3 pt-4 text-xs text-muted-foreground"><span>{total === 0 ? "Nenhum registro" : `Página ${page} de ${pages} · ${total} registro(s)`}</span><div className="flex gap-2"><button type="button" className={btnGhost} disabled={page <= 1} onClick={() => onPage(page - 1)}>Anterior</button><button type="button" className={btnGhost} disabled={page >= pages} onClick={() => onPage(page + 1)}>Próxima</button></div></div>;
+}
 type ProductForm = {
   originalSlug?: string;
   slug: string; categorySlug: string; name: string; description: string; images: string;
@@ -881,15 +888,41 @@ const split = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 
 function ProductsTab() {
   const [products, setProducts] = useState<AdminProduct[] | null>(null);
-  const [cats, setCats] = useState<{ slug: string; name: string }[]>([]);
+  const [cats, setCats] = useState<AdminCategory[]>([]);
   const [editing, setEditing] = useState<ProductForm | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const load = useCallback(() => {
-    listAdminProducts().then(setProducts).catch((e) => toast.error(e.message));
-    listAdminCategories().then((c) => setCats(c.map((x) => ({ slug: x.slug, name: x.name })))).catch(() => {});
+  const [busySlug, setBusySlug] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [status, setStatus] = useState<"all" | "published" | "hidden" | "archived">("all");
+  const [sort, setSort] = useState("name-asc");
+  const [page, setPage] = useState(1);
+  const load = useCallback(async () => {
+    try { const [nextProducts, nextCategories] = await Promise.all([listAdminProducts(), listAdminCategories()]); setProducts(nextProducts); setCats(nextCategories); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível carregar o catálogo."); }
   }, []);
-  useEffect(load, [load]);
+  useEffect(() => { void load(); }, [load]);
+  const filteredProducts = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("pt-BR");
+    const result = (products ?? []).filter((product) => {
+      if (term && !product.name.toLocaleLowerCase("pt-BR").includes(term) && !product.slug.toLocaleLowerCase("pt-BR").includes(term)) return false;
+      if (categoryFilter !== "all" && product.category !== categoryFilter) return false;
+      if (status === "published" && (!product.published || product.archivedAt)) return false;
+      if (status === "hidden" && (product.published || product.archivedAt)) return false;
+      if (status === "archived" && !product.archivedAt) return false;
+      return true;
+    });
+    return result.sort((a,b) => sort === "name-desc" ? b.name.localeCompare(a.name,"pt-BR") : sort === "price-asc" ? a.price-b.price : sort === "price-desc" ? b.price-a.price : sort === "stock-asc" ? (a.stock??0)-(b.stock??0) : sort === "stock-desc" ? (b.stock??0)-(a.stock??0) : a.name.localeCompare(b.name,"pt-BR"));
+  }, [products,search,categoryFilter,status,sort]);
+  const totalPages = Math.max(1,Math.ceil(filteredProducts.length/catalogPageSize));
+  const visibleProducts = filteredProducts.slice((page-1)*catalogPageSize,page*catalogPageSize);
+  useEffect(() => { if(page>totalPages)setPage(totalPages); },[page,totalPages]);
+  const runAction = async (slug:string,action:()=>Promise<unknown>,success:string) => {
+    setBusySlug(slug);
+    try { await action(); toast.success(success); await load(); }
+    catch(error) { toast.error(error instanceof Error?error.message:"Não foi possível concluir a operação."); }
+    finally { setBusySlug(null); }
+  };
 
   const updatePersonalizationIdentity = (index: number, property: "key" | "label", value: string) => {
     setEditing((current) => current ? {
@@ -996,7 +1029,7 @@ function ProductsTab() {
         <label className="text-xs text-muted-foreground">Categoria
           <select value={editing.categorySlug} onChange={(e) => setEditing({ ...editing, categorySlug: e.target.value })} className={cn(input, "mt-1")}>
             <option value="">Escolha…</option>
-            {cats.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+            {cats.map((c) => <option key={c.slug} value={c.slug} disabled={Boolean(c.archived_at)}>{c.name}{c.archived_at ? " (arquivada)" : ""}</option>)}
           </select>
         </label>
         <label className="text-xs text-muted-foreground sm:col-span-2">Nome<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className={cn(input, "mt-1")} /></label>
@@ -1105,83 +1138,68 @@ function ProductsTab() {
     </div>
   );
 
-  return (
-    <div>
-      <button onClick={() => setEditing({ ...emptyProduct, categorySlug: cats[0]?.slug ?? "" })} className={btn}><Plus className="size-3.5" /> Novo produto</button>
-      <ul className="mt-5 divide-y divide-border rounded-2xl border border-border bg-card">
-        {products.map((p) => (
-          <li key={p.slug} className="flex items-center gap-4 p-4">
-            <img src={p.images[0]} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{p.name} {!p.published && <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase">Oculto</span>}</p>
-              <p className="text-xs text-muted-foreground">{brl(p.promoPrice ?? p.price)} · estoque {p.stock}</p>
-            </div>
-            <button onClick={() => setEditing(toForm(p))} aria-label={`Editar ${p.name}`} className="rounded-full p-2 hover:bg-secondary"><Pencil className="size-4" /></button>
-            <button onClick={async () => { if (!confirm(`Excluir ${p.name}?`)) return; try { await deleteProduct({ data: { slug: p.slug } }); toast.success("Produto excluído"); load(); } catch (e) { toast.error(e instanceof Error ? e.message : "Erro"); } }} aria-label={`Excluir ${p.name}`} className="rounded-full p-2 text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
-          </li>
-        ))}
-      </ul>
+  const publishedCount=products.filter(p=>p.published&&!p.archivedAt).length;
+  const archivedCount=products.filter(p=>Boolean(p.archivedAt)).length;
+  const hiddenCount=products.length-publishedCount-archivedCount;
+  return <div className="space-y-5">
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs uppercase tracking-[0.18em] text-primary">Gestão do catálogo</p><h2 className="mt-1 text-2xl font-semibold">Produtos</h2><p className="mt-1 text-sm text-muted-foreground">{products.length} cadastrados · {publishedCount} publicados · {hiddenCount} ocultos · {archivedCount} arquivados</p></div><button type="button" onClick={()=>setEditing({...emptyProduct,categorySlug:cats.find(c=>c.active&&!c.archived_at)?.slug??""})} className={btn}><Plus className="size-3.5"/> Novo produto</button></div>
+    <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-4">
+      <label className="text-xs text-muted-foreground md:col-span-2">Pesquisar produto<span className="relative mt-1 block"><Search className="absolute left-3 top-3 size-4 text-muted-foreground"/><input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} className={cn(input,"pl-9")} placeholder="Nome ou slug"/></span></label>
+      <label className="text-xs text-muted-foreground">Categoria<select value={categoryFilter} onChange={e=>{setCategoryFilter(e.target.value);setPage(1);}} className={cn(input,"mt-1")}><option value="all">Todas</option>{cats.map(c=><option key={c.slug} value={c.slug}>{c.name}</option>)}</select></label>
+      <label className="text-xs text-muted-foreground">Situação<select value={status} onChange={e=>{setStatus(e.target.value as typeof status);setPage(1);}} className={cn(input,"mt-1")}><option value="all">Todas</option><option value="published">Publicados</option><option value="hidden">Não publicados</option><option value="archived">Arquivados</option></select></label>
+      <label className="text-xs text-muted-foreground md:col-span-2">Ordenar por<select value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}} className={cn(input,"mt-1")}><option value="name-asc">Nome (A–Z)</option><option value="name-desc">Nome (Z–A)</option><option value="price-asc">Menor preço</option><option value="price-desc">Maior preço</option><option value="stock-asc">Menor estoque</option><option value="stock-desc">Maior estoque</option></select></label>
     </div>
-  );
+    <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
+      {visibleProducts.length===0?<li className="p-6 text-sm text-muted-foreground">Nenhum produto corresponde aos filtros.</li>:visibleProducts.map(p=>{
+        const busyRow=busySlug===p.slug, categoryName=cats.find(c=>c.slug===p.category)?.name??p.category;
+        return <li key={p.slug} className="flex flex-wrap items-center gap-3 p-4"><img src={p.images[0]||"/images/papelemi/caderneta-ursinho-clean.jpg"} alt="" className="size-14 shrink-0 rounded-xl border border-border object-cover"/><div className="min-w-0 flex-1"><p className="font-medium">{p.name}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{p.slug} · {categoryName}</p><p className="mt-1 text-xs text-muted-foreground">{brl(p.promoPrice??p.price)} · estoque {p.stock??0} · {p.requiresShipping===false?"sem envio":"com envio"}</p><div className="mt-2 flex flex-wrap gap-1.5"><span className="rounded-full bg-secondary px-2 py-0.5 text-[10px]">{p.archivedAt?"Arquivado":p.published?"Publicado":"Oculto"}</span>{p.personalizable&&<span className="rounded-full bg-secondary px-2 py-0.5 text-[10px]">Personalizável</span>}</div></div>
+          <div className="flex flex-wrap items-center gap-1.5"><button type="button" className={btnGhost} disabled={busyRow} onClick={()=>setEditing(toForm(p))}><Pencil className="size-3.5"/>Editar</button>
+            {!p.archivedAt&&<button type="button" className={btnGhost} disabled={busyRow} onClick={()=>void runAction(p.slug,()=>setProductPublished({data:{slug:p.slug,published:!p.published}}),p.published?"Produto ocultado.":"Produto publicado.")}>{p.published?<EyeOff className="size-3.5"/>:<Eye className="size-3.5"/>}{p.published?"Ocultar":"Publicar"}</button>}
+            {p.archivedAt?<button type="button" className={btnGhost} disabled={busyRow} onClick={()=>void runAction(p.slug,()=>restoreProduct({data:{slug:p.slug}}),"Produto restaurado.")}><RotateCcw className="size-3.5"/>Restaurar</button>:<button type="button" className={btnGhost} disabled={busyRow} onClick={()=>{if(confirm("Arquivar este produto? Ele deixará de aparecer na loja e não poderá ser comprado."))void runAction(p.slug,()=>archiveProduct({data:{slug:p.slug}}),"Produto arquivado.");}}><Archive className="size-3.5"/>Arquivar</button>}
+            {p.archivedAt&&<button type="button" className={btnGhost} disabled={busyRow} onClick={()=>{if(confirm("Excluir definitivamente? A operação será bloqueada se houver referência em pedido histórico."))void runAction(p.slug,()=>deleteProduct({data:{slug:p.slug}}),"Produto excluído.");}}><Trash2 className="size-3.5"/>Excluir</button>}
+          </div></li>;
+      })}
+    </ul>
+    <CatalogPagination page={page} total={filteredProducts.length} onPage={setPage}/>
+  </div>;
 }
 
 // ===== Categorias =====
 
-type AdminCategory = Awaited<ReturnType<typeof listAdminCategories>>[number];
-
 function CategoriesTab() {
-  const [cats, setCats] = useState<AdminCategory[] | null>(null);
-  const [editing, setEditing] = useState<{ originalSlug?: string; slug: string; name: string; description: string; image: string; sort: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-  const load = useCallback(() => { listAdminCategories().then(setCats).catch((e) => toast.error(e.message)); }, []);
-  useEffect(load, [load]);
-
-  const save = async () => {
-    if (!editing || busy) return;
-    setBusy(true);
-    try {
-      await saveCategory({ data: { originalSlug: editing.originalSlug, slug: editing.slug, name: editing.name, description: editing.description, image: editing.image, sort: Number(editing.sort) || 0 } });
-      toast.success("Categoria salva"); setEditing(null); load();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao salvar"); }
-    finally { setBusy(false); }
-  };
-
-  if (!cats) return <Loader2 className="size-6 animate-spin text-primary" />;
-
-  if (editing) return (
-    <div className="rounded-2xl border border-border bg-card p-6">
-      <h2 className="text-2xl">{editing.originalSlug ? "Editar categoria" : "Nova categoria"}</h2>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs text-muted-foreground">Identificador (slug)<input value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Nome<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground sm:col-span-2">Descrição<input value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">URL da imagem<input value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Ordem<input type="number" min="0" value={editing.sort} onChange={(e) => setEditing({ ...editing, sort: e.target.value })} className={cn(input, "mt-1")} /></label>
-      </div>
-      <div className="mt-6 flex gap-3">
-        <button onClick={save} disabled={busy} className={btn}>{busy ? <Loader2 className="size-3.5 animate-spin" /> : null} Salvar</button>
-        <button onClick={() => setEditing(null)} className={btnGhost}>Cancelar</button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div>
-      <button onClick={() => setEditing({ slug: "", name: "", description: "", image: "", sort: String(cats.length + 1) })} className={btn}><Plus className="size-3.5" /> Nova categoria</button>
-      <ul className="mt-5 divide-y divide-border rounded-2xl border border-border bg-card">
-        {cats.map((c) => (
-          <li key={c.slug} className="flex items-center gap-4 p-4">
-            <div className="min-w-0 flex-1">
-              <p className="font-medium">{c.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{c.slug} · ordem {c.sort}</p>
-            </div>
-            <button onClick={() => setEditing({ originalSlug: c.slug, slug: c.slug, name: c.name, description: c.description, image: c.image, sort: String(c.sort) })} aria-label={`Editar ${c.name}`} className="rounded-full p-2 hover:bg-secondary"><Pencil className="size-4" /></button>
-            <button onClick={async () => { if (!confirm(`Excluir a categoria ${c.name}? Produtos dela precisam ser movidos antes.`)) return; try { await deleteCategory({ data: { slug: c.slug } }); toast.success("Categoria excluída"); load(); } catch (e) { toast.error(e instanceof Error ? e.message : "Erro"); } }} aria-label={`Excluir ${c.name}`} className="rounded-full p-2 text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+  const [cats,setCats]=useState<AdminCategory[]|null>(null);
+  const [products,setProducts]=useState<AdminProduct[]>([]);
+  const [editing,setEditing]=useState<{originalSlug?:string;slug:string;name:string;description:string;image:string;sort:string;active:boolean}|null>(null);
+  const [busy,setBusy]=useState(false),[busySlug,setBusySlug]=useState<string|null>(null);
+  const [search,setSearch]=useState(""),[status,setStatus]=useState<"all"|"active"|"inactive"|"archived">("all"),[sort,setSort]=useState("sort-asc"),[page,setPage]=useState(1);
+  const load=useCallback(async()=>{try{const [c,p]=await Promise.all([listAdminCategories(),listAdminProducts()]);setCats(c);setProducts(p);}catch(e){toast.error(e instanceof Error?e.message:"Não foi possível carregar categorias.");}},[]);
+  useEffect(()=>{void load();},[load]);
+  const counts=useMemo(()=>{const m=new Map<string,number>();for(const p of products)m.set(p.category,(m.get(p.category)??0)+1);return m;},[products]);
+  const filtered=useMemo(()=>{const term=search.trim().toLocaleLowerCase("pt-BR");const result=(cats??[]).filter(c=>{if(term&&!c.name.toLocaleLowerCase("pt-BR").includes(term)&&!c.slug.toLocaleLowerCase("pt-BR").includes(term))return false;if(status==="active"&&(!c.active||c.archived_at))return false;if(status==="inactive"&&(c.active||c.archived_at))return false;if(status==="archived"&&!c.archived_at)return false;return true;});return result.sort((a,b)=>sort==="name-asc"?a.name.localeCompare(b.name,"pt-BR"):sort==="products-desc"?(counts.get(b.slug)??0)-(counts.get(a.slug)??0):a.sort-b.sort||a.name.localeCompare(b.name,"pt-BR"));},[cats,search,status,sort,counts]);
+  const totalPages=Math.max(1,Math.ceil(filtered.length/catalogPageSize)),visible=filtered.slice((page-1)*catalogPageSize,page*catalogPageSize);
+  useEffect(()=>{if(page>totalPages)setPage(totalPages);},[page,totalPages]);
+  const runAction=async(slug:string,action:()=>Promise<unknown>,success:string)=>{setBusySlug(slug);try{await action();toast.success(success);await load();}catch(e){toast.error(e instanceof Error?e.message:"Não foi possível concluir.");}finally{setBusySlug(null);}};
+  const save=async()=>{if(!editing||busy)return;setBusy(true);try{await saveCategory({data:{originalSlug:editing.originalSlug,slug:editing.slug,name:editing.name,description:editing.description,image:editing.image,sort:Number(editing.sort)||0,active:editing.active}});toast.success("Categoria salva");setEditing(null);await load();}catch(e){toast.error(e instanceof Error?e.message:"Erro ao salvar categoria");}finally{setBusy(false);}};
+  if(!cats)return <Loader2 className="size-6 animate-spin text-primary"/>;
+  if(editing)return <div className="rounded-2xl border border-border bg-card p-6"><h2 className="text-2xl">{editing.originalSlug?"Editar categoria":"Nova categoria"}</h2><div className="mt-5 grid gap-3 sm:grid-cols-2">
+    <label className="text-xs text-muted-foreground">Identificador (slug)<input value={editing.slug} onChange={e=>setEditing({...editing,slug:e.target.value})} className={cn(input,"mt-1")}/></label>
+    <label className="text-xs text-muted-foreground">Nome<input value={editing.name} onChange={e=>setEditing({...editing,name:e.target.value})} className={cn(input,"mt-1")}/></label>
+    <label className="text-xs text-muted-foreground sm:col-span-2">Descrição<input value={editing.description} onChange={e=>setEditing({...editing,description:e.target.value})} className={cn(input,"mt-1")}/></label>
+    <label className="text-xs text-muted-foreground">URL da imagem<input value={editing.image} onChange={e=>setEditing({...editing,image:e.target.value})} className={cn(input,"mt-1")}/></label>
+    <label className="text-xs text-muted-foreground">Ordem<input type="number" min="0" value={editing.sort} onChange={e=>setEditing({...editing,sort:e.target.value})} className={cn(input,"mt-1")}/></label>
+    <label className="flex items-center gap-2 pt-5 text-sm"><input type="checkbox" checked={editing.active} onChange={e=>setEditing({...editing,active:e.target.checked})}/>Categoria ativa na loja</label>
+  </div><div className="mt-6 flex gap-3"><button onClick={save} disabled={busy} className={btn}>{busy?<Loader2 className="size-3.5 animate-spin"/>:null}Salvar</button><button onClick={()=>setEditing(null)} className={btnGhost}>Cancelar</button></div></div>;
+  const activeCount=cats.filter(c=>c.active&&!c.archived_at).length,archivedCount=cats.filter(c=>Boolean(c.archived_at)).length;
+  return <div className="space-y-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs uppercase tracking-[0.18em] text-primary">Organização do catálogo</p><h2 className="mt-1 text-2xl font-semibold">Categorias</h2><p className="mt-1 text-sm text-muted-foreground">{cats.length} cadastradas · {activeCount} ativas · {archivedCount} arquivadas</p></div><button type="button" onClick={()=>setEditing({slug:"",name:"",description:"",image:"",sort:String(cats.length),active:true})} className={btn}><Plus className="size-3.5"/> Nova categoria</button></div>
+    <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-3"><label className="text-xs text-muted-foreground md:col-span-2">Pesquisar categoria<span className="relative mt-1 block"><Search className="absolute left-3 top-3 size-4 text-muted-foreground"/><input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} className={cn(input,"pl-9")} placeholder="Nome ou slug"/></span></label>
+      <label className="text-xs text-muted-foreground">Situação<select value={status} onChange={e=>{setStatus(e.target.value as typeof status);setPage(1);}} className={cn(input,"mt-1")}><option value="all">Todas</option><option value="active">Ativas</option><option value="inactive">Inativas</option><option value="archived">Arquivadas</option></select></label>
+      <label className="text-xs text-muted-foreground">Ordenar por<select value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}} className={cn(input,"mt-1")}><option value="sort-asc">Ordem definida</option><option value="name-asc">Nome (A–Z)</option><option value="products-desc">Mais produtos</option></select></label></div>
+    <ul className="divide-y divide-border rounded-2xl border border-border bg-card">{visible.length===0?<li className="p-6 text-sm text-muted-foreground">Nenhuma categoria corresponde aos filtros.</li>:visible.map(c=>{const count=counts.get(c.slug)??0,busyRow=busySlug===c.slug;return <li key={c.slug} className="flex flex-wrap items-center gap-3 p-4">{c.image?<img src={c.image} alt="" className="size-12 shrink-0 rounded-xl border border-border object-cover"/>:<div className="size-12 shrink-0 rounded-xl bg-secondary"/>}<div className="min-w-0 flex-1"><p className="font-medium">{c.name}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{c.slug} · ordem {c.sort} · {count} produto(s)</p><span className="mt-2 inline-flex rounded-full bg-secondary px-2 py-0.5 text-[10px]">{c.archived_at?"Arquivada":c.active?"Ativa":"Inativa"}</span></div><div className="flex flex-wrap items-center gap-1.5">
+      <button type="button" className={btnGhost} disabled={busyRow} onClick={()=>setEditing({originalSlug:c.slug,slug:c.slug,name:c.name,description:c.description,image:c.image,sort:String(c.sort),active:c.active})}><Pencil className="size-3.5"/>Editar</button>
+      {!c.archived_at&&<button type="button" className={btnGhost} disabled={busyRow} onClick={()=>void runAction(c.slug,()=>setCategoryActive({data:{slug:c.slug,active:!c.active}}),c.active?"Categoria desativada.":"Categoria ativada.")}>{c.active?"Desativar":"Ativar"}</button>}
+      {c.archived_at?<button type="button" className={btnGhost} disabled={busyRow} onClick={()=>void runAction(c.slug,()=>restoreCategory({data:{slug:c.slug}}),"Categoria restaurada.")}><RotateCcw className="size-3.5"/>Restaurar</button>:<button type="button" className={btnGhost} disabled={busyRow} onClick={()=>{const warning=count?`Arquivar esta categoria também ocultará ${count} produto(s) vinculados. Continuar?`:"Arquivar esta categoria?";if(confirm(warning))void runAction(c.slug,()=>archiveCategory({data:{slug:c.slug}}),"Categoria arquivada.");}}><Archive className="size-3.5"/>Arquivar</button>}
+      <button type="button" className={btnGhost} disabled={busyRow||count>0} title={count>0?"Mova ou exclua os produtos vinculados antes.":"Excluir categoria"} onClick={()=>{if(confirm("Excluir definitivamente esta categoria?"))void runAction(c.slug,()=>deleteCategory({data:{slug:c.slug}}),"Categoria excluída.");}}><Trash2 className="size-3.5"/>Excluir</button>
+    </div></li>;})}</ul><CatalogPagination page={page} total={filtered.length} onPage={setPage}/></div>;
 }
 
 // ===== Frases =====

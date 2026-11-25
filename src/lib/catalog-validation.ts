@@ -100,4 +100,5 @@ export const categoryAdminSchema = z.object({
   description: z.string().trim().max(300).default(""),
   image: imageReferenceSchema.or(z.literal("")).default(""),
   sort: z.number().int().min(0).max(999).default(0),
+  active: z.boolean().default(true),
 });
