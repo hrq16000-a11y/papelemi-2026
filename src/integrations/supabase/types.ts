@@ -21,6 +21,7 @@ export type Database = {
           name: string
           slug: string
           sort: number
+          store_key: string
         }
         Insert: {
           description?: string
@@ -28,6 +29,7 @@ export type Database = {
           name: string
           slug: string
           sort?: number
+          store_key?: string
         }
         Update: {
           description?: string
@@ -35,26 +37,46 @@ export type Database = {
           name?: string
           slug?: string
           sort?: number
+          store_key?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_store_key_fkey"
+            columns: ["store_key"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_key"]
+          },
+        ]
       }
       coupons: {
         Row: {
           active: boolean
           code: string
           percent: number
+          store_key: string
         }
         Insert: {
           active?: boolean
           code: string
           percent: number
+          store_key?: string
         }
         Update: {
           active?: boolean
           code?: string
           percent?: number
+          store_key?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "coupons_store_key_fkey"
+            columns: ["store_key"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_key"]
+          },
+        ]
       }
       curated_phrases: {
         Row: {
@@ -63,6 +85,7 @@ export type Database = {
           id: string
           occasion: string
           phrase: string
+          store_key: string
         }
         Insert: {
           active?: boolean
@@ -70,6 +93,7 @@ export type Database = {
           id?: string
           occasion?: string
           phrase: string
+          store_key?: string
         }
         Update: {
           active?: boolean
@@ -77,59 +101,226 @@ export type Database = {
           id?: string
           occasion?: string
           phrase?: string
+          store_key?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "curated_phrases_store_key_fkey"
+            columns: ["store_key"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_key"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          city: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          email_normalized: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          source: string | null
+          state: string | null
+          status: string
+          store_key: string
+          tags: string[]
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          email_normalized?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          store_key?: string
+          tags?: string[]
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          email_normalized?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          store_key?: string
+          tags?: string[]
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_store_key_fkey"
+            columns: ["store_key"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_key"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_number: number
+          line_total: number
+          order_id: string
+          personalization: Json
+          product_image: string | null
+          product_name: string
+          product_slug: string | null
+          quantity: number
+          store_key: string
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_number: number
+          line_total: number
+          order_id: string
+          personalization?: Json
+          product_image?: string | null
+          product_name: string
+          product_slug?: string | null
+          quantity: number
+          store_key?: string
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_number?: number
+          line_total?: number
+          order_id?: string
+          personalization?: Json
+          product_image?: string | null
+          product_name?: string
+          product_slug?: string | null
+          quantity?: number
+          store_key?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_store_key_fkey"
+            columns: ["store_key"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_key"]
+          },
+          {
+            foreignKeyName: "order_items_store_order_fkey"
+            columns: ["store_key", "order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["store_key", "id"]
+          },
+        ]
       }
       orders: {
         Row: {
+          accepted_privacy: boolean
           address: Json
           coupon_code: string | null
           created_at: string
           customer_email: string
+          customer_id: string | null
           customer_name: string
+          customer_notes: string
           customer_phone: string
           discount: number
           id: string
           items: Json
           mp_payment_id: string | null
+          privacy_consent_at: string | null
           shipping: number
+          source: string
           status: string
+          store_key: string
           subtotal: number
           total: number
         }
         Insert: {
+          accepted_privacy?: boolean
           address?: Json
           coupon_code?: string | null
           created_at?: string
           customer_email: string
+          customer_id?: string | null
           customer_name: string
+          customer_notes?: string
           customer_phone?: string
           discount?: number
           id?: string
           items?: Json
           mp_payment_id?: string | null
+          privacy_consent_at?: string | null
           shipping?: number
+          source?: string
           status?: string
+          store_key?: string
           subtotal: number
           total: number
         }
         Update: {
+          accepted_privacy?: boolean
           address?: Json
           coupon_code?: string | null
           created_at?: string
           customer_email?: string
+          customer_id?: string | null
           customer_name?: string
+          customer_notes?: string
           customer_phone?: string
           discount?: number
           id?: string
           items?: Json
           mp_payment_id?: string | null
+          privacy_consent_at?: string | null
           shipping?: number
+          source?: string
           status?: string
+          store_key?: string
           subtotal?: number
           total?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_store_customer_fkey"
+            columns: ["store_key", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["store_key", "id"]
+          },
+          {
+            foreignKeyName: "orders_store_key_fkey"
+            columns: ["store_key"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_key"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -150,6 +341,7 @@ export type Database = {
           sizes: string[]
           slug: string
           stock: number
+          store_key: string
         }
         Insert: {
           best_seller?: boolean
@@ -169,6 +361,7 @@ export type Database = {
           sizes?: string[]
           slug: string
           stock?: number
+          store_key?: string
         }
         Update: {
           best_seller?: boolean
@@ -188,34 +381,80 @@ export type Database = {
           sizes?: string[]
           slug?: string
           stock?: number
+          store_key?: string
         }
         Relationships: [
           {
-            foreignKeyName: "products_category_slug_fkey"
-            columns: ["category_slug"]
+            foreignKeyName: "products_category_store_fkey"
+            columns: ["store_key", "category_slug"]
             isOneToOne: false
             referencedRelation: "categories"
-            referencedColumns: ["slug"]
+            referencedColumns: ["store_key", "slug"]
+          },
+          {
+            foreignKeyName: "products_store_key_fkey"
+            columns: ["store_key"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_key"]
           },
         ]
+      }
+      stores: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          name: string
+          primary_domain: string
+          store_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          name: string
+          primary_domain: string
+          store_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          name?: string
+          primary_domain?: string
+          store_key?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          store_key: string
           user_id: string
         }
         Insert: {
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          store_key?: string
           user_id: string
         }
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          store_key?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_store_key_fkey"
+            columns: ["store_key"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_key"]
+          },
+        ]
       }
     }
     Views: {
@@ -229,9 +468,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_store_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _store_key: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      app_role: "admin"
+      app_role: "admin" | "user" | "editor" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -359,7 +606,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin"],
+      app_role: ["admin", "user", "editor", "customer"],
     },
   },
 } as const

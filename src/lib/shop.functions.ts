@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
@@ -12,7 +13,7 @@ function publicClient() {
   const url = process.env["SUPABASE_URL"];
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) throw new Error("Banco de dados não configurado");
-  return createClient(url, key, {
+  return createClient<Database>(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
@@ -101,7 +102,7 @@ type QuoteInput = z.infer<typeof quoteInput>;
 async function buildOrderQuote(input: QuoteInput) {
   const { productFromRow } = await import("@/lib/catalog.repository.server");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const admin = supabaseAdmin as unknown as SupabaseClient;
+  const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
   const slugs = [...new Set(input.items.map((item) => item.slug))];
   const { data: rows, error } = await admin
     .from("products")
@@ -182,7 +183,7 @@ export const createOrder = createServerFn({ method: "POST" })
   .validator(orderInput)
   .handler(async ({ data: input }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const quote = await buildOrderQuote(input);
     if (await createQuoteToken(quote) !== input.quoteToken) {
       throw new Error("PRICE_CHANGED: Os valores ou condições mudaram. O resumo foi atualizado; confira antes de enviar novamente.");
@@ -307,7 +308,7 @@ export const getOrderStatus = createServerFn({ method: "GET" })
   .validator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const readOrder = () => admin
       .from("orders")
       .select("status,total")
@@ -330,9 +331,6 @@ export const getOrderStatus = createServerFn({ method: "GET" })
 // ===== Administração (exige papel de admin) =====
 
 type AdminCtx = { supabase: ReturnType<typeof publicClient>; userId: string };
-function storeDb(supabase: unknown): SupabaseClient {
-  return supabase as SupabaseClient;
-}
 async function requireAdmin(context: AdminCtx) {
   const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
   if (!data) throw new Error("Acesso restrito ao administrador da loja");
@@ -352,7 +350,7 @@ export const listOrders = createServerFn({ method: "GET" })
     // A tabela orders aceita acesso somente pelo servidor (service_role).
     // A autorização do usuário é validada antes de usar o cliente privilegiado.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const { data, error } = await admin
       .from("orders")
       .select("*")
@@ -368,7 +366,7 @@ export const listCustomers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const pageSize = 1000;
     const maxRows = 20000;
     const customerRows: Record<string, unknown>[] = [];
@@ -454,7 +452,7 @@ export const setOrderStatus = createServerFn({ method: "POST" })
     await requireAdmin(context);
     // Atualizações usam service_role somente após validar o papel do usuário.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const { error } = await admin
       .from("orders")
       .update({ status: data.status })
@@ -488,7 +486,7 @@ export const listAdminProducts = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context);
     const { productFromRow } = await import("@/lib/catalog.repository.server");
-    const { data, error } = await storeDb(context.supabase).from("products").select("*").eq("store_key", "papelemi").order("name");
+    const { data, error } = await context.supabase.from("products").select("*").eq("store_key", "papelemi").order("name");
     if (error) throw new Error(error.message);
     return (data ?? []).map((r) => ({ ...productFromRow(r), minQty: r.min_qty ?? null }));
   });
@@ -498,8 +496,8 @@ export const saveProduct = createServerFn({ method: "POST" })
   .validator(productInput)
   .handler(async ({ context, data: p }) => {
     await requireAdmin(context);
-    const { data: existing } = await storeDb(context.supabase).from("products").select("personalization").eq("store_key", "papelemi").eq("slug", p.slug).maybeSingle();
-    const { error } = await storeDb(context.supabase).from("products").upsert({
+    const { data: existing } = await context.supabase.from("products").select("personalization").eq("store_key", "papelemi").eq("slug", p.slug).maybeSingle();
+    const { error } = await context.supabase.from("products").upsert({
       store_key: "papelemi",
       slug: p.slug,
       category_slug: p.categorySlug,
@@ -528,7 +526,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
   .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await storeDb(context.supabase).from("products").delete().eq("store_key", "papelemi").eq("slug", data.slug);
+    const { error } = await context.supabase.from("products").delete().eq("store_key", "papelemi").eq("slug", data.slug);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -545,7 +543,7 @@ export const listAdminCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await storeDb(context.supabase).from("categories").select("*").eq("store_key", "papelemi").order("sort");
+    const { data, error } = await context.supabase.from("categories").select("*").eq("store_key", "papelemi").order("sort");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -555,7 +553,7 @@ export const saveCategory = createServerFn({ method: "POST" })
   .validator(categoryInput)
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
-    const { error } = await storeDb(context.supabase).from("categories").upsert({ store_key: "papelemi", slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort }, { onConflict: "store_key,slug" });
+    const { error } = await context.supabase.from("categories").upsert({ store_key: "papelemi", slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort }, { onConflict: "store_key,slug" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -565,7 +563,7 @@ export const deleteCategory = createServerFn({ method: "POST" })
   .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await storeDb(context.supabase).from("categories").delete().eq("store_key", "papelemi").eq("slug", data.slug);
+    const { error } = await context.supabase.from("categories").delete().eq("store_key", "papelemi").eq("slug", data.slug);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -574,7 +572,7 @@ export const listAdminPhrases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await storeDb(context.supabase).from("curated_phrases").select("*").eq("store_key", "papelemi").order("created_at", { ascending: false });
+    const { data, error } = await context.supabase.from("curated_phrases").select("*").eq("store_key", "papelemi").order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -591,8 +589,8 @@ export const savePhrase = createServerFn({ method: "POST" })
     await requireAdmin(context);
     const row = { store_key: "papelemi", phrase: p.phrase, occasion: p.occasion, active: p.active };
     const { error } = p.id
-      ? await storeDb(context.supabase).from("curated_phrases").update(row).eq("store_key", "papelemi").eq("id", p.id)
-      : await storeDb(context.supabase).from("curated_phrases").insert(row);
+      ? await context.supabase.from("curated_phrases").update(row).eq("store_key", "papelemi").eq("id", p.id)
+      : await context.supabase.from("curated_phrases").insert(row);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -602,7 +600,7 @@ export const deletePhrase = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.string().uuid() }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await storeDb(context.supabase).from("curated_phrases").delete().eq("store_key", "papelemi").eq("id", data.id);
+    const { error } = await context.supabase.from("curated_phrases").delete().eq("store_key", "papelemi").eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -611,7 +609,7 @@ export const listAdminCoupons = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await storeDb(context.supabase).from("coupons").select("*").eq("store_key", "papelemi").order("code");
+    const { data, error } = await context.supabase.from("coupons").select("*").eq("store_key", "papelemi").order("code");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -625,7 +623,7 @@ export const saveCoupon = createServerFn({ method: "POST" })
   }))
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
-    const { error } = await storeDb(context.supabase).from("coupons").upsert({ store_key: "papelemi", code: c.code, percent: c.percent, active: c.active }, { onConflict: "store_key,code" });
+    const { error } = await context.supabase.from("coupons").upsert({ store_key: "papelemi", code: c.code, percent: c.percent, active: c.active }, { onConflict: "store_key,code" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -635,7 +633,7 @@ export const deleteCoupon = createServerFn({ method: "POST" })
   .validator(z.object({ code: z.string().min(2).max(40) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await storeDb(context.supabase).from("coupons").delete().eq("store_key", "papelemi").eq("code", data.code);
+    const { error } = await context.supabase.from("coupons").delete().eq("store_key", "papelemi").eq("code", data.code);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
