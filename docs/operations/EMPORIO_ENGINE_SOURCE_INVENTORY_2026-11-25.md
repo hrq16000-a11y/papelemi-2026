@@ -1,0 +1,759 @@
+# Inventário-fonte — motor operacional Empório Lele Cute
+
+**Data:** 25/11/2026  
+**Repositório:** `hrq16000-a11y/emporiolelecute-2026`  
+**Branch:** `main`  
+**HEAD:** `d01d843c266b5a32d03af22eeaac6eda4a7fcf0f`
+
+> Inventário extraído da árvore Git e dos tipos gerados versionados. Ele descreve o código-fonte, não comprova sozinho o estado atual do banco hospedado.
+
+## Resumo
+
+| Ativo | Quantidade | Fonte |
+|---|---:|---|
+| Migrations SQL Supabase | 199 | `supabase/migrations/*.sql` |
+| Tabelas tipadas | 155 | `src/integrations/supabase/types.ts` |
+| Funções/RPCs tipadas | 63 | `Database.public.Functions` |
+| Views tipadas | 5 | `Database.public.Views` |
+| Edge Functions | 54 | `supabase/functions/*/index.ts` |
+| Páginas administrativas | 120 | `src/pages/admin` |
+| Componentes administrativos | 411 | `src/components/admin` |
+
+## 1. Tabelas
+
+`access_request_notifications`, `admin_access_requests`, `admin_usage_aggregates`, `after_sales_followups`, `after_sales_rules`, `blog_posts`, `catalog_security_approvals`, `categories`, `collection_products`, `collections`, `combination_pages_registry`, `contact_migration_audit`, `cookie_consent_config`, `cookie_consents`, `coupon_uses`, `coupons`, `customers`, `data_deletion_requests`, `editorial_stories`, `faqs`, `hero_slides`, `home_section_audit`, `home_sections`, `homepage_blocks`, `image_processing_jobs`, `instagram_embed_failures`, `instagram_feed_embeds`, `instagram_post_attempts`, `instagram_posts`, `instagram_sync_history`, `internal_function_secrets`, `kit_products`, `kits`, `media_assets`, `media_audit_runs`, `media_backup_runs`, `menu_items`, `merchant_feed_snapshots`, `notification_preferences`, `occasion_landings`, `occasions`, `operational_settings`, `operational_worker_credentials`, `order_items`, `order_status_notifications`, `orders`, `page_versions`, `pages`, `payment_events`, `pdp_badge_events`, `pdp_funnel_events`, `pdp_section_audit`, `pdp_sections`, `product_faqs`, `product_occasions`, `product_reviews`, `product_segments`, `product_slugs`, `product_tags`, `product_versions`, `products`, `profile_change_audit`, `profiles`, `push_subscriptions`, `redirects`, `reserved_slugs`, `review_import_audit`, `role_promotion_audit`, `search_audit_log`, `search_boosts`, `search_query_log`, `search_synonyms`, `security_scan_runs`, `segments`, `seo_adaptive_memory`, `seo_alert_log`, `seo_causality_registry`, `seo_check_runs`, `seo_civilization_snapshots`, `seo_cluster_memory`, `seo_cognitive_snapshots`, `seo_coherence_conflicts`, `seo_coherence_matrix_snapshots`, `seo_consciousness_fabric_snapshots`, `seo_consciousness_memory`, `seo_consolidation_snapshots`, `seo_continuum_snapshots`, `seo_decision_lineage`, `seo_engine_conflicts`, `seo_engine_registry`, `seo_entity_snapshots`, `seo_execution_log`, `seo_execution_orchestrator_snapshots`, `seo_executive_core_snapshots`, `seo_executive_snapshots`, `seo_final_governance_snapshots`, `seo_governance_matrix_snapshots`, `seo_gsc_snapshots`, `seo_integrity_grid_snapshots`, `seo_kernel_snapshots`, `seo_meta_governance_snapshots`, `seo_meta_reasoning_snapshots`, `seo_metric_consistency`, `seo_metric_lineage`, `seo_metric_registry`, `seo_nervous_system_snapshots`, `seo_nexus_convergence_snapshots`, `seo_operating_fabric_snapshots`, `seo_operational_reality_snapshots`, `seo_operational_snapshots`, `seo_reasoning_conflicts`, `seo_reasoning_drift_registry`, `seo_simulation_runs`, `seo_snapshots`, `seo_stability_fabric_snapshots`, `seo_strategic_reality_snapshots`, `seo_strategy_alignment_registry`, `seo_strategy_memory`, `seo_strategy_simulations`, `seo_structural_dependencies`, `seo_submission_log`, `seo_system_finalization_snapshots`, `seo_system_health_snapshots`, `seo_systemic_risk_registry`, `seo_unified_bus_snapshots`, `seo_unified_nexus_snapshots`, `seo_url_status`, `shipping_audit_logs`, `shipping_providers`, `shipping_quote_cache`, `shipping_rules`, `shipping_settings`, `social_proof_settings`, `stale_bundle_logs`, `store_settings`, `support_messages`, `support_threads`, `tags`, `telemetry_alert_state`, `testimonials`, `theme_hubs`, `tracking_email_log`, `user_preferences`, `user_roles`, `visitor_pageviews`, `visitor_sessions`, `visitors`, `web_vitals_reports`, `wishlist_shares`, `wishlists`, `admin_audit_timeline`, `customer_overview`, `product_review_stats`, `search_insights_summary`, `taxonomy_registry`
+
+## 2. Funções/RPCs
+
+`admin_audit_anomalies`, `admin_search_preview_rank`, `apply_default_weight`, `approve_catalog_security`, `audit_system_dump`, `catalog_security_status`, `check_resend_email_cooldown`, `claim_image_processing_jobs`, `claim_support_thread`, `cleanup_pdp_badge_events`, `cleanup_pdp_funnel_events`, `cleanup_seo_url_status`, `cleanup_stale_bundle_logs`, `cleanup_web_vitals_history`, `create_order_with_items`, `gen_external_ref`, `gen_img_ref`, `get_unified_profile`, `get_unified_timeline`, `has_role`, `list_admin_audit_timeline`, `list_all_users`, `list_all_users_paginated`, `list_contact_migration_audit`, `list_cron_jobs`, `list_cron_runs`, `list_user_audit`, `log_search`, `mark_visitor_as_lead`, `media_gc_candidates`, `media_relink_references`, `migrate_customer_to_user_link`, `migrate_visitor_to_customer`, `normalize_phone_digits`, `normalize_search`, `normalize_slug`, `operational_worker_headers`, `pdp_badge_stats`, `pdp_funnel_stats`, `preview_search_boost`, `promote_user_to_admin`, `rebuild_media_inventory`, `rebuild_media_inventory_internal`, `record_product_slug_hit`, `refresh_admin_audit_timeline`, `reject_admin_request`, `request_admin_access`, `resolve_product_slug`, `retry_image_processing_job`, `revert_product_version`, `save_product_full`, `search_products`, `set_user_role`, `show_limit`, `show_trgm`, `track_heartbeat`, `track_pageview`, `track_pdp_funnel_batch`, `unaccent`, `unresolved_catalog_security_scan`, `update_user_profile`, `users_source_counts`, `validate_coupon`
+
+## 3. Views
+
+`admin_audit_timeline`, `customer_overview`, `product_review_stats`, `search_insights_summary`, `taxonomy_registry`
+
+## 4. Edge Functions
+
+- `admin-backup-export`
+- `admin-backup-import`
+- `admin-create-user`
+- `admin-media-backup`
+- `admin-system-audit`
+- `admin-usage-ingest`
+- `calculate-shipping`
+- `chat`
+- `cleanup-orphan-product-images`
+- `data-deletion-request`
+- `generate-sitemap`
+- `health`
+- `instagram-oembed`
+- `instagram-sync`
+- `media-backup-cron`
+- `mercadopago-webhook`
+- `merchant-feed`
+- `merchant-feed-audit`
+- `notification-prefs`
+- `notification-test`
+- `notify-admins-new-request`
+- `notify-order-status`
+- `notify-role-change`
+- `order-stream`
+- `prerender`
+- `process-image-jobs`
+- `robots-txt`
+- `security-scan`
+- `send-order-email`
+- `seo-autopilot`
+- `seo-bing-verify`
+- `seo-checks`
+- `seo-control-plane`
+- `seo-crawler-probe`
+- `seo-daily-guard`
+- `seo-gsc-analytics`
+- `seo-gsc-coverage`
+- `seo-gsc-snapshot`
+- `seo-image-audit`
+- `seo-index-audit`
+- `seo-indexation-monitor`
+- `seo-jsonld-audit`
+- `seo-jsonld-autofix`
+- `seo-jsonld-hubs`
+- `seo-product-audit`
+- `seo-semrush-snapshot`
+- `seo-sitemap-auto-resubmit`
+- `seo-title-optimizer`
+- `seo-vitals-alert`
+- `submit-sitemap`
+- `support-chat`
+- `telemetry-alert-monitor`
+- `track-order`
+- `track-visit`
+
+## 5. Grupos de navegação administrativa
+
+- Core
+- Dashboard
+- Pedidos
+- Ateliê e pós-venda
+- Pagamentos
+- Clientes
+- Teste de notificações
+- Banner LGPD
+- Produtos
+- Reviews
+- Blog
+- Content
+- Content Health
+- Editorial
+- Content Gaps
+- Image Health
+- Backup de Mídia
+- Blog Health
+- Product Health
+- Discovery
+- Discovery Engine
+- Opportunities
+- Themes
+- Combination Pages
+- Authority
+- SEO Executive (avançado)
+- Executive Mode
+- Executive Home
+- SEO OS
+- War Room
+- Control Tower
+- Execution Orchestrator
+- Operational Reality
+- Operational Consolidation
+- Intelligence (avançado)
+- Knowledge Graph
+- Unified Nexus
+- Strategic Nexus
+- Stability Fabric
+- Integrity Grid
+- Coherence Matrix
+- Consciousness
+- Governance Matrix
+- System (avançado)
+- Final Governance
+- System Audit
+- Consolidation
+- Kernel
+- Unified Intelligence
+- Operating Fabric
+- Cognitive Orchestration
+- Nervous System
+- Site
+- Hero Slides
+- Depoimentos
+- Seções da Home
+- Seções da PDP
+- Blocos Homepage
+- Feed Instagram
+- Landings SEO
+- Páginas
+- Menus
+- FAQs
+- Atendimentos
+- Categorias
+- Ocasiões
+- Tags
+- Taxonomias
+- Cupons
+- Coleções
+- Kits editoriais
+- Settings
+- Redirects
+- Robots.txt
+- Analytics & Ads
+- CTA & Conversão
+- Prova Social
+- Gestão de Fretes
+- Busca · Cockpit
+- Configurações
+- Recursos do site
+- Merchant Feed
+- SEO & Sitemap
+- SEO global
+- SEO Check
+- Sitemap → Google
+- SEO Dashboard
+- Telemetria
+- Cron
+- Desempenho
+- Segurança
+- Usuários
+- Solicitações
+- Auditoria
+- Backup & Migração
+- SEO Avançado
+- SEO Command
+- SEO Evolution
+- SEO Operations
+- Link Health
+- Cloudflare Worker
+- SEO System Audit
+- SEO Diagnóstico
+- SEO Consolidation
+- Labs (Experimental)
+- Meta Reasoning
+- Strategic Reality
+- Strategic Continuum
+- Civilization
+- Singularity
+- Consciousness Fabric
+- Meta Governance
+- Executive Grid
+- Executive Core
+- Autonomy
+- Simulation Lab
+- Strategic Simulation
+
+## 6. Páginas administrativas (inventário completo)
+
+- `src/pages/admin/AdminAccessRequestDetail.tsx`
+- `src/pages/admin/AdminAccessRequests.tsx`
+- `src/pages/admin/AdminAudit.tsx`
+- `src/pages/admin/AdminAuthority.tsx`
+- `src/pages/admin/AdminBackup.tsx`
+- `src/pages/admin/AdminBlog.tsx`
+- `src/pages/admin/AdminBlogHealth.tsx`
+- `src/pages/admin/AdminBoutique.tsx`
+- `src/pages/admin/AdminCategories.tsx`
+- `src/pages/admin/AdminCloudflareGuide.tsx`
+- `src/pages/admin/AdminCollectionForm.tsx`
+- `src/pages/admin/AdminCollections.tsx`
+- `src/pages/admin/AdminCombinationPages.tsx`
+- `src/pages/admin/AdminContentGaps.tsx`
+- `src/pages/admin/AdminContentHealth.tsx`
+- `src/pages/admin/AdminConversionCTA.tsx`
+- `src/pages/admin/AdminCookieConsent.tsx`
+- `src/pages/admin/AdminCoupons.tsx`
+- `src/pages/admin/AdminCronStatus.tsx`
+- `src/pages/admin/AdminCustomers.tsx`
+- `src/pages/admin/AdminDashboard.tsx`
+- `src/pages/admin/AdminDiagnostics.tsx`
+- `src/pages/admin/AdminDiscovery.tsx`
+- `src/pages/admin/AdminEditorialExecution.tsx`
+- `src/pages/admin/AdminExecutiveMode.tsx`
+- `src/pages/admin/AdminFaqs.tsx`
+- `src/pages/admin/AdminFeatures.tsx`
+- `src/pages/admin/AdminFeedInstagram.tsx`
+- `src/pages/admin/AdminHeroSlides.tsx`
+- `src/pages/admin/AdminHomeSections.tsx`
+- `src/pages/admin/AdminHomepageBlocks.tsx`
+- `src/pages/admin/AdminImageHealth.tsx`
+- `src/pages/admin/AdminImport.tsx`
+- `src/pages/admin/AdminInstagram.tsx`
+- `src/pages/admin/AdminKitForm.tsx`
+- `src/pages/admin/AdminKits.tsx`
+- `src/pages/admin/AdminKnowledgeGraph.tsx`
+- `src/pages/admin/AdminLayout.tsx`
+- `src/pages/admin/AdminLinkHealth.tsx`
+- `src/pages/admin/AdminLogin.tsx`
+- `src/pages/admin/AdminMediaBackup.tsx`
+- `src/pages/admin/AdminMenus.tsx`
+- `src/pages/admin/AdminMerchantFeed.tsx`
+- `src/pages/admin/AdminNotificationTest.tsx`
+- `src/pages/admin/AdminOccasionLandings.tsx`
+- `src/pages/admin/AdminOccasions.tsx`
+- `src/pages/admin/AdminOpportunities.tsx`
+- `src/pages/admin/AdminOrders.tsx`
+- `src/pages/admin/AdminPageForm.tsx`
+- `src/pages/admin/AdminPages.tsx`
+- `src/pages/admin/AdminPayments.tsx`
+- `src/pages/admin/AdminPdpSections.tsx`
+- `src/pages/admin/AdminPerformance.tsx`
+- `src/pages/admin/AdminProductForm.tsx`
+- `src/pages/admin/AdminProductReviews.tsx`
+- `src/pages/admin/AdminProducts.tsx`
+- `src/pages/admin/AdminProductsHealth.tsx`
+- `src/pages/admin/AdminRedirects.tsx`
+- `src/pages/admin/AdminRobots.tsx`
+- `src/pages/admin/AdminSEO.tsx`
+- `src/pages/admin/AdminSEODashboard.tsx`
+- `src/pages/admin/AdminSEOReport.tsx`
+- `src/pages/admin/AdminSearch.tsx`
+- `src/pages/admin/AdminSecurityScan.tsx`
+- `src/pages/admin/AdminSeoAutonomy.tsx`
+- `src/pages/admin/AdminSeoCheck.tsx`
+- `src/pages/admin/AdminSeoCivilization.tsx`
+- `src/pages/admin/AdminSeoCognitiveOrchestration.tsx`
+- `src/pages/admin/AdminSeoCoherenceMatrix.tsx`
+- `src/pages/admin/AdminSeoCommandCenter.tsx`
+- `src/pages/admin/AdminSeoConsciousness.tsx`
+- `src/pages/admin/AdminSeoConsciousnessFabric.tsx`
+- `src/pages/admin/AdminSeoConsolidation.tsx`
+- `src/pages/admin/AdminSeoControlPlane.tsx`
+- `src/pages/admin/AdminSeoControlTower.tsx`
+- `src/pages/admin/AdminSeoEvolution.tsx`
+- `src/pages/admin/AdminSeoExecutionOrchestrator.tsx`
+- `src/pages/admin/AdminSeoExecutiveCore.tsx`
+- `src/pages/admin/AdminSeoExecutiveGrid.tsx`
+- `src/pages/admin/AdminSeoExecutiveHome.tsx`
+- `src/pages/admin/AdminSeoFinalGovernance.tsx`
+- `src/pages/admin/AdminSeoGlobal.tsx`
+- `src/pages/admin/AdminSeoGovernanceMatrix.tsx`
+- `src/pages/admin/AdminSeoIntegrityGrid.tsx`
+- `src/pages/admin/AdminSeoKernel.tsx`
+- `src/pages/admin/AdminSeoMetaGovernance.tsx`
+- `src/pages/admin/AdminSeoMetaReasoning.tsx`
+- `src/pages/admin/AdminSeoNervousSystem.tsx`
+- `src/pages/admin/AdminSeoNexusConvergence.tsx`
+- `src/pages/admin/AdminSeoOS.tsx`
+- `src/pages/admin/AdminSeoOperatingFabric.tsx`
+- `src/pages/admin/AdminSeoOperationalConsolidation.tsx`
+- `src/pages/admin/AdminSeoOperationalReality.tsx`
+- `src/pages/admin/AdminSeoOperations.tsx`
+- `src/pages/admin/AdminSeoSimulationLab.tsx`
+- `src/pages/admin/AdminSeoSingularity.tsx`
+- `src/pages/admin/AdminSeoStabilityFabric.tsx`
+- `src/pages/admin/AdminSeoStrategicContinuum.tsx`
+- `src/pages/admin/AdminSeoStrategicReality.tsx`
+- `src/pages/admin/AdminSeoSystemAudit.tsx`
+- `src/pages/admin/AdminSeoUnifiedIntelligence.tsx`
+- `src/pages/admin/AdminSeoUnifiedNexus.tsx`
+- `src/pages/admin/AdminSeoWarRoom.tsx`
+- `src/pages/admin/AdminSettings.tsx`
+- `src/pages/admin/AdminShipping.tsx`
+- `src/pages/admin/AdminShippingAudit.tsx`
+- `src/pages/admin/AdminSitemapStatus.tsx`
+- `src/pages/admin/AdminSocialProof.tsx`
+- `src/pages/admin/AdminStrategicSimulation.tsx`
+- `src/pages/admin/AdminSupport.tsx`
+- `src/pages/admin/AdminTags.tsx`
+- `src/pages/admin/AdminTaxonomies.tsx`
+- `src/pages/admin/AdminTaxonomiesHealth.tsx`
+- `src/pages/admin/AdminTelemetry.tsx`
+- `src/pages/admin/AdminTestimonials.tsx`
+- `src/pages/admin/AdminThemes.tsx`
+- `src/pages/admin/AdminTracking.tsx`
+- `src/pages/admin/AdminUsage.tsx`
+- `src/pages/admin/AdminUsers.tsx`
+- `src/pages/admin/SearchAnalytics.tsx`
+
+## 7. Componentes administrativos (inventário completo)
+
+- `src/components/admin/AdaptiveCapacityGauge.tsx`
+- `src/components/admin/AdaptiveMaturityRadar.tsx`
+- `src/components/admin/AdaptiveRecoveryForecast.tsx`
+- `src/components/admin/AdminCommandPalette.tsx`
+- `src/components/admin/AdminMotionPreference.tsx`
+- `src/components/admin/AdminPerformanceOverview.tsx`
+- `src/components/admin/AdminRecentActivity.tsx`
+- `src/components/admin/AdminSearchBar.tsx`
+- `src/components/admin/AfterSalesRuleFields.tsx`
+- `src/components/admin/AnomalyDetectionPanel.tsx`
+- `src/components/admin/ArchitecturalDebtPanel.tsx`
+- `src/components/admin/ArchitecturalEntropyMap.tsx`
+- `src/components/admin/AuthorityBalanceGauge.tsx`
+- `src/components/admin/AuthorityContinuityRadar.tsx`
+- `src/components/admin/AuthorityInstabilityCard.tsx`
+- `src/components/admin/AuthorityLegacyRadar.tsx`
+- `src/components/admin/AuthorityStatusPanel.tsx`
+- `src/components/admin/AutopilotPanel.tsx`
+- `src/components/admin/AwarenessCollapseAlert.tsx`
+- `src/components/admin/BackToHomeSections.tsx`
+- `src/components/admin/BottleneckMatrix.tsx`
+- `src/components/admin/BulkEditProductsDialog.tsx`
+- `src/components/admin/BurnoutZonesPanel.tsx`
+- `src/components/admin/CachePressurePanel.tsx`
+- `src/components/admin/CascadeOriginsPanel.tsx`
+- `src/components/admin/CausalAlignmentGraph.tsx`
+- `src/components/admin/CausalityPropagationMap.tsx`
+- `src/components/admin/CircularReasoningAlert.tsx`
+- `src/components/admin/CivilizationIntegrityMap.tsx`
+- `src/components/admin/CivilizationScoreCard.tsx`
+- `src/components/admin/ClusterDependencyPanel.tsx`
+- `src/components/admin/ClusterDependencyRadar.tsx`
+- `src/components/admin/CognitiveConsistencyGauge.tsx`
+- `src/components/admin/CognitiveLoadGauge.tsx`
+- `src/components/admin/CognitiveLoadTimeline.tsx`
+- `src/components/admin/CognitiveNoiseHeatmap.tsx`
+- `src/components/admin/CognitiveResilienceGauge.tsx`
+- `src/components/admin/CognitiveStabilityCard.tsx`
+- `src/components/admin/CognitiveStabilityGauge.tsx`
+- `src/components/admin/CoherenceBreakAlert.tsx`
+- `src/components/admin/CoherenceExecutiveSummary.tsx`
+- `src/components/admin/CoherenceMatrixCard.tsx`
+- `src/components/admin/CoherenceMatrixHeatmap.tsx`
+- `src/components/admin/CollapseProbabilityCard.tsx`
+- `src/components/admin/CollapseProbabilityPanel.tsx`
+- `src/components/admin/CollapseResistanceGauge.tsx`
+- `src/components/admin/CollapseRiskCard.tsx`
+- `src/components/admin/CommercialCorrelationRadar.tsx`
+- `src/components/admin/CommercialOpportunityRadar.tsx`
+- `src/components/admin/CommercialRiskBadge.tsx`
+- `src/components/admin/ComplexityPressureCard.tsx`
+- `src/components/admin/ComplexityWithoutValueAlert.tsx`
+- `src/components/admin/CompoundingLeveragePanel.tsx`
+- `src/components/admin/CompressionRiskGauge.tsx`
+- `src/components/admin/ConfidenceIntegrityGauge.tsx`
+- `src/components/admin/ConsciousnessBlindspotsPanel.tsx`
+- `src/components/admin/ConsciousnessScoreCard.tsx`
+- `src/components/admin/ConsensusIntegrityMatrix.tsx`
+- `src/components/admin/ContentExecutionQueue.tsx`
+- `src/components/admin/ContinuityBreakMap.tsx`
+- `src/components/admin/ContinuityBreakRiskPanel.tsx`
+- `src/components/admin/ContinuityCoherenceTimeline.tsx`
+- `src/components/admin/ContinuityIntegrityGauge.tsx`
+- `src/components/admin/ContinuityStrengthGauge.tsx`
+- `src/components/admin/ContradictionRiskPanel.tsx`
+- `src/components/admin/CoreMetricsCanonCard.tsx`
+- `src/components/admin/CoveragePanel.tsx`
+- `src/components/admin/CriticalRiskBoard.tsx`
+- `src/components/admin/CrossEngineConflictPanel.tsx`
+- `src/components/admin/DashboardCompressionPlanner.tsx`
+- `src/components/admin/DashboardMergeCandidates.tsx`
+- `src/components/admin/DashboardNoiseMatrix.tsx`
+- `src/components/admin/DashboardOverlapMatrix.tsx`
+- `src/components/admin/DecisionConfidenceCard.tsx`
+- `src/components/admin/DecisionSynthesisMatrix.tsx`
+- `src/components/admin/DeduplicationHeatmap.tsx`
+- `src/components/admin/DependencyComplexityGraph.tsx`
+- `src/components/admin/DependencyFragilityRadar.tsx`
+- `src/components/admin/DependencyOpacityHeatmap.tsx`
+- `src/components/admin/DocumentationCoverageCard.tsx`
+- `src/components/admin/DocumentationReliabilityGauge.tsx`
+- `src/components/admin/DraftNavigationGuard.tsx`
+- `src/components/admin/DraftStatusBadge.tsx`
+- `src/components/admin/DraggableImageList.tsx`
+- `src/components/admin/EcosystemSurvivabilityGauge.tsx`
+- `src/components/admin/EditorialActionChecklist.tsx`
+- `src/components/admin/EditorialTemplatesPicker.tsx`
+- `src/components/admin/EngineConsensusMatrix.tsx`
+- `src/components/admin/EngineOverlapRadar.tsx`
+- `src/components/admin/EntityTimeline.tsx`
+- `src/components/admin/EntropyAbsorptionCard.tsx`
+- `src/components/admin/EntropyResistancePanel.tsx`
+- `src/components/admin/EvolutionVelocityTimeline.tsx`
+- `src/components/admin/EvolutionaryStabilityCard.tsx`
+- `src/components/admin/EvolutionarySurvivabilityGauge.tsx`
+- `src/components/admin/ExecutionAlignmentGauge.tsx`
+- `src/components/admin/ExecutionCadenceCard.tsx`
+- `src/components/admin/ExecutionConflictMatrix.tsx`
+- `src/components/admin/ExecutionDilutionGauge.tsx`
+- `src/components/admin/ExecutionDriftTimeline.tsx`
+- `src/components/admin/ExecutionFocusMap.tsx`
+- `src/components/admin/ExecutionLoadMeter.tsx`
+- `src/components/admin/ExecutionQueuePanel.tsx`
+- `src/components/admin/ExecutionSustainabilityCard.tsx`
+- `src/components/admin/ExecutionWasteHeatmap.tsx`
+- `src/components/admin/ExecutiveActionSummary.tsx`
+- `src/components/admin/ExecutiveAuditSummary.tsx`
+- `src/components/admin/ExecutiveAwarenessPanel.tsx`
+- `src/components/admin/ExecutiveClarityGauge.tsx`
+- `src/components/admin/ExecutiveCoherenceMap.tsx`
+- `src/components/admin/ExecutiveCompressionGauge.tsx`
+- `src/components/admin/ExecutiveCompressionSummary.tsx`
+- `src/components/admin/ExecutiveConvergenceSummary.tsx`
+- `src/components/admin/ExecutiveCoreScoreCard.tsx`
+- `src/components/admin/ExecutiveDailySummary.tsx`
+- `src/components/admin/ExecutiveEntropyGauge.tsx`
+- `src/components/admin/ExecutiveFinalSummary.tsx`
+- `src/components/admin/ExecutiveFinalizationSummary.tsx`
+- `src/components/admin/ExecutiveFocusGauge.tsx`
+- `src/components/admin/ExecutiveHealthCard.tsx`
+- `src/components/admin/ExecutiveNarrativeCard.tsx`
+- `src/components/admin/ExecutiveNarrativePanel.tsx`
+- `src/components/admin/ExecutiveOverviewCard.tsx`
+- `src/components/admin/ExecutivePriorityMatrix.tsx`
+- `src/components/admin/ExecutivePruningMatrix.tsx`
+- `src/components/admin/ExecutiveSignalMap.tsx`
+- `src/components/admin/ExecutiveStabilityCard.tsx`
+- `src/components/admin/ExecutiveStateCard.tsx`
+- `src/components/admin/ExistentialRiskCard.tsx`
+- `src/components/admin/ExistentialStabilityCard.tsx`
+- `src/components/admin/ExplainabilityPanel.tsx`
+- `src/components/admin/ExplainabilityTracePanel.tsx`
+- `src/components/admin/FabricObservabilityMatrix.tsx`
+- `src/components/admin/FaqSuggestionsPanel.tsx`
+- `src/components/admin/FinalGovernanceSummary.tsx`
+- `src/components/admin/FocusWindowPlanner.tsx`
+- `src/components/admin/ForecastTimeline.tsx`
+- `src/components/admin/FragmentationRiskPanel.tsx`
+- `src/components/admin/FutureResilienceMatrix.tsx`
+- `src/components/admin/FutureRiskPanel.tsx`
+- `src/components/admin/FuzzyMatchExplanation.tsx`
+- `src/components/admin/GlobalSitemapPanel.tsx`
+- `src/components/admin/GovernanceAlignmentRadar.tsx`
+- `src/components/admin/GovernanceCollapseRiskCard.tsx`
+- `src/components/admin/GovernanceConvergenceGauge.tsx`
+- `src/components/admin/GovernanceDriftAlert.tsx`
+- `src/components/admin/GovernanceEntropyPanel.tsx`
+- `src/components/admin/GovernanceMatrixCard.tsx`
+- `src/components/admin/GovernanceMatrixEntropyPanel.tsx`
+- `src/components/admin/GovernanceResilienceRadar.tsx`
+- `src/components/admin/GovernanceScoreCard.tsx`
+- `src/components/admin/GovernanceTopologyMap.tsx`
+- `src/components/admin/GrowthMomentumCard.tsx`
+- `src/components/admin/GrowthProjectionPanel.tsx`
+- `src/components/admin/HeroPreviewFrame.tsx`
+- `src/components/admin/HiddenRiskPanel.tsx`
+- `src/components/admin/HumanOperationsChecklist.tsx`
+- `src/components/admin/IllusionRiskPanel.tsx`
+- `src/components/admin/ImageJobsPanel.tsx`
+- `src/components/admin/ImagePickerWithLibrary.tsx`
+- `src/components/admin/ImageUploader.tsx`
+- `src/components/admin/InstagramSchedulePanel.tsx`
+- `src/components/admin/InstagramSyncManager.tsx`
+- `src/components/admin/IntegrityBreachPanel.tsx`
+- `src/components/admin/IntegrityBreakAlert.tsx`
+- `src/components/admin/IntegrityExecutiveSummary.tsx`
+- `src/components/admin/IntegrityGridCard.tsx`
+- `src/components/admin/InternalLinkPlanner.tsx`
+- `src/components/admin/KernelCoherenceCard.tsx`
+- `src/components/admin/LineageGraph.tsx`
+- `src/components/admin/LongTermCompoundingChart.tsx`
+- `src/components/admin/LongTermSustainabilityCard.tsx`
+- `src/components/admin/LongTermViabilityCard.tsx`
+- `src/components/admin/LongevityProjectionGauge.tsx`
+- `src/components/admin/LongitudinalConsistencyTimeline.tsx`
+- `src/components/admin/LucideIconPicker.tsx`
+- `src/components/admin/MaintainabilityScoreCard.tsx`
+- `src/components/admin/MaintenanceBurdenPanel.tsx`
+- `src/components/admin/MaintenanceLiabilityCard.tsx`
+- `src/components/admin/MediaAlertEmailsCard.tsx`
+- `src/components/admin/MediaExportPanel.tsx`
+- `src/components/admin/MediaRestorePanel.tsx`
+- `src/components/admin/MenuCompressionSuggestions.tsx`
+- `src/components/admin/MetaIntelligencePanel.tsx`
+- `src/components/admin/MetaReasoningScoreCard.tsx`
+- `src/components/admin/MetricOverlapMatrix.tsx`
+- `src/components/admin/MetricRedundancyMatrix.tsx`
+- `src/components/admin/MetricVarianceHeatmap.tsx`
+- `src/components/admin/MomentumTimeline.tsx`
+- `src/components/admin/MutationRateCard.tsx`
+- `src/components/admin/NarrativeConsistencyPanel.tsx`
+- `src/components/admin/NavigationEntropyPanel.tsx`
+- `src/components/admin/NervousSystemCard.tsx`
+- `src/components/admin/NexusConvergenceCard.tsx`
+- `src/components/admin/NexusSignalIntegrityPanel.tsx`
+- `src/components/admin/NexusSynchronizationTimeline.tsx`
+- `src/components/admin/NoiseVsSignalGauge.tsx`
+- `src/components/admin/ObservabilityContractsPanel.tsx`
+- `src/components/admin/ObservabilityCoverageMap.tsx`
+- `src/components/admin/OperatingFabricScoreCard.tsx`
+- `src/components/admin/OperationalAlertsFeed.tsx`
+- `src/components/admin/OperationalAlignmentHeatmap.tsx`
+- `src/components/admin/OperationalCompressionGauge.tsx`
+- `src/components/admin/OperationalConflictHeatmap.tsx`
+- `src/components/admin/OperationalContinuityGauge.tsx`
+- `src/components/admin/OperationalDebtCard.tsx`
+- `src/components/admin/OperationalDissonancePanel.tsx`
+- `src/components/admin/OperationalDragHeatmap.tsx`
+- `src/components/admin/OperationalFatigueHeatmap.tsx`
+- `src/components/admin/OperationalFatiguePanel.tsx`
+- `src/components/admin/OperationalGovernanceMatrix.tsx`
+- `src/components/admin/OperationalGovernanceSummary.tsx`
+- `src/components/admin/OperationalHarmonyMatrix.tsx`
+- `src/components/admin/OperationalHarmonyPanel.tsx`
+- `src/components/admin/OperationalPersistencePanel.tsx`
+- `src/components/admin/OperationalPlaybookPanel.tsx`
+- `src/components/admin/OperationalPredictabilityCard.tsx`
+- `src/components/admin/OperationalRealitySummary.tsx`
+- `src/components/admin/OperationalRhythmTimeline.tsx`
+- `src/components/admin/OperationalScoreCard.tsx`
+- `src/components/admin/OperationalSettingsPanel.tsx`
+- `src/components/admin/OperationalSimplicityGauge.tsx`
+- `src/components/admin/OperationalTruthGauge.tsx`
+- `src/components/admin/OperationalUsageCard.tsx`
+- `src/components/admin/OperationalWastePanel.tsx`
+- `src/components/admin/PerformanceHardeningCard.tsx`
+- `src/components/admin/PerformancePressureGauge.tsx`
+- `src/components/admin/PerformancePressurePanel.tsx`
+- `src/components/admin/PersistenceTimeline.tsx`
+- `src/components/admin/PersonalizationOptionsEditor.tsx`
+- `src/components/admin/PredictabilityTimeline.tsx`
+- `src/components/admin/PressureHeatmap.tsx`
+- `src/components/admin/PriorityActionsPanel.tsx`
+- `src/components/admin/ProductFaqEditor.tsx`
+- `src/components/admin/ProductLivePreview.tsx`
+- `src/components/admin/ProductReviewForm.tsx`
+- `src/components/admin/ProductSeoChecklist.tsx`
+- `src/components/admin/ProductSeoScoreBadge.tsx`
+- `src/components/admin/ProductVersionHistory.tsx`
+- `src/components/admin/ProjectionMatrix.tsx`
+- `src/components/admin/QuickWinsBoard.tsx`
+- `src/components/admin/RealityConsistencyTimeline.tsx`
+- `src/components/admin/RealityDistortionMap.tsx`
+- `src/components/admin/ReasoningConflictPanel.tsx`
+- `src/components/admin/ReasoningDriftTimeline.tsx`
+- `src/components/admin/ReasoningFabricMap.tsx`
+- `src/components/admin/RecoveryCapacityGauge.tsx`
+- `src/components/admin/RecoveryCohesionTimeline.tsx`
+- `src/components/admin/RecoveryForecastCard.tsx`
+- `src/components/admin/RecoveryPersistencePanel.tsx`
+- `src/components/admin/ReliabilityIntegrityCard.tsx`
+- `src/components/admin/ResilienceContinuityGauge.tsx`
+- `src/components/admin/ResilienceContinuumCard.tsx`
+- `src/components/admin/ResilienceForecastMatrix.tsx`
+- `src/components/admin/ResilienceIntegrityRadar.tsx`
+- `src/components/admin/ResilienceMatrix.tsx`
+- `src/components/admin/ResilienceUnificationMap.tsx`
+- `src/components/admin/ReviewImportAuditPanel.tsx`
+- `src/components/admin/ReviewUnmatchedQueue.tsx`
+- `src/components/admin/RiskAlertsMatrix.tsx`
+- `src/components/admin/RobotsAndSitemapPanel.tsx`
+- `src/components/admin/SEOIndexationPanel.tsx`
+- `src/components/admin/SaturationMatrix.tsx`
+- `src/components/admin/ScalabilityProjectionCard.tsx`
+- `src/components/admin/ScalabilityRiskCard.tsx`
+- `src/components/admin/ScenarioComparisonPanel.tsx`
+- `src/components/admin/SearchAuditPanel.tsx`
+- `src/components/admin/SearchBoostEditor.tsx`
+- `src/components/admin/SearchBoostPreview.tsx`
+- `src/components/admin/SearchInsights.security.test.tsx`
+- `src/components/admin/SearchInsights.tsx`
+- `src/components/admin/SelfConflictMatrix.tsx`
+- `src/components/admin/SemanticAlignmentRadar.tsx`
+- `src/components/admin/SemanticCoherenceMap.tsx`
+- `src/components/admin/SemanticCohesionRadar.tsx`
+- `src/components/admin/SemanticConfusionMatrix.tsx`
+- `src/components/admin/SemanticContinuityMap.tsx`
+- `src/components/admin/SemanticContinuityMatrix.tsx`
+- `src/components/admin/SemanticDriftRadar.tsx`
+- `src/components/admin/SemanticEntropyCard.tsx`
+- `src/components/admin/SemanticEntropyMap.tsx`
+- `src/components/admin/SemanticFatigueCard.tsx`
+- `src/components/admin/SemanticFutureMap.tsx`
+- `src/components/admin/SemanticGravityPanel.tsx`
+- `src/components/admin/SemanticGroundingMatrix.tsx`
+- `src/components/admin/SemanticIntegrityMatrix.tsx`
+- `src/components/admin/SemanticPulseMatrix.tsx`
+- `src/components/admin/SemanticStabilityBadge.tsx`
+- `src/components/admin/SemanticTrustMatrix.tsx`
+- `src/components/admin/SeoAlertLogPanel.tsx`
+- `src/components/admin/SeoBingPanel.tsx`
+- `src/components/admin/SeoCrawlerProbePanel.tsx`
+- `src/components/admin/SeoDailyGuardPanel.tsx`
+- `src/components/admin/SeoForceActionsPanel.tsx`
+- `src/components/admin/SeoGscCoveragePanel.tsx`
+- `src/components/admin/SeoGscTrendsPanel.tsx`
+- `src/components/admin/SeoHubJsonLdPanel.tsx`
+- `src/components/admin/SeoImageQualityPanel.tsx`
+- `src/components/admin/SeoIndexAuditPanel.tsx`
+- `src/components/admin/SeoJsonLdPanel.tsx`
+- `src/components/admin/SeoPreview.tsx`
+- `src/components/admin/SeoReadinessBadge.tsx`
+- `src/components/admin/SeoSubmissionLogPanel.tsx`
+- `src/components/admin/SeoTitleFixPanel.tsx`
+- `src/components/admin/SeoWebVitalsPanel.tsx`
+- `src/components/admin/SignalCompressionGauge.tsx`
+- `src/components/admin/SignalCompressionPanel.tsx`
+- `src/components/admin/SignalEfficiencyPanel.tsx`
+- `src/components/admin/SignalIntegrityPanel.tsx`
+- `src/components/admin/SilentDegradationPanel.tsx`
+- `src/components/admin/SimulationConfidenceBadge.tsx`
+- `src/components/admin/SimulationScenarioCard.tsx`
+- `src/components/admin/SingleImageUpload.tsx`
+- `src/components/admin/SingularityScoreCard.tsx`
+- `src/components/admin/SocialSeoPreviews.tsx`
+- `src/components/admin/StabilityBreakAlert.tsx`
+- `src/components/admin/StabilityExecutiveSummary.tsx`
+- `src/components/admin/StabilityFabricCard.tsx`
+- `src/components/admin/StickySaveBar.tsx`
+- `src/components/admin/StrategicAlignmentMatrix.tsx`
+- `src/components/admin/StrategicAlignmentMeter.tsx`
+- `src/components/admin/StrategicAlignmentPanel.tsx`
+- `src/components/admin/StrategicAlignmentRadar.tsx`
+- `src/components/admin/StrategicAuthenticityPanel.tsx`
+- `src/components/admin/StrategicBlackholePanel.tsx`
+- `src/components/admin/StrategicBlindspotsPanel.tsx`
+- `src/components/admin/StrategicClarityGauge.tsx`
+- `src/components/admin/StrategicCoherencePanel.tsx`
+- `src/components/admin/StrategicConfidenceBadge.tsx`
+- `src/components/admin/StrategicConfusionAlert.tsx`
+- `src/components/admin/StrategicConsciousnessCard.tsx`
+- `src/components/admin/StrategicContinuityTimeline.tsx`
+- `src/components/admin/StrategicContinuumCard.tsx`
+- `src/components/admin/StrategicDriftPanel.tsx`
+- `src/components/admin/StrategicElasticityMeter.tsx`
+- `src/components/admin/StrategicEquilibriumPanel.tsx`
+- `src/components/admin/StrategicFatigueAlert.tsx`
+- `src/components/admin/StrategicForecastTimeline.tsx`
+- `src/components/admin/StrategicGovernabilityGauge.tsx`
+- `src/components/admin/StrategicHallucinationAlert.tsx`
+- `src/components/admin/StrategicHarmonyTimeline.tsx`
+- `src/components/admin/StrategicIdentityPanel.tsx`
+- `src/components/admin/StrategicIntegrityGauge.tsx`
+- `src/components/admin/StrategicInvestmentSimulator.tsx`
+- `src/components/admin/StrategicLeverageRadar.tsx`
+- `src/components/admin/StrategicLongevityGauge.tsx`
+- `src/components/admin/StrategicLongevityPanel.tsx`
+- `src/components/admin/StrategicPacingGauge.tsx`
+- `src/components/admin/StrategicPersistencePanel.tsx`
+- `src/components/admin/StrategicPriorityPanel.tsx`
+- `src/components/admin/StrategicPulseGauge.tsx`
+- `src/components/admin/StrategicRealityCard.tsx`
+- `src/components/admin/StrategicResilienceMap.tsx`
+- `src/components/admin/StrategicScatterMap.tsx`
+- `src/components/admin/StrategicSelfAwarenessPanel.tsx`
+- `src/components/admin/StrategicSignalRadar.tsx`
+- `src/components/admin/StrategicSimplificationRadar.tsx`
+- `src/components/admin/StrategicSimulationScenarioCard.tsx`
+- `src/components/admin/StrategicTruthCard.tsx`
+- `src/components/admin/StrategicUnificationGauge.tsx`
+- `src/components/admin/StressLevelGauge.tsx`
+- `src/components/admin/StructuralDebtPanel.tsx`
+- `src/components/admin/StructuralIntegrityMap.tsx`
+- `src/components/admin/SurvivabilityRealityCard.tsx`
+- `src/components/admin/SurvivalConfidenceGauge.tsx`
+- `src/components/admin/SurvivalProbabilityGauge.tsx`
+- `src/components/admin/SustainabilityGauge.tsx`
+- `src/components/admin/SustainabilityProjectionCard.tsx`
+- `src/components/admin/SustainableComplexityGauge.tsx`
+- `src/components/admin/SynonymEditor.tsx`
+- `src/components/admin/SystemComplexityCard.tsx`
+- `src/components/admin/SystemHealthCard.tsx`
+- `src/components/admin/SystemIntegrityCard.tsx`
+- `src/components/admin/SystemMaintainabilityCard.tsx`
+- `src/components/admin/SystemicClarityMap.tsx`
+- `src/components/admin/SystemicCoherenceMap.tsx`
+- `src/components/admin/SystemicCollapseRadar.tsx`
+- `src/components/admin/SystemicConsistencyMatrix.tsx`
+- `src/components/admin/SystemicDispersionHeatmap.tsx`
+- `src/components/admin/SystemicEntropyPanel.tsx`
+- `src/components/admin/SystemicHarmonyMatrix.tsx`
+- `src/components/admin/SystemicReflectionRadar.tsx`
+- `src/components/admin/SystemicShockAlert.tsx`
+- `src/components/admin/SystemicTrustIntegrityMap.tsx`
+- `src/components/admin/SystemicTrustPanel.tsx`
+- `src/components/admin/SystemicTruthRadar.tsx`
+- `src/components/admin/TagGovernancePanel.tsx`
+- `src/components/admin/TaxonomyForm.tsx`
+- `src/components/admin/TaxonomyManager.tsx`
+- `src/components/admin/TaxonomySuggestionsHints.tsx`
+- `src/components/admin/TelemetryCompressionGauge.tsx`
+- `src/components/admin/TelemetryCompressionPanel.tsx`
+- `src/components/admin/TelemetryQualityCard.tsx`
+- `src/components/admin/TemporalCoherenceTimeline.tsx`
+- `src/components/admin/TrustLeakMap.tsx`
+- `src/components/admin/TwinHealthGauge.tsx`
+- `src/components/admin/UnifiedBusScoreCard.tsx`
+- `src/components/admin/UnifiedNexusCard.tsx`
+- `src/components/admin/UnifiedProfileDrawer.tsx`
+- `src/components/admin/VanityComplexityAlert.tsx`
+- `src/components/admin/VanitySeoAlert.tsx`
+- `src/components/admin/VelocityTimeline.tsx`
+- `src/components/admin/WYSIWYGEditor.tsx`
+- `src/components/admin/WhatsAppPreview.tsx`
+- `src/components/admin/customers/CustomerCard.tsx`
+- `src/components/admin/customers/VisitorCard.tsx`
+- `src/components/admin/customers/VisitorFilters.tsx`
+- `src/components/admin/shipping/ShippingAuditTab.tsx`
+- `src/components/admin/shipping/ShippingProvidersTab.tsx`
+- `src/components/admin/shipping/ShippingRulesTab.tsx`
+- `src/components/admin/shipping/ShippingSettingsTab.tsx`
+
+## 8. Migrations
+
+Total: **199** arquivos SQL. Diretório completo: `supabase/migrations/`. A migration mais recente no inventário é `supabase/migrations/20261109024000_operational_controls_parity.sql`.
+
+## 9. Regras para a integração PapeLemi
+
+- Usar este inventário como checklist de paridade; não omitir páginas/componentes ou funções apenas por serem avançados.
+- Revisar migrations em sequência e consolidar um baseline compatível com as seis migrations já aplicadas na PapeLemi; não reproduzir as 199 migrations antigas diretamente em produção sem reconciliação.
+- Manter somente estrutura, código e regras. Não importar catálogo, clientes, pedidos, imagens, campanhas, credenciais ou secrets Empório.
+- Atualizar tipos gerados a partir do schema real do destino após a migração.
+- Cada Edge Function precisa de análise de dependências e secrets próprios PapeLemi; não copiar secrets ou URLs do Empório.
+- Cada tela deve ser homologada com dados PapeLemi e RLS ativo antes de ser classificada como integrada.
