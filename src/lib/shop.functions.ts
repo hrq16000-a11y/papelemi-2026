@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
@@ -677,8 +677,12 @@ export const updateShippingSettings = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const { id, ...values } = data;
+    const patch = Object.fromEntries(
+      Object.entries(values).filter(([, value]) => value !== undefined),
+    ) as Database["public"]["Tables"]["shipping_settings"]["Update"];
+    patch.updated_at = new Date().toISOString();
     const { error } = await admin.from("shipping_settings")
-      .update({ ...values, updated_at: new Date().toISOString() })
+      .update(patch)
       .eq("id", id).eq("store_key", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -771,7 +775,12 @@ export const saveShippingRule = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const { id, ...values } = data;
-    const row = { ...values, store_key: "papelemi", updated_at: new Date().toISOString() };
+    const row = {
+      ...values,
+      condition_value: values.condition_value as Json,
+      store_key: "papelemi",
+      updated_at: new Date().toISOString(),
+    };
     const { error } = id
       ? await admin.from("shipping_rules").update(row).eq("id", id).eq("store_key", "papelemi")
       : await admin.from("shipping_rules").insert(row);

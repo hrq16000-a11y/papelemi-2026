@@ -133,20 +133,24 @@ export default function ShippingAdminPanel() {
 
   const saveRule = async () => {
     if (!ruleEdit || saving) return;
-    const condition_value = ruleEdit.condition_type === "min_cart_value"
+    const condition_value: Record<string, unknown> = ruleEdit.condition_type === "min_cart_value"
       ? { value: Number(ruleEdit.value) }
       : ruleEdit.condition_type === "specific_state"
         ? { states: ruleEdit.states.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean) }
         : { from: ruleEdit.from.replace(/\D/g, ""), to: ruleEdit.to.replace(/\D/g, "") };
-    if (ruleEdit.condition_type === "min_cart_value" && (!Number.isFinite(condition_value.value) || condition_value.value < 0)) {
+    const minimumValue = Number(condition_value["value"] ?? 0);
+    const states = Array.isArray(condition_value["states"]) ? condition_value["states"] : [];
+    const zipFrom = typeof condition_value["from"] === "string" ? condition_value["from"] : "";
+    const zipTo = typeof condition_value["to"] === "string" ? condition_value["to"] : "";
+    if (ruleEdit.condition_type === "min_cart_value" && (!Number.isFinite(minimumValue) || minimumValue < 0)) {
       toast.error("Informe um valor mínimo válido.");
       return;
     }
-    if (ruleEdit.condition_type === "specific_state" && (!("states" in condition_value) || !condition_value.states.length)) {
+    if (ruleEdit.condition_type === "specific_state" && states.length === 0) {
       toast.error("Informe ao menos uma UF.");
       return;
     }
-    if (ruleEdit.condition_type === "zip_code_range" && (!("from" in condition_value) || condition_value.from.length !== 8 || condition_value.to.length !== 8 || condition_value.from > condition_value.to)) {
+    if (ruleEdit.condition_type === "zip_code_range" && (zipFrom.length !== 8 || zipTo.length !== 8 || zipFrom > zipTo)) {
       toast.error("Informe uma faixa de CEP válida.");
       return;
     }
@@ -278,8 +282,8 @@ export default function ShippingAdminPanel() {
                 const cv = rule.condition_value as Record<string, unknown>;
                 setRuleEdit({
                   id: rule.id, rule_name: rule.rule_name, condition_type: rule.condition_type,
-                  value: String(cv.value ?? ""), states: Array.isArray(cv.states) ? cv.states.join(", ") : "",
-                  from: String(cv.from ?? ""), to: String(cv.to ?? ""), discount_type: rule.discount_type,
+                  value: String(cv["value"] ?? ""), states: Array.isArray(cv["states"]) ? cv["states"].join(", ") : "",
+                  from: String(cv["from"] ?? ""), to: String(cv["to"] ?? ""), discount_type: rule.discount_type,
                   discount_value: String(rule.discount_value), priority: String(rule.priority), is_active: rule.is_active,
                 });
               }}><Pencil className="size-4" /> Editar</button><button type="button" className={secondaryClass} onClick={() => void removeRule(rule)}><Trash2 className="size-4" /> Excluir</button></div>
