@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 
-const baseUrl = process.env.PREVIEW_URL;
-if (!baseUrl) throw new Error("PREVIEW_URL não configurada");
+const baseUrl = process.env.BASE_URL;
+if (!baseUrl) throw new Error("BASE_URL não configurada");
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
