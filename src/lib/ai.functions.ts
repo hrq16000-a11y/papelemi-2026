@@ -101,7 +101,7 @@ export const suggestPhrases = createServerFn({ method: "POST" })
 
     // O Lovable AI Gateway só está ativo quando a chave de servidor existe no ambiente.
     // Sem a chave, o fluxo continua utilizável com sugestões editáveis e sem erro de checkout.
-    if (!process.env.LOVABLE_API_KEY) {
+    if (!process.env["LOVABLE_API_KEY"]) {
       return { suggestions: fallback, error: "A geração por IA ainda não está conectada neste ambiente. Estas sugestões de apoio podem ser editadas livremente." };
     }
 
