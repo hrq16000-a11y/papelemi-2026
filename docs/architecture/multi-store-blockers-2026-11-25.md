@@ -44,3 +44,18 @@ O catálogo do arquivo custom confirma definições e objetos, mas as contagens 
 ## Regra de bloqueio
 
 Enquanto os itens acima não estiverem resolvidos, limitar o trabalho a inventário, documentação, desenho e testes isolados. Não alterar o schema de produção nem redirecionar o Empório para a base PapeLemi.
+
+
+## 7. Restaurador PostgreSQL indisponível no executor desta rodada
+
+Os arquivos ZIP foram localizados e lidos no ambiente de trabalho. Entretanto, este executor não possui `pg_restore`, `psql` ou Docker instalados, e não conseguiu acessar o repositório de pacotes para instalar o cliente PostgreSQL.
+
+O dump é um PostgreSQL Custom Archive (servidor 17.6, dump tool 18.7). Não tentar tratá-lo como SQL texto nem executar seu conteúdo diretamente em produção.
+
+A restauração precisa ocorrer em um ambiente PostgreSQL isolado e compatível, com `pg_restore` adequado. Até lá, manter a atividade em inventário estático e documentação.
+
+## 8. Homologação Supabase isolada e custo
+
+A opção de criar uma development branch no projeto PapeLemi foi consultada. O preço retornado para a branch é **US$ 0,01344 por hora**. Nenhuma branch foi criada.
+
+A criação exige aprovação explícita do proprietário para esse custo recorrente. Uma branch Supabase também nasce sem os dados de produção; ela serve para testar migrações e RLS, não substitui o restore do backup Empório.

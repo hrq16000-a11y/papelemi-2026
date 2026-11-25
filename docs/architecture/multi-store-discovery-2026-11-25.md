@@ -55,6 +55,8 @@ Arquivo recebido: \`emporiolelecute_261125.backup(2).zip\`
 
 O inventário abaixo vem do catálogo do arquivo custom, não de uma restauração executada. A contagem de registros por tabela ainda precisa ser extraída e conferida em ambiente isolado.
 
+A leitura dos comandos `COPY` do catálogo confirma **201 blocos de dados**: 150 em `public`, 27 em `auth`, 10 em `storage`, 9 em `realtime`, 2 em `cron`, e 1 em cada schema `drizzle`, `supabase_migrations` e `vault`. Esses blocos são por tabela, não contagens de linhas.
+
 | Objeto no catálogo do backup | Quantidade |
 |---|---:|
 | Definições de tabelas | 199 |
