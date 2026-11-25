@@ -259,7 +259,7 @@ export async function buildShippingQuote(input: {
       ...option,
       price: option.price === 0 ? 0 : roundShippingMoney(option.price * (1 + markup / 100) + handlingFee),
     }));
-    options = applyShippingRules(options, { subtotal: input.subtotal, state: input.destinationState, destinationZip }, rules);
+    options = applyShippingRules(options, { subtotal: input.subtotal, destinationZip, ...(input.destinationState ? { state: input.destinationState } : {}) }, rules);
     if (settings.free_shipping_enabled && input.subtotal >= Number(settings.free_shipping_threshold)) {
       options.sort((a, b) => a.price - b.price);
       if (options[0]) options[0] = { ...options[0], price: 0, service_name: `${options[0].service_name} · Frete grátis` };
