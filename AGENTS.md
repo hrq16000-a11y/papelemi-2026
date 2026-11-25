@@ -34,3 +34,17 @@ use the editor.
 - AI phrase suggestions run only in the `suggestPhrases` server function (`src/lib/ai.functions.ts`) via the Lovable AI Gateway SDK; never call models from browser code.
 - Cart is client-side (localStorage) for round one; validate stored items before use. Checkout quotes and order creation must re-read published products and active coupons from Supabase, validate variations/personalization and minimum quantities on the server, and never trust client prices. Use the existing orders.id primary key as an idempotency key; do not add or edit migrations manually. No real payments until a gateway is approved.
 - AI writing context (styles, occasions, per-category/product profiles) lives in `src/data/ai-config.ts`; the server resolves the published product and field limit from the live Supabase catalog by slug, so clients cannot inject product context or exceed field limits.
+
+
+## Owner override — PapeLemi shared database / Empório engine (25/11/2026)
+
+The owner has changed the database direction: the dedicated PapeLemi Supabase project (gpdpfoxpbferjwbppcmb) is the planned central database. PapeLemi receives the full Empório operational engine first; Empório will migrate to this same Supabase project later.
+
+For this explicitly authorized workstream, the earlier Lovable-managed database restriction above is superseded for schema design and versioned migration work in this repository. Use GitHub as the source of truth for reviewed migrations and the connected Supabase PapeLemi project for controlled application. Do not edit or delete the managed Lovable block itself.
+
+Safety requirements remain mandatory:
+- Never replay the 199 historical Empório migrations blindly over the existing PapeLemi schema.
+- Build an additive, reconciled migration plan that preserves current PapeLemi records and authentication.
+- No destructive DDL, data import, or production migration until the complete SQL has been reviewed, a backup/rollback path is confirmed, and the owner explicitly approves the apply step.
+- The live Empório Supabase project (xfqffqxqiuqauefrrcxn) is a source reference only; do not modify it.
+- Never copy Empório commercial data, assets, media, or secrets into PapeLemi.
