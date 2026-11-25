@@ -70,6 +70,9 @@ const orderLineInput = z.object({
 const quoteInput = z.object({
   items: z.array(orderLineInput).min(1).max(50),
   couponCode: z.string().trim().toUpperCase().min(2).max(40).optional(),
+  destinationZip: z.string().trim().regex(/^\d{5}-?\d{3}$/).optional(),
+  destinationState: z.string().trim().regex(/^[A-Za-z]{2}$/).optional(),
+  shippingOptionId: z.string().trim().min(8).max(64).optional(),
 });
 
 const orderInput = quoteInput.extend({
@@ -95,6 +98,11 @@ const orderInput = quoteInput.extend({
   customerNotes: z.string().trim().max(1000).default(""),
   acceptedPrivacy: z.literal(true),
   quoteToken: z.string().regex(/^[a-f0-9]{64}$/),
+  destinationZip: z.string().trim().regex(/^\d{5}-?\d{3}$/),
+  shippingOptionId: z.string().trim().min(8).max(64),
+}).refine((input) => input.destinationZip.replace(/\D/g, "") === input.address.cep.replace(/\D/g, ""), {
+  path: ["destinationZip"],
+  message: "O CEP utilizado na cotação precisa ser o mesmo do endereço de entrega.",
 });
 
 type QuoteInput = z.infer<typeof quoteInput>;
@@ -132,10 +140,30 @@ async function buildOrderQuote(input: QuoteInput) {
     couponPercent = Number(coupon.percent);
   }
 
+  const totals = calculateOrderTotals(items, couponPercent);
+  const { buildShippingQuote } = await import("@/lib/shipping-quote.server");
+  const shippingQuote = await buildShippingQuote({
+    admin,
+    ...(input.destinationZip ? { destinationZip: input.destinationZip } : {}),
+    ...(input.destinationState ? { destinationState: input.destinationState } : {}),
+    items: input.items,
+    products: rows ?? [],
+    subtotal: totals.subtotal,
+    ...(input.shippingOptionId ? { selectedOptionId: input.shippingOptionId } : {}),
+  });
   return {
     items,
     couponCode,
-    ...calculateOrderTotals(items, couponPercent),
+    subtotal: totals.subtotal,
+    discount: totals.discount,
+    shipping: shippingQuote.shipping,
+    total: roundMoney(totals.subtotal - totals.discount + shippingQuote.shipping),
+    shippingOptions: shippingQuote.options,
+    selectedShippingOption: shippingQuote.selectedOption,
+    selectedShippingOptionId: shippingQuote.selectedOptionId,
+    shippingSelectionChanged: shippingQuote.selectionChanged,
+    destinationZip: shippingQuote.destinationZip,
+    destinationState: shippingQuote.destinationState,
   };
 }
 
@@ -144,6 +172,9 @@ async function createQuoteToken(quote: Awaited<ReturnType<typeof buildOrderQuote
   const payload = JSON.stringify({
     items: quote.items,
     couponCode: quote.couponCode,
+    destinationZip: quote.destinationZip,
+    destinationState: quote.destinationState,
+    selectedShippingOption: quote.selectedShippingOption,
     subtotal: quote.subtotal,
     discount: quote.discount,
     shipping: quote.shipping,
@@ -168,6 +199,10 @@ export const getOrderQuote = createServerFn({ method: "POST" })
       discount: quote.discount,
       shipping: quote.shipping,
       total: quote.total,
+      shippingOptions: quote.shippingOptions,
+      selectedShippingOption: quote.selectedShippingOption,
+      selectedShippingOptionId: quote.selectedShippingOptionId,
+      shippingSelectionChanged: quote.shippingSelectionChanged,
     };
   });
 
@@ -185,6 +220,9 @@ export const createOrder = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const quote = await buildOrderQuote(input);
+    if (!quote.selectedShippingOption) {
+      throw new Error("SHIPPING_CHANGED: Selecione novamente uma opção de frete antes de registrar a encomenda.");
+    }
     if (await createQuoteToken(quote) !== input.quoteToken) {
       throw new Error("PRICE_CHANGED: Os valores ou condições mudaram. O resumo foi atualizado; confira antes de enviar novamente.");
     }
@@ -200,6 +238,16 @@ export const createOrder = createServerFn({ method: "POST" })
         district: input.address.district,
         city: input.address.city,
         state: input.address.state,
+        shipping: quote.selectedShippingOption ? {
+          option_id: quote.selectedShippingOption.id,
+          provider: quote.selectedShippingOption.provider,
+          service_name: quote.selectedShippingOption.service_name,
+          estimated_delivery_days: quote.selectedShippingOption.estimated_delivery_days,
+          estimated: quote.selectedShippingOption.estimated,
+          requires_confirmation: quote.selectedShippingOption.requiresConfirmation,
+          pickup_address: quote.selectedShippingOption.pickupAddress ?? "",
+          pickup_instructions: quote.selectedShippingOption.pickupInstructions ?? "",
+        } : null,
       },
       items: quote.items,
       subtotal: quote.subtotal,
@@ -281,7 +329,7 @@ export const createOrder = createServerFn({ method: "POST" })
     if (orderItemsError) throw new Error("Não foi possível registrar os itens do pedido.");
 
     let initPoint: string | null = null;
-    const paymentReady = mpConfigured();
+    const paymentReady = mpConfigured() && !quote.selectedShippingOption.requiresConfirmation;
     if (paymentReady) {
       const origin = safeOrigin(input.origin);
       const pref = (await mpRequest("checkout/preferences", {
@@ -301,7 +349,7 @@ export const createOrder = createServerFn({ method: "POST" })
       })) as { init_point?: string };
       initPoint = pref.init_point ?? null;
     }
-    return { orderId, initPoint, total: quote.total, paymentReady };
+    return { orderId, initPoint, total: quote.total, paymentReady, shippingRequiresConfirmation: quote.selectedShippingOption.requiresConfirmation };
   });
 
 export const getOrderStatus = createServerFn({ method: "GET" })
@@ -374,7 +422,7 @@ export const listCustomers = createServerFn({ method: "GET" })
 
     for (let offset = 0; offset < maxRows; offset += pageSize) {
       const { data, error } = await admin.from("customers")
-        .select("id,name,email,phone,city,state,source,status,tags,notes,created_at,updated_at")
+        .select("id,name,email,phone,whatsapp,city,state,source,status,tags,notes,created_at,updated_at")
         .eq("store_key", "papelemi")
         .order("updated_at", { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -428,6 +476,7 @@ export const listCustomers = createServerFn({ method: "GET" })
           email: String(row["email"] ?? ""),
           name: String(row["name"] ?? ""),
           phone: String(row["phone"] ?? ""),
+          whatsapp: String(row["whatsapp"] ?? ""),
           ordersCount: stats?.count ?? 0,
           firstOrderAt: stats?.firstOrderAt ?? createdAt,
           lastOrderAt: stats?.lastOrderAt ?? createdAt,
@@ -443,6 +492,79 @@ export const listCustomers = createServerFn({ method: "GET" })
       scannedOrders,
       truncated: customersTruncated || ordersTruncated,
     };
+  });
+
+const customerInput = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().max(254).refine((value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "E-mail inválido").default(""),
+  phone: z.string().trim().max(40).default(""),
+  whatsapp: z.string().trim().max(40).default(""),
+  city: z.string().trim().max(100).default(""),
+  state: z.string().trim().max(2).default(""),
+  status: z.enum(["active", "inactive"]).default("active"),
+  tags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
+  notes: z.string().trim().max(2000).default(""),
+});
+
+export const saveCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(customerInput)
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const email = data.email || null;
+    const values = {
+      store_key: "papelemi",
+      name: data.name,
+      email,
+      email_normalized: email ? email.toLowerCase() : null,
+      phone: data.phone || null,
+      whatsapp: data.whatsapp || null,
+      city: data.city || null,
+      state: data.state.toUpperCase() || null,
+      status: data.status,
+      tags: data.tags,
+      notes: data.notes || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const result = data.id
+      ? await admin.from("customers").update(values).eq("id", data.id).eq("store_key", "papelemi").select("id").maybeSingle()
+      : await admin.from("customers").insert({ ...values, created_by: context.userId, source: "admin" }).select("id").single();
+
+    if (result.error?.code === "23505") {
+      throw new Error("Já existe um cliente da PapeLemi com esse e-mail.");
+    }
+    if (result.error) throw new Error(result.error.message);
+    if (!result.data?.id) throw new Error("Cliente não encontrado ou fora da PapeLemi.");
+    return { id: result.data.id };
+  });
+
+const orderDetailInput = z.object({ id: z.string().uuid() });
+
+export const getOrderDetails = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator(orderDetailInput)
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { data: order, error: orderError } = await admin.from("orders")
+      .select("*")
+      .eq("id", data.id)
+      .eq("store_key", "papelemi")
+      .maybeSingle();
+    if (orderError) throw new Error(orderError.message);
+    if (!order) throw new Error("Pedido não encontrado nesta loja.");
+    const { data: items, error: itemsError } = await admin.from("order_items")
+      .select("id,line_number,product_name,product_slug,product_image,quantity,unit_price,line_total,personalization")
+      .eq("order_id", data.id)
+      .eq("store_key", "papelemi")
+      .order("line_number", { ascending: true });
+    if (itemsError) throw new Error(itemsError.message);
+    return { order, items: items ?? [] };
   });
 
 export const setOrderStatus = createServerFn({ method: "POST" })
