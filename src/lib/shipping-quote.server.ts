@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { getRequest } from "@tanstack/react-start/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
-import { applyShippingRules, manualShippingOption, packShippingCart, quoteCorreiosEstimate, roundShippingMoney, type ShippingOptionDraft } from "@/lib/shipping-quote";
+import { applyShippingRules, isAllowedShippingProviderEndpoint, manualShippingOption, packShippingCart, quoteCorreiosEstimate, roundShippingMoney, type ShippingOptionDraft } from "@/lib/shipping-quote";
 
 type AdminClient = SupabaseClient<Database>;
 type ProductShippingRow = Pick<Database["public"]["Tables"]["products"]["Row"], "slug" | "name" | "price" | "promo_price" | "weight_kg" | "requires_shipping">;
@@ -83,19 +83,12 @@ async function writeProviderCache(admin: AdminClient, cacheKey: string, options:
   } catch { /* cache is best-effort */ }
 }
 
-function isAllowedProviderEndpoint(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && (url.hostname === "melhorenvio.com.br" || url.hostname.endsWith(".melhorenvio.com.br"));
-  } catch { return false; }
-}
-
 async function quoteMelhorEnvio(
   provider: Database["public"]["Tables"]["shipping_providers"]["Row"],
   settings: Database["public"]["Tables"]["shipping_settings"]["Row"],
   context: { originZip: string; destinationZip: string; totalWeight: number; subtotal: number },
 ): Promise<ShippingOptionDraft[]> {
-  if (!provider.api_key || !provider.endpoint_url || !isAllowedProviderEndpoint(provider.endpoint_url)) return [];
+  if (!provider.api_key || !provider.endpoint_url || !isAllowedShippingProviderEndpoint(provider.endpoint_url)) return [];
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
   try {
