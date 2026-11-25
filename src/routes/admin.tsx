@@ -409,7 +409,7 @@ function CustomersTab() {
     name: customer.name,
     email: customer.email,
     phone: customer.phone,
-    whatsapp: customer.phone,
+    whatsapp: customer.whatsapp,
     city: customer.city,
     state: customer.state,
     status: customer.status === "inactive" ? "inactive" : "active",
@@ -452,6 +452,8 @@ function CustomersTab() {
       setCustomers(result.customers);
       setTruncated(result.truncated);
     } catch (error) {
+      setCustomers([]);
+      setTruncated(false);
       toast.error(error instanceof Error ? error.message : "Não foi possível carregar os clientes.");
     } finally {
       setRefreshing(false);
@@ -466,7 +468,7 @@ function CustomersTab() {
 
   const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR");
   const filtered = customers.filter((customer) =>
-    [customer.name, customer.email, customer.phone].some((value) =>
+    [customer.name, customer.email, customer.phone, customer.whatsapp, customer.city, customer.state, customer.tags.join(" ")].some((value) =>
       value.toLocaleLowerCase("pt-BR").includes(normalizedSearch),
     ),
   );
