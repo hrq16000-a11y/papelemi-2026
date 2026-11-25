@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { brl, finalPrice, getProduct } from "@/data/catalog";
 import { useCart } from "@/lib/cart";
+import { aiField } from "@/components/store/PhraseGenerator";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({ meta: [
@@ -27,7 +28,7 @@ function Cart() {
             <li key={i.id} className="flex gap-4 py-6">
               <img src={p.images[0]} alt={p.name} className="size-24 shrink-0 rounded-xl object-cover md:size-28" />
               <div className="min-w-0 flex-1">
-                <div className="flex justify-between gap-2"><Link to="/produto/$slug" params={{ slug: p.slug }} className="font-display text-xl hover:text-primary">{p.name}</Link><p className="whitespace-nowrap">{brl(finalPrice(p) * i.qty)}</p></div>
+                <div className="flex justify-between gap-2"><Link to="/produto/$slug" params={{ slug: p.slug }} search={{ frase: i.options[aiField(p)?.label ?? ""] || undefined }} className="font-display text-xl hover:text-primary">{p.name}</Link><p className="whitespace-nowrap">{brl(finalPrice(p) * i.qty)}</p></div>
                 <dl className="mt-1 space-y-0.5 text-xs text-muted-foreground">{Object.entries(i.options).filter(([, v]) => v).map(([k, v]) => <div key={k} className="break-words"><dt className="inline font-medium">{k}:</dt> <dd className="inline">{v}</dd></div>)}</dl>
                 <div className="mt-3 flex items-center gap-3">
                   <div className="flex items-center rounded-full border border-border text-sm">

@@ -1,13 +1,15 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { Clock, Minus, Plus } from "lucide-react";
+import { Clock, Minus, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { brl, getCategory, getProduct, publishedProducts } from "@/data/catalog";
 import { useCart } from "@/lib/cart";
-import { AiPhraseAssistant } from "@/components/store/AiPhraseAssistant";
+import { aiField, PhraseGenerator } from "@/components/store/PhraseGenerator";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ProductGrid } from "@/components/store/ProductCard";
 
 export const Route = createFileRoute("/produto/$slug")({
+  validateSearch: (s: Record<string, unknown>): { frase?: string | undefined } => ({ frase: typeof s["frase"] === "string" ? s["frase"].slice(0, 400) : undefined }),
   loader: ({ params }) => { const p = getProduct(params.slug); if (!p) throw notFound(); return p; },
   head: ({ loaderData: p }) => ({
     meta: p ? [
@@ -29,7 +31,10 @@ function ProductPage() {
   const [size, setSize] = useState(p.sizes[0] ?? "");
   const [finish, setFinish] = useState(p.finishes[0] ?? "");
   const [qty, setQty] = useState(p.minQty ?? 1);
-  const [opts, setOpts] = useState<Record<string, string>>({});
+  const { frase } = Route.useSearch();
+  const ai = aiField(p);
+  const [opts, setOpts] = useState<Record<string, string>>(() => (ai && frase ? { [ai.key]: frase.slice(0, ai.maxLength) } : {}));
+  const [genOpen, setGenOpen] = useState(false);
   const set = (k: string, v: string) => setOpts((o) => ({ ...o, [k]: v }));
   const field = "w-full rounded-xl border border-input bg-card px-4 py-3 text-base md:text-sm outline-none focus:border-ring";
   const Pills = ({ label, list, value, onChange }: { label: string; list: string[]; value: string; onChange: (v: string) => void }) => list.length > 1 ? (
@@ -37,13 +42,13 @@ function ProductPage() {
       <div className="mt-2 flex flex-wrap gap-2">{list.map((v) => <button key={v} type="button" onClick={() => onChange(v)} className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${v === value ? "border-primary bg-secondary text-secondary-foreground" : "border-border hover:border-primary"}`}>{v}</button>)}</div></div>
   ) : null;
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const addToCart = (current: Record<string, string>) => {
     const options: Record<string, string> = { Cor: color, Tamanho: size, Acabamento: finish };
-    p.personalization.forEach((o) => { const v = opts[o.key]; if (v) options[o.label] = v; });
+    p.personalization.forEach((o) => { const v = current[o.key]; if (v) options[o.label] = v; });
     add({ slug: p.slug, qty, options });
     toast.success("Adicionado ao carrinho", { action: { label: "Ver carrinho", onClick: () => navigate({ to: "/carrinho" }) } });
   };
+  const submit = (e: React.FormEvent) => { e.preventDefault(); addToCart(opts); };
 
   const cat = getCategory(p.category);
   return (
@@ -81,7 +86,7 @@ function ProductPage() {
                         ? <textarea id={o.key} rows={3} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={`${field} font-display text-lg italic`} />
                         : <input id={o.key} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={field} />}
                       <p className="mt-1 text-right text-xs text-muted-foreground">{(opts[o.key] ?? "").length}/{o.maxLength}</p>
-                      {o.ai && <AiPhraseAssistant product={p.name} field={o.label} maxLength={o.maxLength} onPick={(s) => { set(o.key, s); toast.success("Frase aplicada"); }} />}
+                      {o.ai && <button type="button" onClick={() => setGenOpen(true)} className="mt-1 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"><Sparkles className="size-4" /> Criar dedicatória com a assistente</button>}
                     </>
                   )}
                 </div>
@@ -100,6 +105,18 @@ function ProductPage() {
           {p.minQty && <p className="text-xs text-muted-foreground">Pedido mínimo: {p.minQty} unidades.</p>}
         </form>
       </div>
+      <Dialog open={genOpen} onOpenChange={setGenOpen}>
+        <DialogContent className="max-h-[92dvh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto rounded-3xl p-5 md:p-8">
+          <DialogTitle className="sr-only">Assistente de dedicatórias</DialogTitle>
+          <DialogDescription className="sr-only">Crie uma frase personalizada para {p.name}</DialogDescription>
+          {genOpen && <PhraseGenerator fixedProduct={p} onApply={(_, text, toCart) => {
+            if (!ai) return;
+            const next = { ...opts, [ai.key]: text };
+            setOpts(next); setGenOpen(false);
+            if (toCart) addToCart(next); else toast.success("Dedicatória inserida no produto");
+          }} />}
+        </DialogContent>
+      </Dialog>
       <section className="mt-24"><h2 className="mb-8 text-4xl">Você também pode gostar</h2><ProductGrid items={publishedProducts.filter((x) => x.category === p.category && x.slug !== p.slug).concat(publishedProducts.filter((x) => x.bestSeller && x.slug !== p.slug)).filter((x, i, a) => a.indexOf(x) === i).slice(0, 4)} /></section>
     </div>
   );
