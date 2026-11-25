@@ -7,7 +7,7 @@ on:
       - "feat/**"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: papelemi-quality-${{ github.ref }}
@@ -52,3 +52,76 @@ jobs:
 
       - name: TypeScript
         run: bunx tsc --noEmit -p tsconfig.order-integrity.json
+
+  reconstruct-emporio-schema:
+    name: Reconstruct Emporio schema locally (no production access)
+    if: github.ref == 'refs/heads/feat/papelemi-emp-or-core-baseline-01' && hashFiles('docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md') != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout PapeLemi
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout Emporio source
+        uses: actions/checkout@v4
+        with:
+          repository: hrq16000-a11y/emporiolelecute-2026
+          ref: main
+          path: emporio
+          fetch-depth: 1
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start isolated local Supabase
+        working-directory: emporio
+        run: supabase start
+
+      - name: Apply all versioned Emporio migrations locally
+        working-directory: emporio
+        run: supabase db reset --local
+
+      - name: Export schema-only snapshot and generated types
+        working-directory: emporio
+        run: |
+          mkdir -p ../docs/operations/reference
+          supabase db dump --local --schema public \\
+            -f ../docs/operations/reference/EMPORIO_PUBLIC_SCHEMA_2026-11-25.sql
+          supabase gen types typescript --local --schema public \\
+            > ../docs/operations/reference/EMPORIO_DATABASE_TYPES_2026-11-25.ts
+
+      - name: Record migration reconstruction metadata
+        working-directory: emporio
+        run: |
+          {
+            echo "# Emporio local migration reconstruction"
+            echo
+            echo "- Source repository: hrq16000-a11y/emporiolelecute-2026"
+            echo "- Source ref: main"
+            echo "- Source SHA: $(git rev-parse HEAD)"
+            echo "- Migration files: $(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)"
+            echo "- Generated from local migrations only; no hosted database was queried."
+            echo "- No row data, auth users, credentials or secrets are included."
+          } > ../docs/operations/reference/EMPORIO_SCHEMA_SNAPSHOT_README.md
+
+      - name: Stop local Supabase
+        if: always()
+        working-directory: emporio
+        run: supabase stop --no-backup || true
+
+      - name: Commit generated schema reference
+        run: |
+          rm -f docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/operations/reference/ docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md
+          if git diff --cached --quiet; then
+            echo "No schema snapshot changes."
+            exit 0
+          fi
+          git commit -m "chore(db): add reconstructed Emporio schema reference"
+          git push origin "HEAD:$GITHUB_REF_NAME"
