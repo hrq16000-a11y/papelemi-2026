@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(29);
+SELECT plan(30);
 SELECT has_table('public','shipping_settings','shipping settings table exists');
 SELECT has_table('public','shipping_providers','shipping providers table exists');
 SELECT has_table('public','shipping_quote_cache','shipping cache table exists');
@@ -21,7 +21,8 @@ SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='public.shipping_audit_
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid='public.shipping_quote_rate_limits'::regclass),'rate-limit RLS enabled');
 SELECT ok(NOT has_table_privilege('anon','public.shipping_settings','SELECT'),'anonymous users cannot read shipping settings');
 SELECT ok(NOT has_table_privilege('anon','public.shipping_providers','SELECT'),'anonymous users cannot read provider credentials');
-SELECT ok(NOT has_table_privilege('authenticated','public.shipping_providers','SELECT') = false,'provider table is accessible only to authorized admins through RLS');
+SELECT ok(NOT has_table_privilege('authenticated','public.shipping_providers','SELECT'),'authenticated users cannot read provider credentials directly');
+SELECT ok(NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='shipping_providers' AND policyname='shipping_providers_admin_select'),'provider credentials have no client-side SELECT policy');
 SELECT ok(NOT has_table_privilege('anon','public.shipping_audit_logs','SELECT'),'anonymous users cannot read shipping audit');
 SELECT ok(NOT has_table_privilege('anon','public.shipping_quote_cache','SELECT'),'anonymous users cannot read shipping cache');
 SELECT ok(to_regprocedure('public.consume_shipping_quote_rate_limit(text,timestamptz,integer)') IS NOT NULL,'server-side quote rate limiter exists');
