@@ -144,7 +144,7 @@ export const createOrder = createServerFn({ method: "POST" })
     };
     const { data: order, error: insErr } = await supabaseAdmin
       .from("orders")
-      .insert(orderPayload)
+      .insert(orderPayload as unknown as Database["public"]["Tables"]["orders"]["Insert"])
       .select("id")
       .single();
     if (insErr || !order) throw new Error(insErr?.message ?? "Não foi possível criar o pedido");
