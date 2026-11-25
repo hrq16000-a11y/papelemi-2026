@@ -142,7 +142,7 @@ function LoginForm() {
 // ===== Pedidos =====
 
 type Order = Awaited<ReturnType<typeof listOrders>>[number];
-const ORDER_STATUS: Record<string, string> = { pending: "Aguardando", paid: "Pago", shipped: "Enviado", delivered: "Entregue", cancelled: "Cancelado" };
+const ORDER_STATUS: Record<string, string> = { pending: "Recebido / aguardando confirmação", paid: "Pago", shipped: "Enviado", delivered: "Entregue", cancelled: "Cancelado" };
 
 function OrdersTab() {
   const [orders, setOrders] = useState<Order[] | null>(null);

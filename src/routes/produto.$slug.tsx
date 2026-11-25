@@ -78,7 +78,7 @@ function ProductDetail({ p }: { p: Product }) {
           <div>
             <h1 className="text-4xl leading-tight md:text-5xl">{p.name}</h1>
             <p className="mt-3 text-2xl">{p.promoPrice ? <><span className="mr-3 text-lg text-muted-foreground line-through">{brl(p.price)}</span><span className="text-primary">{brl(p.promoPrice)}</span></> : brl(p.price)}{p.minQty && <span className="text-sm text-muted-foreground"> por unidade</span>}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Preço demonstrativo</p>
+            <p className="mt-1 text-xs text-muted-foreground">Preço de referência. Disponibilidade e condições serão confirmadas pela PapeLemi.</p>
             <p className="mt-4 text-muted-foreground">{p.description}</p>
             <p className="mt-3 flex items-center gap-2 text-sm"><Clock className="size-4 text-primary" /> Produção: {p.productionDays}</p>
           </div>

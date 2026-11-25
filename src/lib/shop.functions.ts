@@ -6,9 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Category, Product } from "@/data/catalog";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 
-const PUBLISHED_ORIGIN = "https://papelemi.lovable.app";
-const FREE_SHIPPING_FROM = 199;
-const SHIPPING_FLAT = 19.9;
+const PUBLISHED_ORIGIN = "https://papelemi.com.br";
 
 // Cliente público (somente leitura) para dados abertos da loja.
 function publicClient() {
@@ -105,11 +103,14 @@ const orderInput = z.object({
   })).min(1).max(50),
   couponCode: z.string().trim().max(40).optional(),
   origin: z.string().url().max(200).optional(),
+  customerNotes: z.string().trim().max(1000).default(""),
+  acceptedPrivacy: z.literal(true),
 });
 
 function safeOrigin(origin?: string) {
   try {
-    if (origin && new URL(origin).host === new URL(PUBLISHED_ORIGIN).host) return origin;
+    const parsed = new URL(origin ?? "");
+    if (parsed.protocol === "https:" && ["papelemi.com.br", "www.papelemi.com.br"].includes(parsed.hostname)) return parsed.origin;
   } catch { /* ignora */ }
   return PUBLISHED_ORIGIN;
 }
@@ -129,7 +130,8 @@ export const createOrder = createServerFn({ method: "POST" })
       return { slug: p.slug, name: p.name, qty, unit_price: p.promoPrice ?? p.price, options: i.options };
     });
     const subtotal = Math.round(items.reduce((s, i) => s + i.unit_price * i.qty, 0) * 100) / 100;
-    const shipping = subtotal >= FREE_SHIPPING_FROM ? 0 : SHIPPING_FLAT;
+    // O frete é confirmado pela PapeLemi após revisar o CEP; não estimar um valor não validado.
+    const shipping = 0;
     let discount = 0;
     let couponCode: string | null = null;
     if (input.couponCode) {
@@ -145,6 +147,11 @@ export const createOrder = createServerFn({ method: "POST" })
       address: input.address,
       items,
       subtotal, shipping, discount, coupon_code: couponCode, total,
+      store_key: "papelemi",
+      customer_notes: input.customerNotes,
+      accepted_privacy: input.acceptedPrivacy,
+      privacy_consent_at: new Date().toISOString(),
+      source: "storefront",
     }).select("id").single();
     if (insErr || !order) throw new Error(insErr?.message ?? "Não foi possível criar o pedido");
 
@@ -180,7 +187,7 @@ export const getOrderStatus = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin.from("orders").select("status,total").eq("id", data.orderId).single();
     if (!order) throw new Error("Pedido não encontrado");
-    return { status: order.status, total: Number(order.total) };
+    return { status: !mpConfigured() && order.status === "pending" ? "received" : order.status, total: Number(order.total) };
   });
 
 // ===== Administração (exige papel de admin) =====

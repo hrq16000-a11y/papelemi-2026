@@ -1,72 +1,79 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useState } from "react";
-import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
-
-const nav = [
-  { to: "/loja", label: "Loja" },
-  { to: "/personalizados", label: "Personalizados" },
-  { to: "/sobre", label: "Sobre" },
-  { to: "/contato", label: "Contato" },
-] as const;
+import { useCatalog } from "@/lib/catalog-store";
 
 export function Header() {
   const { count } = useCart();
   const { categories } = useCatalog();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    setOpen(false);
+    setSearchOpen(false);
+    setMenuOpen(false);
     navigate({ to: "/loja", search: { q: q.trim() || undefined } });
   };
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur">
-      <div className="bg-primary px-4 py-1.5 text-center text-xs tracking-wide text-primary-foreground">
-        Pré-venda das agendas 2027 · Loja demonstrativa — preços ilustrativos
+    <header className="relative z-40 bg-background">
+      <div className="bg-secondary px-3 py-1.5 text-center text-[10px] tracking-[0.12em] text-foreground md:text-xs">
+        Feito com afeto, pensado para cada história <span className="px-1 text-primary">✦</span> Enviamos para todo o Brasil!
       </div>
-      <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 md:px-8">
-        <button className="md:hidden" aria-label="Abrir menu" onClick={() => setOpen(!open)}>
-          {open ? <X className="size-6" /> : <Menu className="size-6" />}
+      <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4 md:px-8 md:py-5">
+        <button type="button" aria-label="Abrir busca" aria-expanded={searchOpen} onClick={() => setSearchOpen((v) => !v)} className="justify-self-start rounded-full p-2 text-foreground transition-colors hover:bg-secondary">
+          <Search className="size-4" />
         </button>
-        <Link to="/" className="font-display text-3xl font-semibold italic text-primary" aria-label="PapeLemi — início">
-          PapeLemi
+        <Link to="/" className="justify-self-center text-center leading-none" aria-label="PapeLemi — início">
+          <span className="block font-display text-[2rem] font-semibold tracking-tight text-foreground md:text-3xl">PapeLe<span className="text-primary">♡</span>i</span>
+          <span className="mt-1 block text-[8px] font-medium tracking-[0.28em] text-muted-foreground md:text-[9px]">PAPELARIA PERSONALIZADA</span>
         </Link>
-        <nav className="ml-6 hidden gap-6 text-sm md:flex">
-          {nav.map((n) => (
-            <Link key={n.to} to={n.to} className="transition-colors hover:text-primary" activeProps={{ className: "text-primary" }}>{n.label}</Link>
-          ))}
-        </nav>
-        <form onSubmit={submit} className="ml-auto hidden items-center rounded-full border border-border bg-card px-3 lg:flex">
-          <Search className="size-4 text-muted-foreground" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar agendas, kits…" aria-label="Buscar produtos" className="w-56 bg-transparent px-2 py-2 text-sm outline-none" />
-        </form>
-        <Link to="/carrinho" className="relative ml-auto rounded-full p-2 transition-colors hover:bg-secondary lg:ml-0" aria-label={`Carrinho, ${count} itens`}>
-          <ShoppingBag className="size-5" />
-          {count > 0 && <span className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-primary text-[10px] text-primary-foreground">{count}</span>}
-        </Link>
-      </div>
-      <div className="hidden border-t border-border/60 md:block">
-        <div className="mx-auto flex max-w-7xl gap-8 overflow-x-auto px-8 py-2.5 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-          {categories.map((c) => (
-            <Link key={c.slug} to="/categoria/$slug" params={{ slug: c.slug }} className="whitespace-nowrap hover:text-primary" activeProps={{ className: "text-primary" }}>{c.name}</Link>
-          ))}
+        <div className="flex items-center justify-self-end gap-2 md:gap-5">
+          <Link to="/loja" className="hidden text-xs transition-colors hover:text-primary md:inline-flex md:items-center md:gap-1">Ver produtos <span aria-hidden="true">↗</span></Link>
+          <Link to="/carrinho" className="relative rounded-full p-2 transition-colors hover:bg-secondary" aria-label={"Carrinho, " + count + " itens"}>
+            <ShoppingBag className="size-4" />
+            {count > 0 && <span className="absolute -right-0.5 -top-0.5 grid size-4 place-items-center rounded-full bg-primary text-[9px] text-primary-foreground">{count}</span>}
+          </Link>
+          <button type="button" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="rounded-full p-2 md:hidden">
+            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
         </div>
       </div>
-      {open && (
-        <div className="border-t border-border bg-background px-4 pb-6 md:hidden">
-          <form onSubmit={submit} className="my-4 flex items-center rounded-full border border-border bg-card px-3">
+      <nav className="hidden items-center justify-center gap-7 border-y border-border/70 px-4 py-3 text-[11px] tracking-[0.04em] md:flex">
+        <Link to="/" className="transition-colors hover:text-primary">Início</Link>
+        <Link to="/loja" className="transition-colors hover:text-primary">Todos os produtos</Link>
+        {categories.map((c) => <Link key={c.slug} to="/categoria/$slug" params={{ slug: c.slug }} className="transition-colors hover:text-primary">{c.name}</Link>)}
+        <Link to="/sobre" className="transition-colors hover:text-primary">Nossa história</Link>
+      </nav>
+      <div className="bg-cream px-3 py-1.5 text-center text-[9px] tracking-[0.1em] text-muted-foreground md:text-[10px]">Personalize o que é seu. Guarde o que importa. ♡</div>
+
+      {searchOpen && (
+        <form onSubmit={submit} className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-4">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="O que você está buscando?" aria-label="Buscar produtos" className="min-w-0 flex-1 border-b border-border bg-transparent px-2 py-2 text-base outline-none focus:border-primary" />
+          <button className="bg-foreground px-4 py-2 text-xs text-background">Buscar →</button>
+        </form>
+      )}
+
+      {menuOpen && (
+        <div className="border-t border-border bg-background px-5 pb-6 pt-4 md:hidden">
+          <form onSubmit={submit} className="mb-5 flex items-center gap-2 border-b border-border pb-2">
             <Search className="size-4 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar produtos" aria-label="Buscar produtos" className="w-full bg-transparent px-2 py-2.5 text-base outline-none" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar produtos" aria-label="Buscar produtos" className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none" />
+            <button className="text-xs text-primary">Buscar</button>
           </form>
-          <div className="flex flex-col gap-3 text-lg">
-            {nav.map((n) => <Link key={n.to} to={n.to} onClick={() => setOpen(false)}>{n.label}</Link>)}
-          </div>
-          <p className="mt-5 text-xs uppercase tracking-widest text-muted-foreground">Categorias</p>
-          <div className="mt-2 flex flex-col gap-2">
-            {categories.map((c) => <Link key={c.slug} to="/categoria/$slug" params={{ slug: c.slug }} onClick={() => setOpen(false)}>{c.name}</Link>)}
+          <div className="grid gap-4 text-sm">
+            <Link to="/" onClick={() => setMenuOpen(false)}>Início</Link>
+            <Link to="/loja" onClick={() => setMenuOpen(false)}>Todos os produtos</Link>
+            {categories.map((c) => <Link key={c.slug} to="/categoria/$slug" params={{ slug: c.slug }} onClick={() => setMenuOpen(false)}>{c.name}</Link>)}
+            <Link to="/sobre" onClick={() => setMenuOpen(false)}>Nossa história</Link>
+            <Link to="/personalizados" onClick={() => setMenuOpen(false)}>Personalizados</Link>
+            <Link to="/kits" onClick={() => setMenuOpen(false)}>Kits</Link>
+            <Link to="/presentes" onClick={() => setMenuOpen(false)}>Presentes</Link>
           </div>
         </div>
       )}

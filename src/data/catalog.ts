@@ -1,7 +1,19 @@
-// DADOS DEMONSTRATIVOS — substituir pela importação do catálogo real da PapeLemi.
-// Preços, estoques e prazos abaixo NÃO são reais.
-export const img = (id: string, w = 900) =>
-  `https://images.unsplash.com/photo-${id}?w=${w}&q=75&auto=format&fit=crop`;
+// Catálogo fiel à vitrine original da PapeLemi.
+// Preços e prazos são referências exibidas na vitrine; a loja confirma disponibilidade,
+// personalização, frete e pagamento antes da produção.
+// Fotografias originais recuperadas do HTML integral da vitrine PapeLemi.
+const ASSET_BY_SOURCE_ID: Record<string, string> = {
+  "1519337265831-281ec6cc8514": "/images/papelemi/caderneta-ursinho-clean.jpg",
+  "1531346878377-a5be20888e57": "/images/papelemi/caderneta-astronauta-luxo.jpg",
+  "1517842645767-c639042777db": "/images/papelemi/caderneta-raio-de-sol.jpg",
+  "1527239441953-caffd968d952": "/images/papelemi/planner-devocional-masculino.jpg",
+  "1452860606245-08befc0ff44b": "/images/papelemi/bloco-anotacoes-capa-dura.jpg",
+  "1586075010923-2dd4570fb338": "/images/papelemi/bloco-notas-9x11.jpg",
+  "1513201099705-a9746e1e201f": "/images/papelemi/marca-pagina-magnetico.jpg",
+  "1549465220-1a8b9238cd48": "/images/papelemi/caixa-porta-chocolate.jpg",
+};
+export const img = (id: string, _width = 900) =>
+  ASSET_BY_SOURCE_ID[id] ?? "/images/papelemi/caderneta-ursinho-clean.jpg";
 
 export type Category = { slug: string; name: string; description: string; image: string };
 export type PersonalizationOption =
@@ -21,7 +33,7 @@ export type Product = {
   sizes: string[];
   finishes: string[];
   productionDays: string;
-  stock: number;
+  stock?: number;
   published: boolean;
   bestSeller?: boolean;
   personalizable: boolean;
@@ -30,32 +42,143 @@ export type Product = {
 };
 
 export const categories: Category[] = [
-  { slug: "agendas-e-planners", name: "Agendas e planners", description: "Para organizar dias com intenção e beleza.", image: img("1517842645767-c639042777db") },
-  { slug: "cadernos", name: "Cadernos", description: "Páginas prontas para ideias, memórias e listas.", image: img("1531346878377-a5be20888e57") },
-  { slug: "lembrancas", name: "Lembranças", description: "Pequenos mimos que guardam grandes momentos.", image: img("1513201099705-a9746e1e201f") },
-  { slug: "kits", name: "Kits", description: "Combinações pensadas para presentear com afeto.", image: img("1549465220-1a8b9238cd48") },
-  { slug: "brindes-corporativos", name: "Brindes corporativos", description: "Sua marca lembrada com delicadeza e cuidado.", image: img("1456735190827-d1262f71b8a3") },
+  { slug: "cadernetas", name: "Cadernetas", description: "Para guardar cada fase.", image: img("1519337265831-281ec6cc8514") },
+  { slug: "planners-blocos", name: "Planners & blocos", description: "Ideias para o dia a dia.", image: img("1527239441953-caffd968d952") },
+  { slug: "mimos-lembrancas", name: "Mimos & lembranças", description: "Pequenos grandes gestos.", image: img("1513201099705-a9746e1e201f") },
+  { slug: "brindes-personalizados", name: "Brindes personalizados", description: "Sua marca com afeto.", image: img("1549465220-1a8b9238cd48") },
 ];
 
-const nameAndPhrase: PersonalizationOption[] = [
-  { type: "text", key: "nome", label: "Nome na capa", maxLength: 30 },
-  { type: "text", key: "frase", label: "Frase ou dedicatória", maxLength: 140, ai: true },
+const notes: PersonalizationOption = { type: "notes", key: "observacoes", label: "Observações para a encomenda" };
+const nameAndDedication: PersonalizationOption[] = [
+  { type: "text", key: "nome", label: "Nome", maxLength: 40 },
+  { type: "text", key: "frase", label: "Mensagem ou dedicatória", maxLength: 140, ai: true },
 ];
-const notes: PersonalizationOption = { type: "notes", key: "obs", label: "Observações para a produção" };
+const dedicationOnly: PersonalizationOption[] = [
+  { type: "text", key: "frase", label: "Mensagem ou dedicatória", maxLength: 140, ai: true },
+];
+const referenceCopy = "Produto feito sob encomenda. A PapeLemi confirma os detalhes, a disponibilidade e o prazo antes da produção.";
 
 export const products: Product[] = [
-  { slug: "agenda-afeto-2027", name: "Agenda Afeto 2027", category: "agendas-e-planners", description: "Agenda diária com capa dura, miolo pólen 90g e páginas de reflexão mensal. Personalizada com nome e frase.", images: [img("1517842645767-c639042777db"), img("1531346878377-a5be20888e57")], price: 129.9, promoPrice: 114.9, colors: ["Rosa quartzo", "Creme", "Verde sálvia"], sizes: ["A5", "B5"], finishes: ["Hot stamping dourado", "Impressão fosca"], productionDays: "7 a 10 dias úteis", stock: 24, published: true, bestSeller: true, personalizable: true, personalization: [...nameAndPhrase, { type: "choice", key: "tema", label: "Estampa da capa", options: ["Floral aquarela", "Liso minimalista", "Poá delicado"] }, notes] },
-  { slug: "planner-semanal-respiro", name: "Planner Semanal Respiro", category: "agendas-e-planners", description: "Planner sem datas, com visão semanal, hábitos e metas. Encadernação wire-o.", images: [img("1531346878377-a5be20888e57")], price: 89.9, colors: ["Rosa", "Off-white"], sizes: ["A5"], finishes: ["Wire-o dourado", "Wire-o branco"], productionDays: "5 a 7 dias úteis", stock: 18, published: true, personalizable: true, personalization: [...nameAndPhrase, notes] },
-  { slug: "caderno-memorias", name: "Caderno Memórias", category: "cadernos", description: "Caderno pautado com capa em tecido e marcador de cetim. Ideal para diários e registros afetivos.", images: [img("1531346878377-a5be20888e57"), img("1527239441953-caffd968d952")], price: 69.9, colors: ["Linho", "Rosa antigo"], sizes: ["A5", "A6"], finishes: ["Capa em tecido", "Capa laminada"], productionDays: "5 a 7 dias úteis", stock: 30, published: true, bestSeller: true, personalizable: true, personalization: [...nameAndPhrase, notes] },
-  { slug: "caderneta-de-receitas", name: "Caderneta de Receitas de Família", category: "cadernos", description: "Caderneta com páginas guiadas para registrar receitas e as histórias por trás delas.", images: [img("1527239441953-caffd968d952")], price: 79.9, colors: ["Creme", "Terracota"], sizes: ["A5"], finishes: ["Costura aparente"], productionDays: "7 dias úteis", stock: 12, published: true, personalizable: true, personalization: [...nameAndPhrase, notes] },
-  { slug: "caderneta-de-saude-bebe", name: "Caderneta de Saúde do Bebê", category: "cadernos", description: "Capa personalizada para caderneta de saúde, com nome do bebê e espaço para fotos.", images: [img("1519337265831-281ec6cc8514")], price: 59.9, colors: ["Rosa", "Azul névoa", "Areia"], sizes: ["Padrão"], finishes: ["Laminação soft touch"], productionDays: "5 dias úteis", stock: 20, published: true, bestSeller: true, personalizable: true, personalization: [{ type: "text", key: "nome", label: "Nome do bebê", maxLength: 30 }, { type: "text", key: "frase", label: "Mensagem de boas-vindas", maxLength: 140, ai: true }, notes] },
-  { slug: "tag-lembranca-maternidade", name: "Tags de Lembrança Maternidade", category: "lembrancas", description: "Tags impressas em papel algodão com cordão de juta, para mimos de maternidade.", images: [img("1513201099705-a9746e1e201f")], price: 2.9, colors: ["Rosa", "Verde sálvia"], sizes: ["5x8 cm"], finishes: ["Papel algodão 300g"], productionDays: "5 dias úteis", stock: 500, published: true, personalizable: true, minQty: 20, personalization: [...nameAndPhrase, notes] },
-  { slug: "cartao-dedicatoria", name: "Cartão Dedicatória", category: "lembrancas", description: "Cartão dobrado com envelope colorido, para acompanhar presentes com uma mensagem especial.", images: [img("1586075010923-2dd4570fb338")], price: 12.9, colors: ["Rosa", "Creme", "Lavanda"], sizes: ["10x15 cm"], finishes: ["Relevo seco"], productionDays: "3 dias úteis", stock: 80, published: true, personalizable: true, personalization: [{ type: "text", key: "frase", label: "Mensagem do cartão", maxLength: 220, ai: true }, notes] },
-  { slug: "kit-professora-querida", name: "Kit Professora Querida", category: "kits", description: "Caderno, bloco de notas, marcador e cartão em caixa presenteável. Perfeito para fim de ano letivo.", images: [img("1549465220-1a8b9238cd48"), img("1512909006721-3d6018887383")], price: 149.9, colors: ["Rosa", "Off-white"], sizes: ["Único"], finishes: ["Caixa rígida com laço"], productionDays: "10 dias úteis", stock: 10, published: true, bestSeller: true, personalizable: true, personalization: [{ type: "text", key: "nome", label: "Nome da professora", maxLength: 30 }, { type: "text", key: "frase", label: "Dedicatória", maxLength: 180, ai: true }, notes] },
-  { slug: "kit-boas-vindas-bebe", name: "Kit Boas-vindas Bebê", category: "kits", description: "Caderneta de saúde, álbum de memórias e tags personalizadas em uma caixa delicada.", images: [img("1512909006721-3d6018887383")], price: 219.9, colors: ["Rosa", "Areia"], sizes: ["Único"], finishes: ["Caixa com visor"], productionDays: "10 a 12 dias úteis", stock: 6, published: true, personalizable: true, personalization: [{ type: "text", key: "nome", label: "Nome do bebê", maxLength: 30 }, { type: "text", key: "frase", label: "Mensagem", maxLength: 180, ai: true }, notes] },
-  { slug: "kit-onboarding-empresa", name: "Kit Onboarding Empresa", category: "brindes-corporativos", description: "Caderno, caneta e cartão de boas-vindas com a identidade da sua empresa.", images: [img("1456735190827-d1262f71b8a3")], price: 98.9, colors: ["Cores da marca"], sizes: ["Único"], finishes: ["Hot stamping", "Impressão digital"], productionDays: "15 dias úteis", stock: 100, published: true, personalizable: true, minQty: 10, personalization: [{ type: "text", key: "nome", label: "Nome da empresa", maxLength: 40 }, { type: "text", key: "frase", label: "Mensagem de boas-vindas", maxLength: 180, ai: true }, notes] },
-  { slug: "bloco-de-notas-marca", name: "Bloco de Notas com Marca", category: "brindes-corporativos", description: "Bloco de notas 50 folhas com logotipo e paleta da empresa.", images: [img("1452860606245-08befc0ff44b")], price: 18.9, colors: ["Cores da marca"], sizes: ["A6", "A5"], finishes: ["Colado no topo"], productionDays: "10 dias úteis", stock: 300, published: true, personalizable: true, minQty: 30, personalization: [{ type: "text", key: "nome", label: "Nome da empresa", maxLength: 40 }, { type: "text", key: "frase", label: "Slogan ou frase", maxLength: 80, ai: true }, notes] },
-  { slug: "calendario-de-mesa-afeto", name: "Calendário de Mesa Afeto", category: "agendas-e-planners", description: "Calendário 2027 com base em kraft e frases inspiradoras mês a mês.", images: [img("1509909756405-be0199881695")], price: 39.9, colors: ["Rosa", "Kraft"], sizes: ["15x20 cm"], finishes: ["Wire-o"], productionDays: "5 dias úteis", stock: 40, published: true, personalizable: true, personalization: [...nameAndPhrase, notes] },
+  {
+    slug: "caderneta-saude-ursinho-clean",
+    name: "Caderneta de Saúde · Ursinho Clean",
+    category: "cadernetas",
+    description: "Caderneta de Saúde com a arte Ursinho Clean. " + referenceCopy,
+    images: [img("1519337265831-281ec6cc8514")],
+    price: 59.9,
+    colors: [],
+    sizes: [],
+    finishes: [],
+    productionDays: "10 dias úteis",
+    published: true,
+    personalizable: true,
+    personalization: [...nameAndDedication, notes],
+  },
+  {
+    slug: "caderneta-saude-astronauta-luxo",
+    name: "Caderneta de Saúde · Astronauta Luxo",
+    category: "cadernetas",
+    description: "Caderneta de Saúde com a arte Astronauta Luxo. " + referenceCopy,
+    images: [img("1531346878377-a5be20888e57")],
+    price: 59.9,
+    colors: [],
+    sizes: [],
+    finishes: [],
+    productionDays: "10 dias úteis",
+    published: true,
+    personalizable: true,
+    personalization: [...nameAndDedication, notes],
+  },
+  {
+    slug: "caderneta-saude-raio-de-sol",
+    name: "Caderneta de Saúde · Raio de Sol",
+    category: "cadernetas",
+    description: "Caderneta de Saúde com a arte Raio de Sol. " + referenceCopy,
+    images: [img("1517842645767-c639042777db")],
+    price: 59.9,
+    colors: [],
+    sizes: [],
+    finishes: [],
+    productionDays: "10 dias úteis",
+    published: true,
+    personalizable: true,
+    personalization: [...nameAndDedication, notes],
+  },
+  {
+    slug: "planner-devocional-masculino",
+    name: "Planner Devocional Masculino Personalizado",
+    category: "planners-blocos",
+    description: "Planner Devocional Masculino personalizado. " + referenceCopy,
+    images: [img("1527239441953-caffd968d952")],
+    price: 64.8,
+    colors: [],
+    sizes: [],
+    finishes: [],
+    productionDays: "10 dias úteis",
+    published: true,
+    personalizable: true,
+    personalization: [...nameAndDedication, notes],
+  },
+  {
+    slug: "bloco-anotacoes-dia-dos-pais-capa-dura",
+    name: "Bloco de Anotações Dia dos Pais · Capa Dura",
+    category: "planners-blocos",
+    description: "Bloco de Anotações Dia dos Pais com capa dura. " + referenceCopy,
+    images: [img("1452860606245-08befc0ff44b")],
+    price: 24.9,
+    colors: [],
+    sizes: [],
+    finishes: [],
+    productionDays: "10 dias úteis",
+    published: true,
+    personalizable: true,
+    personalization: [...dedicationOnly, notes],
+  },
+  {
+    slug: "bloco-notas-9x11-mimo-dia-dos-pais",
+    name: "Bloco de Notas 9×11 · Mimo Dia dos Pais",
+    category: "mimos-lembrancas",
+    description: "Bloco de Notas 9×11 da coleção Mimo Dia dos Pais. " + referenceCopy,
+    images: [img("1586075010923-2dd4570fb338")],
+    price: 6.59,
+    colors: [],
+    sizes: [],
+    finishes: [],
+    productionDays: "10 dias úteis",
+    published: true,
+    personalizable: true,
+    personalization: [...dedicationOnly, notes],
+  },
+  {
+    slug: "marca-pagina-magnetico-dia-dos-professores",
+    name: "Marca Página Magnético · Dia dos Professores",
+    category: "mimos-lembrancas",
+    description: "Marca Página Magnético da coleção Dia dos Professores. " + referenceCopy,
+    images: [img("1513201099705-a9746e1e201f")],
+    price: 2.6,
+    colors: [],
+    sizes: [],
+    finishes: [],
+    productionDays: "8 dias úteis",
+    published: true,
+    personalizable: true,
+    personalization: [...dedicationOnly, notes],
+  },
+  {
+    slug: "caixa-porta-chocolate-dia-dos-professores",
+    name: "Caixa Porta Chocolate · Dia dos Professores",
+    category: "brindes-personalizados",
+    description: "Caixa Porta Chocolate da coleção Dia dos Professores. " + referenceCopy,
+    images: [img("1549465220-1a8b9238cd48")],
+    price: 3.5,
+    colors: [],
+    sizes: [],
+    finishes: [],
+    productionDays: "6 dias úteis",
+    published: true,
+    personalizable: true,
+    personalization: [...dedicationOnly, notes],
+  },
 ];
 
 export const publishedProducts = products.filter((p) => p.published);
@@ -63,3 +186,18 @@ export const getProduct = (slug: string) => publishedProducts.find((p) => p.slug
 export const getCategory = (slug: string) => categories.find((c) => c.slug === slug);
 export const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 export const finalPrice = (p: Product) => p.promoPrice ?? p.price;
+
+export const PRODUCT_ORDER = [
+  "caderneta-saude-ursinho-clean",
+  "caderneta-saude-astronauta-luxo",
+  "caderneta-saude-raio-de-sol",
+  "planner-devocional-masculino",
+  "bloco-anotacoes-dia-dos-pais-capa-dura",
+  "bloco-notas-9x11-mimo-dia-dos-pais",
+  "marca-pagina-magnetico-dia-dos-professores",
+  "caixa-porta-chocolate-dia-dos-professores",
+] as const;
+export function sortProducts(items: Product[]) {
+  const order = new Map<string, number>(PRODUCT_ORDER.map((slug, index) => [slug, index]));
+  return [...items].sort((a, b) => (order.get(a.slug) ?? 999) - (order.get(b.slug) ?? 999));
+}

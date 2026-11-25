@@ -1,34 +1,44 @@
-# Papelemi
+# PapeLemi
 
-Crie a loja virtual PapeLemi para papelaria afetiva e personalizados conforme os documentos em anexo, incluindo a funcionalidade de IA usando AI Gateway para sugerir frases e dedicatórias personalizadas nos itens.
+Loja de papelaria personalizada com afeto. Aplicação construída com TanStack Start, React, TypeScript, Tailwind CSS e Supabase.
 
-Siga as diretrizes da Primeira Rodada de execução especificadas no documento:
-- Fundação visual acolhedora e elegante (rosa suave, off-white, creme, tipografia refinada e toque editorial).
-- Estrutura principal da loja (/ com Home completa, /loja com catálogo completo, categorias, página de produto /produto/:slug, /personalizados, /sobre, /contato, /carrinho).
-- Header elegante com busca, categorias e carrinho.
-- Catálogo demonstrativo estruturado por categorias (Agendas e planners, Cadernos, Lembranças, Kits, Brindes corporativos).
-- Experiência de personalização nos produtos com assistente de IA para sugerir frases, mensagens e dedicatórias com afeto.
-- Responsividade refinada para mobile e desktop.
+## Produção
 
-This project was built with [Lovable](https://lovable.dev).
+- Domínio oficial: https://papelemi.com.br
+- Repositório: https://github.com/hrq16000-a11y/papelemi-2026
+- Projeto Vercel: `papelemi` (equipe `msolus`)
+- Banco dedicado Supabase: projeto `gpdpfoxpbferjwbppcmb`
 
-**Live app**: https://papelemi.lovable.app
+## Vitrine original
 
-## Build with Lovable
+A Home foi reconstruída com base na captura e no HTML integral da vitrine PapeLemi. As oito fotografias originais e as fontes DM Sans/DM Serif Display foram extraídas do HTML e são servidas localmente em `public/images/papelemi` e `public/fonts/papelemi`.
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/823eb0e0-f279-48fa-bea8-45a106062765).
+A estrutura inclui hero editorial, benefícios, quatro coleções, oito produtos, seção de marca, instruções de encomenda, privacidade, FAQ e rodapé.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## Catálogo e encomendas
 
-## Development
+O catálogo do Supabase contém os oito produtos recuperados da vitrine, seus preços e prazos de referência, as quatro coleções e as opções de personalização. O carrinho e o checkout registram encomendas na tabela `orders`, com itens, endereço, observações e consentimento de privacidade.
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+O frete é confirmado pela PapeLemi após revisar o CEP. Não há cobrança nesta etapa enquanto a integração de pagamento não estiver conectada. Os preços e prazos são referências e precisam ser confirmados antes da produção.
+
+## Assistente de dedicatórias
+
+O fluxo permite escolher produto, ocasião, estilo, destinatário e sentimento, editar as sugestões e aplicar a frase ao produto. Quando `LOVABLE_API_KEY` está disponível, usa o Lovable AI Gateway; sem a chave, oferece sugestões de apoio editáveis para não interromper a encomenda.
+
+## Painel administrativo
+
+A rota `/admin` usa Supabase Auth e permissões de administrador. O primeiro usuário precisa criar a conta e receber o papel `admin` na tabela `user_roles` antes de acessar os dados de gestão.
+
+## Banco de dados
+
+As migrações aplicadas estão versionadas em `supabase/migrations`. O projeto usa RLS; dados pessoais e pedidos são acessíveis somente por código confiável do servidor e administradores autorizados.
+
+## Desenvolvimento
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+npm install
 npm run dev
+npm run build
 ```
+
+Não coloque chaves secretas no código ou em variáveis `VITE_*`. O segredo Supabase deve permanecer apenas no ambiente de servidor da Vercel.
