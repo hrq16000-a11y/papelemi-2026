@@ -330,3 +330,83 @@ O diretório de clientes não substitui o CRM relacional da Empório; a tabela `
 Documento operacional desta decisão: `docs/operations/PAPELEMI_EMPORIO_CORE_PARITY_DECISION_2026-11-25.md`.
 
 **Regra de precedência:** em caso de conflito com a seção 9 ou o prompt mestre anterior, seguir esta atualização mais recente. Não iniciar multi-loja antes de autorização e conclusão da paridade operacional da PapeLemi.
+
+
+---
+
+## 17. Decisão mais recente do proprietário — banco central e motor Empório integral (25/11/2026)
+
+Esta decisão **substitui a orientação anterior de manter as duas bases de banco totalmente independentes**.
+
+### Objetivo obrigatório
+
+A PapeLemi será a primeira loja a receber o motor operacional completo da Empório Lele Cute. O Supabase dedicado da PapeLemi passa a ser a base central planejada; depois da homologação da PapeLemi, a Empório migrará para esse mesmo projeto Supabase.
+
+**Não basta copiar algumas telas. O objetivo é reproduzir o esquema completo, as regras de negócio, RPCs, views, triggers, políticas RLS, Edge Functions, Storage e o painel administrativo integral.**
+
+### Referências confirmadas
+
+- Supabase PapeLemi (destino central): \`gpdpfoxpbferjwbppcmb\`, região \`sa-east-1\`, status \`ACTIVE_HEALTHY\`.
+- Vercel Production da PapeLemi: \`VITE_SUPABASE_URL\` confirmado como \`https://gpdpfoxpbferjwbppcmb.supabase.co\`.
+- Supabase de origem Empório (referência do repositório): \`xfqffqxqiuqauefrrcxn\`, declarado em \`supabase/config.toml\` do Empório.
+- O projeto Supabase Empório não está disponível nas conexões Supabase atualmente autorizadas nesta sessão; a consulta de acesso retornou permissão negada. Não afirmar que seu banco hospedado foi inspecionado.
+
+### Inventário comprovado no repositório Empório, branch main, HEAD \`d01d843c266b5a32d03af22eeaac6eda4a7fcf0f\`
+
+- 199 migrations SQL Supabase.
+- 155 tabelas no tipo gerado \`src/integrations/supabase/types.ts\`.
+- 63 funções/RPCs tipadas.
+- 5 views tipadas.
+- 54 Edge Functions.
+- 120 páginas administrativas.
+- 411 componentes administrativos.
+- A árvore de navegação contém módulos Core, Content, Discovery, Executive, Intelligence, System, Site, Settings, SEO Advanced e Labs.
+
+Este inventário é a referência de código versionado, não substitui o dump/schema real do banco hospedado.
+
+### Arquitetura central planejada
+
+- Um único projeto Supabase dedicado: \`gpdpfoxpbferjwbppcmb\`.
+- PapeLemi é a primeira implantação e continua com catálogo, clientes, pedidos, arquivos, marca e conteúdo próprios.
+- O motor operacional Empório será portado integralmente para o schema operacional PapeLemi, preservando os dados atuais.
+- A futura migração da Empório utilizará o mesmo projeto Supabase, com isolamento de dados por loja. A implementação deverá escolher e homologar o mecanismo final de isolamento (schemas dedicados ou tenancy/RLS) antes de mover dados; não misturar registros de lojas.
+- Autenticação global poderá ser compartilhada quando apropriado, mas papéis, permissões e dados comerciais deverão respeitar o escopo da loja.
+- A troca de loja em um clique é parte do desenho final, porém a prioridade imediata é fazer a PapeLemi funcionar integralmente.
+
+### Dados que NÃO serão copiados do Empório para a PapeLemi
+
+Não importar produtos, preços, estoque, clientes, pedidos, cupons, avaliações, depoimentos, campanhas, fotos, vídeos, logo, conteúdo editorial, domínio, credenciais, tokens ou secrets da Empório. Somente estrutura, código, regras e recursos operacionais.
+
+### Estado atual da PapeLemi
+
+Consulta read-only do Supabase dedicado:
+- \`categories\`: 4 registros.
+- \`products\`: 8 registros.
+- \`curated_phrases\`: 10 registros.
+- \`coupons\`: 0 registros.
+- \`orders\`: 0 registros.
+- \`user_roles\`: 1 registro.
+- 6 migrations registradas.
+
+As tabelas existentes têm diferenças relevantes do Empório. Exemplo: PapeLemi \`orders\` armazena endereço/itens em JSONB; Empório utiliza endereço relacional e \`order_items\`. Produtos e categorias também têm modelos diferentes. A migração precisa ser aditiva e preservar compatibilidade, não substituir tabelas às cegas.
+
+### Governança e bloqueios
+
+- O \`AGENTS.md\` mantém um bloco gerenciado pelo Lovable que proíbe editar migrations manualmente e manda solicitar alterações de schema pelo Lovable.
+- A conexão das ferramentas Lovable falhou nesta sessão. Não contornar a regra nem aplicar DDL diretamente até o fluxo de governança estar resolvido.
+- O Supabase Empório \`xfqffqxqiuqauefrrcxn\` não está acessível nas conexões atuais. Para reconciliar 100% o estado hospedado, é necessário conectar esse projeto ou fornecer um schema dump completo sem dados pessoais/segredos.
+- Nenhuma migration Empório foi aplicada no Supabase PapeLemi nesta rodada.
+- Nenhuma migração de dados Empório foi iniciada.
+
+### Critério de conclusão
+
+A PapeLemi só será declarada 100% funcional quando:
+1. o esquema necessário do motor Empório estiver integrado e validado no Supabase central;
+2. as 120 páginas administrativas e seus fluxos reais estiverem presentes, com a identidade PapeLemi;
+3. as 54 Edge Functions e dependências necessárias estiverem implantadas/configuradas para o destino correto;
+4. pedidos, clientes, catálogo, personalização, pagamentos, frete, conteúdo, mídia, SEO, suporte, auditoria e permissões tiverem persistência real;
+5. RLS, Storage, autenticação, webhooks e secrets estiverem homologados;
+6. os dados existentes da PapeLemi permanecerem íntegros;
+7. a homologação funcional e mobile estiver aprovada.
+
+Não classificar como concluído apenas porque o build ou o Preview ficou READY.

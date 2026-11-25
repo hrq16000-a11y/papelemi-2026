@@ -180,3 +180,22 @@ Legenda: **Implementado** = existe no código/fluxo da PapeLemi; **Parcial** = h
 Os módulos experimentais de SEO/“intelligence labs” existentes no código Empório não serão copiados nesta fase. Primeiro concluiremos os fluxos de comércio, administração, conteúdo, logística, relacionamento e segurança que sustentam a operação diária. A adoção de cada laboratório avançado exigirá evidência de uso e benefício real para a PapeLemi.
 
 Esta matriz é o controle de conclusão da paridade; o status só muda para Implementado após código, persistência e validação verificáveis.
+
+
+---
+
+## 12. Retificação aprovada pelo proprietário — 25/11/2026
+
+A decisão mais recente do proprietário substitui a orientação anterior de manter Empório e PapeLemi em bancos totalmente independentes.
+
+**Novo objetivo:** o Supabase dedicado da PapeLemi (\`gpdpfoxpbferjwbppcmb\`) passa a ser a base central planejada. A PapeLemi receberá o motor operacional integral da Empório e será homologada primeiro. Posteriormente, a Empório passará a usar o mesmo projeto Supabase.
+
+O escopo agora inclui o esquema completo do motor, regras, RPCs, views, triggers, RLS, Storage, Edge Functions e as 120 páginas administrativas com seus 411 componentes. A referência versionada Empório está no HEAD \`d01d843c266b5a32d03af22eeaac6eda4a7fcf0f\`, com 199 migrations SQL, 155 tabelas, 63 RPCs, 5 views e 54 Edge Functions.
+
+A PapeLemi não receberá produtos, clientes, pedidos, imagens, vídeos, preços, campanhas, conteúdo ou credenciais da Empório. Somente estrutura e funcionalidades. O isolamento de dados por loja é obrigatório no banco central; o mecanismo será definido após a revisão integral das migrations e homologação.
+
+O projeto Empório declara o Supabase \`xfqffqxqiuqauefrrcxn\`, mas ele não está disponível nas conexões atuais. Não afirmar inspeção do banco hospedado. O projeto PapeLemi está acessível e ativo.
+
+**A arquitetura multi-loja deixa de estar totalmente adiada:** o banco central e a capacidade de isolamento por loja entram no escopo estrutural agora. A interface de troca de loja em um clique e a migração dos dados Empório permanecem para depois da homologação integral da PapeLemi.
+
+Documento de referência: \`docs/operations/PAPELEMI_SHARED_DATABASE_EMPORIO_ENGINE_2026-11-25.md\`.
