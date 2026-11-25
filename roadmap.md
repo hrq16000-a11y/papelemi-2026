@@ -1,11 +1,15 @@
 # Roadmap — PapeLemi
 
-## Em andamento
-- [ ] Ligar conta Mercado Pago (conector) — aguardando usuário no cartão de conexão
-- [ ] Ativar login por e-mail (painel /admin)
-- [ ] Banco de dados: pedidos, itens do pedido, produtos/categorias gerenciáveis, frases favoritas
-- [ ] Checkout real: frete, cupom, pagamento Mercado Pago (Checkout Pro + webhook)
-- [ ] Painel /admin com login: produtos, categorias, frases, pedidos
-- [ ] Frete por CEP via Melhor Envio (bloqueado: precisa de conta/chave do usuário) — provisório: fixo R$ 19,90, grátis ≥ R$ 199
-- [ ] Dados legais na política/termos (bloqueado: aguardando razão social, CNPJ, e-mail)
-- [ ] Publicar a loja (ação do usuário) e mostrar como ver medições
+## Concluído
+- [x] Banco de dados: pedidos, produtos, categorias, cupons, frases, papéis de admin
+- [x] Vitrine ligada ao banco (catálogo gerenciável)
+- [x] Checkout com frete (fixo R$ 19,90, grátis ≥ R$ 199), cupom (BEMVINDO10) e pedido salvo
+- [x] Painel /admin com login: pedidos, produtos, categorias, frases, cupons
+- [x] Código Mercado Pago pronto (preferência, webhook, confirmação) — testado sem conta conectada
+
+## Pendente (aguardando usuário)
+- [ ] Conectar conta Mercado Pago (usuário pulou o cartão de conexão) → pagamento real ativa sozinho depois
+- [ ] Liberar acesso admin: usuário cria conta em /admin, confirma e-mail e me avisa para eu dar o papel de admin
+- [ ] Frete por CEP via Melhor Envio (precisa de conta/chave do usuário)
+- [ ] Dados legais na política/termos (aguardando razão social, CNPJ, e-mail)
+- [ ] Publicar a loja (ação do usuário)
