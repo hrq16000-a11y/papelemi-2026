@@ -133,3 +133,12 @@ Cada etapa terá micro-PR própria, migração versionada quando necessária, te
 PapeLemi será considerada operacionalmente equivalente ao núcleo da Empório quando os módulos de gestão acima tiverem fluxos reais e persistência verificada, sem páginas demonstrativas, sem perda de dados PapeLemi e sem conteúdo comercial do Empório.
 
 A fase multi-loja só começa depois que a PapeLemi estiver sólida como loja independente e o proprietário aprovar essa nova etapa.
+
+
+## 10. Governança antes da próxima etapa de banco
+
+O AGENTS.md ainda contém o bloco gerenciado pelo Lovable que proíbe editar migrations/Drizzle manualmente e orienta mudanças de schema pelo fluxo Lovable. A decisão atual usa o Supabase dedicado PapeLemi e o GitHub como base do trabalho.
+
+Antes de criar/aplicar a primeira migration de paridade, reconciliar essa regra de governança explicitamente no repositório, sem apagar o bloco gerenciado. A migration deverá ser revisada no Git, aplicada ao Supabase correto somente após homologação e autorização, e os tipos gerados deverão ser atualizados pelo mecanismo oficial.
+
+O arquivo supabase/config.toml foi alinhado nesta branch ao projeto dedicado confirmado `gpdpfoxpbferjwbppcmb`. Isso corrige apenas o identificador usado pela CLI; não aplica migrations nem altera o banco.
