@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Instagram, Mail, MessageCircle } from "lucide-react";
-import { categories } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 
 export function Footer() {
+  const { categories } = useCatalog();
   return (
     <footer className="mt-24 bg-cream">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4 md:px-8">
@@ -25,6 +26,7 @@ export function Footer() {
             <li><Link to="/contato" className="hover:text-primary">Atendimento</Link></li>
             <li><Link to="/politica-de-privacidade" className="hover:text-primary">Política de privacidade</Link></li>
             <li><Link to="/termos-de-uso" className="hover:text-primary">Termos de uso</Link></li>
+            <li><Link to="/admin" className="hover:text-primary">Painel da loja</Link></li>
           </ul>
         </div>
         <div>

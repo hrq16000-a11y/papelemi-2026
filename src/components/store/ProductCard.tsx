@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { brl, getCategory, type Product } from "@/data/catalog";
+import { brl, type Product } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 
 export function ProductCard({ p }: { p: Product }) {
+  const { getCategory } = useCatalog();
   return (
     <Link to="/produto/$slug" params={{ slug: p.slug }} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted">

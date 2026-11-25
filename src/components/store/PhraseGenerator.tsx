@@ -4,7 +4,8 @@ import { ArrowLeft, ArrowRight, Check, Copy, Loader2, RefreshCw, ShoppingBag, Sp
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getAiProfile, LENGTH_OPTIONS, OCCASIONS, STYLES, type StyleId } from "@/data/ai-config";
-import { publishedProducts, type Product } from "@/data/catalog";
+import { type Product } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 import { suggestPhrases } from "@/lib/ai.functions";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ const writeFavs = (f: SavedFav[]) => { try { localStorage.setItem(FAV_KEY, JSON.
 
 export function PhraseGenerator({ fixedProduct, onApply }: { fixedProduct?: Product; onApply: (p: Product, text: string, addToCart: boolean) => void }) {
   const run = useServerFn(suggestPhrases);
+  const { publishedProducts } = useCatalog();
   const products = publishedProducts.filter((p) => aiField(p));
   const [product, setProduct] = useState<Product | undefined>(fixedProduct);
   const [step, setStep] = useState(fixedProduct ? 2 : 1);

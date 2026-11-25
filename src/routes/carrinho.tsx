@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { brl, finalPrice, getProduct } from "@/data/catalog";
+import { brl, finalPrice } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
 import { aiField } from "@/components/store/PhraseGenerator";
 
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/carrinho")({
 
 function Cart() {
   const { items, setQty, remove } = useCart();
+  const { getProduct } = useCatalog();
   const rows = items.flatMap((i) => { const p = getProduct(i.slug); return p ? [{ i, p }] : []; });
   const subtotal = rows.reduce((s, { i, p }) => s + finalPrice(p) * i.qty, 0);
   if (!rows.length) return (
@@ -44,11 +46,10 @@ function Cart() {
       <aside className="h-fit rounded-[1.5rem] bg-cream p-6 md:sticky md:top-36">
         <h2 className="text-2xl">Resumo</h2>
         <div className="mt-4 flex justify-between text-sm"><span>Subtotal</span><span>{brl(subtotal)}</span></div>
-        <div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>Frete</span><span>Calculado no checkout</span></div>
-        <input placeholder="Cupom de desconto" aria-label="Cupom" className="mt-4 w-full rounded-full border border-input bg-card px-4 py-2.5 text-base md:text-sm" />
-        <div className="mt-4 flex justify-between border-t border-border pt-4 text-lg"><span>Total</span><span>{brl(subtotal)}</span></div>
-        <button disabled className="mt-5 w-full rounded-full bg-primary py-3.5 text-sm text-primary-foreground opacity-60">Finalizar compra (em breve)</button>
-        <p className="mt-2 text-center text-xs text-muted-foreground">Pagamentos serão ativados na próxima etapa.</p>
+        <div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>Frete e cupom</span><span>Calculados no checkout</span></div>
+        <div className="mt-4 flex justify-between border-t border-border pt-4 text-lg"><span>Total parcial</span><span>{brl(subtotal)}</span></div>
+        <Link to="/checkout" className="mt-5 block w-full rounded-full bg-primary py-3.5 text-center text-sm font-medium text-primary-foreground shadow-soft transition-transform hover:-translate-y-0.5">Finalizar compra</Link>
+        <p className="mt-2 text-center text-xs text-muted-foreground">Pagamento seguro via Mercado Pago.</p>
       </aside>
     </div>
   );

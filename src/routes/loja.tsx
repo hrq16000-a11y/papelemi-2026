@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { categories, finalPrice, publishedProducts } from "@/data/catalog";
+import { finalPrice } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 import { ProductGrid } from "@/components/store/ProductCard";
 
 type S = { q?: string | undefined; cat?: string | undefined; sort?: "menor" | "maior" | undefined };
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/loja")({
 
 function Shop() {
   const { q, cat, sort } = Route.useSearch();
+  const { categories, publishedProducts } = useCatalog();
   const navigate = useNavigate();
   let items = publishedProducts.filter((p) => (!cat || p.category === cat) && (!q || `${p.name} ${p.description}`.toLowerCase().includes(q.toLowerCase())));
   if (sort) items = [...items].sort((a, b) => (sort === "menor" ? 1 : -1) * (finalPrice(a) - finalPrice(b)));

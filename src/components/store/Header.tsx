@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useState } from "react";
-import { categories } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
 
 const nav = [
@@ -13,6 +13,7 @@ const nav = [
 
 export function Header() {
   const { count } = useCart();
+  const { categories } = useCatalog();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);

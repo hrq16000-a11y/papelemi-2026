@@ -1,9 +1,10 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
-import { getCategory, publishedProducts } from "@/data/catalog";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { getCategory } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 import { ProductGrid } from "@/components/store/ProductCard";
 
 export const Route = createFileRoute("/categoria/$slug")({
-  loader: ({ params }) => { const c = getCategory(params.slug); if (!c) throw notFound(); return c; },
+  loader: ({ params }) => getCategory(params.slug) ?? null,
   head: ({ loaderData }) => ({ meta: loaderData ? [
     { title: `${loaderData.name} — PapeLemi` }, { name: "description", content: loaderData.description },
     { property: "og:title", content: `${loaderData.name} — PapeLemi` }, { property: "og:description", content: loaderData.description },
@@ -13,7 +14,16 @@ export const Route = createFileRoute("/categoria/$slug")({
 });
 
 function CategoryPage() {
-  const c = Route.useLoaderData();
+  const loaderCat = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const { getCategory, publishedProducts } = useCatalog();
+  const c = getCategory(slug) ?? loaderCat;
+  if (!c) return (
+    <div className="mx-auto max-w-xl px-4 py-24 text-center">
+      <h1 className="text-4xl">Categoria não encontrada</h1>
+      <Link to="/loja" className="mt-8 inline-block rounded-full bg-primary px-7 py-3 text-sm text-primary-foreground">Ver toda a loja</Link>
+    </div>
+  );
   return (
     <div>
       <div className="relative h-64 md:h-80"><img src={c.image} alt="" className="size-full object-cover" />

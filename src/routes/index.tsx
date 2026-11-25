@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Heart, PenLine, Package, Sparkles } from "lucide-react";
-import { categories, img, publishedProducts } from "@/data/catalog";
+import { img } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 import { ProductGrid } from "@/components/store/ProductCard";
 
 const hero = img("1517842645767-c639042777db", 1600);
@@ -34,6 +35,7 @@ const SeeAll = ({ to, label }: { to: "/loja" | "/personalizados"; label: string 
 );
 
 function Home() {
+  const { categories, publishedProducts } = useCatalog();
   const best = publishedProducts.filter((p) => p.bestSeller);
   const kits = publishedProducts.filter((p) => p.category === "kits" || p.category === "lembrancas");
   const custom = publishedProducts.filter((p) => p.personalization.some((o) => o.type === "text" && o.ai)).slice(0, 4);

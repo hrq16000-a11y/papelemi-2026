@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { publishedProducts } from "@/data/catalog";
+import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
 import { ProductGrid } from "@/components/store/ProductCard";
 import { aiField, PhraseGenerator } from "@/components/store/PhraseGenerator";
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/personalizados")({
 function Personalizados() {
   const navigate = useNavigate();
   const { add } = useCart();
+  const { publishedProducts } = useCatalog();
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
       <p className="text-xs uppercase tracking-[0.2em] text-primary">Feito sob medida</p>

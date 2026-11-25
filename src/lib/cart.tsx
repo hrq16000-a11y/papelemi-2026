@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type CartItem = { id: string; slug: string; qty: number; options: Record<string, string> };
-type Ctx = { items: CartItem[]; add: (i: Omit<CartItem, "id">) => void; setQty: (id: string, q: number) => void; remove: (id: string) => void; count: number };
+type Ctx = { items: CartItem[]; add: (i: Omit<CartItem, "id">) => void; setQty: (id: string, q: number) => void; remove: (id: string) => void; clear: () => void; count: number };
 const CartCtx = createContext<Ctx | null>(null);
 const KEY = "papelemi-cart";
 
@@ -21,6 +21,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       },
       setQty: (id, q) => save(items.map((i) => (i.id === id ? { ...i, qty: Math.max(1, q) } : i))),
       remove: (id) => save(items.filter((i) => i.id !== id)),
+      clear: () => save([]),
     }}>{children}</CartCtx.Provider>
   );
 }
