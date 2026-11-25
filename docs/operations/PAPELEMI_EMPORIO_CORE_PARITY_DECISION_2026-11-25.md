@@ -142,3 +142,41 @@ O AGENTS.md ainda contém o bloco gerenciado pelo Lovable que proíbe editar mig
 Antes de criar/aplicar a primeira migration de paridade, reconciliar essa regra de governança explicitamente no repositório, sem apagar o bloco gerenciado. A migration deverá ser revisada no Git, aplicada ao Supabase correto somente após homologação e autorização, e os tipos gerados deverão ser atualizados pelo mecanismo oficial.
 
 O arquivo supabase/config.toml foi alinhado nesta branch ao projeto dedicado confirmado `gpdpfoxpbferjwbppcmb`. Isso corrige apenas o identificador usado pela CLI; não aplica migrations nem altera o banco.
+
+
+## 11. Matriz de paridade operacional — referência Empório
+
+Legenda: **Implementado** = existe no código/fluxo da PapeLemi; **Parcial** = há uma primeira versão, mas faltam recursos de paridade; **Pendente** = ainda não existe como módulo operacional PapeLemi.
+
+| Domínio/módulo | Estado PapeLemi | Observação objetiva |
+|---|---|---|
+| Dashboard | Parcial | Indicadores básicos e encomendas recentes na PR #8; faltam indicadores completos e alertas operacionais |
+| Pedidos | Parcial | Lista, itens JSONB e mudança de status; falta ficha detalhada, filtros, timeline, envio/tracking e eventos normalizados |
+| Clientes | Parcial | Diretório derivado de pedidos na PR #8; falta CRM persistente, edição, tags, notas e histórico unificado |
+| Produtos | Parcial | CRUD básico e fonte Supabase; faltam atributos logísticos, versões, mídia, reviews e controles avançados |
+| Categorias | Implementado (básico) | CRUD e ordenação simples |
+| Ocasiões e tags | Pendente | Sem taxonomias relacionais completas |
+| Kits | Pendente | Sem tabelas e editor |
+| Coleções | Pendente | Sem tabelas e editor |
+| Cupons | Implementado (básico) | CRUD e validação percentual; falta histórico de uso e regras avançadas |
+| Personalização | Parcial | Campos JSON por produto e assistente de dedicatórias; falta prévia de produção e histórico completo |
+| Checkout | Parcial | Revalidação server-side, cupom, personalização e idempotência; frete ainda manual |
+| Pagamentos | Parcial | Integração Mercado Pago no código; conta/webhook real ainda não homologados |
+| Frete e expedição | Pendente | Sem configuração de origem, provedores, regras, cotações persistidas e tracking |
+| Ateliê e pós-venda | Pendente | Sem filas, follow-ups e regras de pós-venda |
+| Atendimento/suporte | Pendente | Sem inbox e histórico de conversas |
+| Notificações | Pendente | Sem centro de notificações e preferências administrativas |
+| Usuários e permissões | Parcial | Login provisionado e papel admin; falta matriz de papéis e auditoria |
+| Auditoria operacional | Pendente | Sem trilha unificada das alterações administrativas |
+| CMS/páginas/blog | Pendente | Rotas públicas existentes, mas sem CMS administrativo equivalente |
+| Home/PDP configuráveis | Pendente | Estrutura ainda não gerida por tabelas de seções |
+| Mídia/Storage PapeLemi | Pendente | Sem bucket próprio no Supabase consultado |
+| SEO/sitemap | Parcial | Sitemap dinâmico e metadados básicos; falta cockpit operacional completo |
+| Analytics/telemetria | Pendente | Eventos do projeto não foram comprovados em um destino analítico |
+| Segurança e LGPD | Parcial | RLS e consentimento no checkout; falta gestão operacional de solicitações e auditoria |
+
+### Fora do núcleo atual
+
+Os módulos experimentais de SEO/“intelligence labs” existentes no código Empório não serão copiados nesta fase. Primeiro concluiremos os fluxos de comércio, administração, conteúdo, logística, relacionamento e segurança que sustentam a operação diária. A adoção de cada laboratório avançado exigirá evidência de uso e benefício real para a PapeLemi.
+
+Esta matriz é o controle de conclusão da paridade; o status só muda para Implementado após código, persistência e validação verificáveis.
