@@ -85,7 +85,7 @@ try {
     const categoryHtml = await categoryResponse.text();
     const category = await inspectLayout(width);
     if (!categoryResponse.ok()) throw new Error(`Categoria retornou HTTP ${categoryResponse.status()}`);
-    if (!categoryHtml.includes("name=\\"description\\"")) {
+    if (!categoryHtml.includes('name="description"')) {
       throw new Error(`HTML inicial não contém meta description da categoria em ${width}px`);
     }
     if (!category.h1.includes("Cadernetas")) throw new Error(`H1 de categoria inesperado em ${width}px: ${category.h1}`);
