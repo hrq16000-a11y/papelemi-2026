@@ -192,7 +192,7 @@ DECLARE
 BEGIN
   IF TG_OP = 'INSERT' THEN
     INSERT INTO public.order_status_history (store_key, order_id, order_code, from_status, to_status, note)
-    VALUES (NEW.store_key, NEW.id, NEW.order_code, NULL, NEW.status, 'Pedido recebido');
+    VALUES (NEW.store_key, NEW.id, NEW.order_code, NULL, NEW.status, 'Pedido recebido', NULL, clock_timestamp());
   ELSIF NEW.status IS DISTINCT FROM OLD.status THEN
     BEGIN
       v_actor_id := NULLIF(current_setting('app.actor_id', true), '')::uuid;
@@ -201,7 +201,7 @@ BEGIN
     END;
     v_note := NULLIF(current_setting('app.order_change_note', true), '');
     INSERT INTO public.order_status_history (store_key, order_id, order_code, from_status, to_status, note, changed_by)
-    VALUES (NEW.store_key, NEW.id, NEW.order_code, OLD.status, NEW.status, v_note, v_actor_id);
+    VALUES (NEW.store_key, NEW.id, NEW.order_code, OLD.status, NEW.status, v_note, v_actor_id, clock_timestamp());
   END IF;
   RETURN NEW;
 END;
