@@ -374,6 +374,7 @@ const CUSTOMER_STATUS: Record<string, string> = {
   shipped: "Enviado",
   delivered: "Entregue",
   cancelled: "Cancelado",
+  no_orders: "Sem pedidos",
 };
 
 function CustomersTab() {
@@ -415,7 +416,7 @@ function CustomersTab() {
           <p className="text-xs uppercase tracking-[0.2em] text-primary">Relacionamento</p>
           <h2 className="mt-1 text-3xl">Clientes</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Contatos identificados a partir do histórico de encomendas da PapeLemi.
+            Cadastros persistentes do CRM da PapeLemi, com histórico de pedidos vinculado.
           </p>
         </div>
         <button type="button" onClick={() => void load()} disabled={refreshing} className={btnGhost}>
@@ -464,10 +465,10 @@ function CustomersTab() {
               </thead>
               <tbody className="divide-y divide-border">
                 {filtered.map((customer) => (
-                  <tr key={customer.email.toLowerCase()} className="align-top">
+                  <tr key={customer.id} className="align-top">
                     <td className="px-4 py-3">
                       <p className="font-medium">{customer.name || "Cliente sem nome"}</p>
-                      <a href={`mailto:${customer.email}`} className="text-xs text-muted-foreground underline underline-offset-2">{customer.email}</a>
+                      {customer.email ? <a href={`mailto:${customer.email}`} className="text-xs text-muted-foreground underline underline-offset-2">{customer.email}</a> : <span className="text-xs text-muted-foreground">E-mail não informado</span>}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{customer.phone || "—"}</td>
                     <td className="px-4 py-3 tabular-nums">{customer.ordersCount}</td>
@@ -481,9 +482,9 @@ function CustomersTab() {
 
           <ul className="grid gap-3 md:hidden">
             {filtered.map((customer) => (
-              <li key={customer.email.toLowerCase()} className="rounded-2xl border border-border bg-card p-4">
+              <li key={customer.id} className="rounded-2xl border border-border bg-card p-4">
                 <p className="font-medium">{customer.name || "Cliente sem nome"}</p>
-                <a href={`mailto:${customer.email}`} className="mt-1 block break-all text-xs text-muted-foreground underline underline-offset-2">{customer.email}</a>
+                {customer.email ? <a href={`mailto:${customer.email}`} className="mt-1 block break-all text-xs text-muted-foreground underline underline-offset-2">{customer.email}</a> : <span className="mt-1 block text-xs text-muted-foreground">E-mail não informado</span>}
                 <p className="mt-2 text-sm text-muted-foreground">{customer.phone || "Telefone não informado"}</p>
                 <div className="mt-3 flex flex-wrap justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
                   <span>{customer.ordersCount} pedido(s)</span>

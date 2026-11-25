@@ -39,18 +39,19 @@ A referência Empório será usada para reproduzir, com fidelidade funcional, os
 
 A PapeLemi terá Storage e mídia próprios. O backup de mídia do Empório não faz parte desta implantação e não deve ser importado para a PapeLemi.
 
-## 3. Escopo explicitamente adiado
+## 3. Isolamento multi-loja obrigatório desde a primeira migration
 
-A arquitetura multi-loja definitiva fica para uma fase posterior:
+A separação dos negócios não fica adiada. A infraestrutura compartilhada deve nascer com escopo de loja no banco, nos serviços e nas permissões.
 
-- cadastro central de várias lojas;
-- seletor de loja com troca em um clique para Letícia;
-- associação usuário/loja e permissões globais;
-- tenantização de todas as tabelas;
-- isolamento multi-tenant de RLS, Storage, serviços e integrações;
-- migração do Empório para a infraestrutura compartilhada.
+- Cadastro central de lojas pela tabela `stores`, com identificador estável `store_key`.
+- Chaves naturais de catálogo e cupons compostas por loja, permitindo slugs iguais sem colisão.
+- Papéis administrativos associados à loja; a autorização PapeLemi é validada por `has_store_role`.
+- RLS e consultas server-side devem filtrar o escopo da loja; pedidos, clientes e itens permanecem privados no servidor.
+- Cada loja mantém catálogo, preços, clientes, pedidos, pagamentos, estoque, mídia, conteúdo e configurações separados.
+- PapeLemi é o primeiro tenant provisionado. O tenant Empório será criado somente na migração posterior, sem importar dados comerciais, mídia ou secrets.
+- O seletor visual de loja em um clique para Letícia permanece etapa posterior; a separação de dados e permissões é requisito imediato.
 
-Por enquanto, PapeLemi opera como uma única loja no próprio Supabase dedicado. O campo `store_key = 'papelemi'` existente em pedidos será preservado por compatibilidade, sem implementar agora o seletor multi-loja.
+A primeira migration de paridade cobre o núcleo comercial PapeLemi (categorias, produtos, cupons, frases, papéis, pedidos, clientes e itens). A tenantização dos demais módulos do snapshot Empório — CMS, logística, pós-venda, mídia, analytics, suporte, auditoria e automações — é gate obrigatório antes de cadastrar a Empório no mesmo banco.
 
 ## 4. Stack e preservação
 

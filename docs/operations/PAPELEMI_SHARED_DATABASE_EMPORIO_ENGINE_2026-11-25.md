@@ -33,10 +33,11 @@ O painel está organizado em Core, Content, Discovery, Executive, Intelligence, 
 
 - Projeto Supabase central: `gpdpfoxpbferjwbppcmb`, região `sa-east-1`, status `ACTIVE_HEALTHY`.
 - A URL pública de produção da PapeLemi foi confirmada no Vercel como `https://gpdpfoxpbferjwbppcmb.supabase.co`.
-- O projeto de referência Empório está declarado em `supabase/config.toml` como `xfqffqxqiuqauefrrcxn`, mas não aparece nas contas Supabase conectadas e a leitura direta foi negada.
-- A arquitetura final deve permitir um único banco PostgreSQL e isolamento absoluto dos dados por loja. O mecanismo (schemas separados ou tenancy/RLS) será decidido após análise das migrations e homologação.
-- A autenticação poderá ser compartilhada, mas papéis, catálogo, pedidos, clientes, mídia e configurações permanecem separados por loja.
-- O seletor de loja em um clique é uma etapa posterior à conclusão da PapeLemi.
+- O projeto de referência Empório está declarado em `supabase/config.toml` como `xfqffqxqiuqauefrrcxn`, mas não aparece nas contas Supabase conectadas e a leitura direta foi negada; o snapshot versionado veio das migrations locais, não de um dump do banco hospedado.
+- O isolamento multi-loja começa na primeira migration: registro em `stores`, `store_key` nas entidades comerciais, chaves compostas e RLS por loja.
+- A autenticação pode usar a mesma infraestrutura, mas papéis e dados comerciais são vinculados ao tenant. Clientes, pedidos e itens permanecem acessíveis apenas por operações server-side autorizadas.
+- PapeLemi é o primeiro tenant. O tenant Empório só será provisionado depois da tenantização dos módulos restantes e sem copiar dados comerciais, mídia ou secrets.
+- O seletor de loja em um clique é uma etapa de interface posterior; não adia o isolamento estrutural no banco e nos serviços.
 
 ## 4. O que será integrado
 
@@ -79,9 +80,10 @@ Cada etapa deve ser entregue em micro-PR, com build, testes e validação de ban
 
 ## 8. Bloqueios objetivos atuais
 
-- A conexão Supabase atual dá acesso ao projeto PapeLemi, mas não ao projeto Empório `xfqffqxqiuqauefrrcxn`. É necessário conectar esse projeto ou fornecer dump/schema completo sem dados pessoais e sem secrets para confirmar o estado hospedado.
-- O `AGENTS.md` do PapeLemi mantém instrução gerenciada pelo Lovable para alterações de schema. A conexão Lovable falhou nesta sessão; não editar migrations manualmente nem aplicar DDL diretamente enquanto a governança não for resolvida.
-- O projeto PapeLemi já tem Preview READY e CI aprovado para a base inicial, mas isso não significa que o motor Empório esteja integrado.
+- O projeto Supabase hospedado do Empório `xfqffqxqiuqauefrrcxn` não está disponível na conexão atual. O schema de referência foi reconstruído a partir das 199 migrations versionadas; isso comprova o modelo de código, não o estado do banco hospedado.
+- A criação de uma branch Supabase de desenvolvimento exige confirmação de custo. Nenhuma branch adicional foi provisionada; o replay de migrations será executado em Supabase local no GitHub Actions.
+- O snapshot Empório ainda não foi reconciliado integralmente com o modelo multi-tenant. Cada módulo importado precisa receber `store_key`, RLS e consultas server-side antes de ser considerado integrado.
+- Preview READY e CI de frontend não comprovam integração do motor completo nem autorizam publicação em Production.
 
 ## 9. Critério de 100%
 
@@ -99,3 +101,14 @@ Consulta dos advisors Supabase no projeto central:
 - Quatro índices foram classificados como não utilizados. Como a loja ainda tem zero pedidos, não remover índices neste momento; reavaliar após tráfego real.
 
 Esses achados demonstram por que copiar as páginas administrativas sem adaptar a camada de dados não constitui integração funcional.
+
+
+## 11. Governança de migrations e aplicação
+
+O bloco gerenciado do Lovable em `AGENTS.md` é preservado, mas o override explícito do proprietário autoriza este workstream a manter migrations versionadas no GitHub e aplicá-las de forma controlada ao Supabase dedicado PapeLemi.
+
+- A migration deve ser aditiva, revisada no Git e validada por replay local no GitHub Actions.
+- Não aplicar migrations históricas Empório cegamente sobre o banco PapeLemi.
+- Não executar DDL em Production sem confirmar backup/rollback adequado e revisar o SQL final.
+- A criação de uma branch Supabase de desenvolvimento retornou exigência de confirmação de custo; nenhuma branch paga foi criada. A validação desta rodada usa Supabase local em CI.
+- A aplicação em Production permanece separada da validação de código/Preview; não houve alteração no banco hospedado nesta rodada.

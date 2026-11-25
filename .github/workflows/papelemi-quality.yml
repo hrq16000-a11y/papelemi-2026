@@ -54,6 +54,28 @@ jobs:
         run: bunx tsc --noEmit -p tsconfig.order-integrity.json
 
 
+
+  validate-papelemi-database:
+    name: Replay PapeLemi migrations and verify tenant schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start isolated local Supabase
+        run: supabase start
+      - name: Replay versioned migrations without seed data
+        run: supabase db reset --local --no-seed --yes
+      - name: Run database contract tests
+        run: supabase test db
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
+
   reconstruct-emporio-schema:
     name: Reconstruct Emporio schema locally (no production access)
     if: github.ref == 'refs/heads/feat/papelemi-emp-or-core-baseline-01'

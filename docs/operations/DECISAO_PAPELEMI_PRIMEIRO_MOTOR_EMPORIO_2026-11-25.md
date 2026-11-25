@@ -17,7 +17,7 @@ A Empório é a referência do motor existente. Não se deseja criar uma versão
 3. **Painel administrativo fiel:** portar o painel da Empório com seus módulos e capacidades reais, não apenas copiar aparência ou criar telas sem persistência. Adaptar identidade e conteúdo à PapeLemi, mantendo a funcionalidade.
 4. **Supabase dedicado PapeLemi como destino inicial:** consolidar nele o motor compartilhado. Não tratar inventário, código importado ou migrations preparadas como prova de que o banco já foi aplicado ou está operacional.
 5. **Empório depois:** em etapa posterior, migrar a própria Empório Lele Cute para utilizar a infraestrutura central, após validar a PapeLemi e planejar a migração sem perda de dados.
-6. **Visão futura de multi-loja:** Letícia é proprietária da Empório Lele Cute, PapeLemi e outras lojas. A experiência futura deverá permitir alternar de loja com um clique, com identidade e operações próprias para cada negócio. Essa camada mais complexa de gestão multi-loja não deve bloquear a entrega imediata da PapeLemi.
+6. **Isolamento multi-loja desde a primeira migration:** Letícia é proprietária da Empório Lele Cute, PapeLemi e outras lojas. O banco central deve nascer com registro de lojas, chaves compostas, papéis por loja e RLS/serviços com escopo de tenant. PapeLemi é o primeiro tenant; a Empório será provisionada depois, sem misturar dados. A alternância visual de loja com um clique permanece uma etapa posterior e não pode adiar o isolamento estrutural.
 
 ## Limite essencial: motor compartilhado, negócios separados
 

@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
   getCategory as getFallbackCategory,
@@ -80,10 +80,10 @@ export const productFromRow = (row: ProductRow): Product => ({
 });
 
 export async function getCatalogFromDatabase() {
-  const sb = publicClient();
+  const sb = publicClient() as unknown as SupabaseClient;
   const [{ data: categoryRows, error: categoryError }, { data: productRows, error: productError }] = await Promise.all([
-    sb.from("categories").select("*").order("sort"),
-    sb.from("products").select("*").order("name"),
+    sb.from("categories").select("*").eq("store_key", "papelemi").order("sort"),
+    sb.from("products").select("*").eq("store_key", "papelemi").order("name"),
   ]);
 
   if (categoryError || productError) {
@@ -97,9 +97,11 @@ export async function getCatalogFromDatabase() {
 }
 
 export async function getPublishedProductFromDatabase(slug: string): Promise<Product | null> {
-  const { data, error } = await publicClient()
+  const sb = publicClient() as unknown as SupabaseClient;
+  const { data, error } = await sb
     .from("products")
     .select("*")
+    .eq("store_key", "papelemi")
     .eq("slug", slug)
     .eq("published", true)
     .maybeSingle();
@@ -109,9 +111,11 @@ export async function getPublishedProductFromDatabase(slug: string): Promise<Pro
 }
 
 export async function getPublishedCategoryFromDatabase(slug: string): Promise<Category | null> {
-  const { data, error } = await publicClient()
+  const sb = publicClient() as unknown as SupabaseClient;
+  const { data, error } = await sb
     .from("categories")
     .select("*")
+    .eq("store_key", "papelemi")
     .eq("slug", slug)
     .maybeSingle();
 

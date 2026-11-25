@@ -3,9 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
-import { buildCustomerSummaries, type CustomerOrderRow } from "@/lib/customer-summary";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -14,7 +12,7 @@ function publicClient() {
   const url = process.env["SUPABASE_URL"];
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) throw new Error("Banco de dados não configurado");
-  return createClient<Database>(url, key, {
+  return createClient(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
@@ -48,7 +46,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
 
 export const getCuratedPhrases = createServerFn({ method: "GET" }).handler(async () => {
   const sb = publicClient();
-  const { data, error } = await sb.from("curated_phrases").select("id,phrase,occasion").eq("active", true).order("created_at", { ascending: false }).limit(12);
+  const { data, error } = await sb.from("curated_phrases").select("id,phrase,occasion").eq("store_key", "papelemi").eq("active", true).order("created_at", { ascending: false }).limit(12);
   if (error) throw new Error(error.message);
   return data ?? [];
 });
@@ -57,7 +55,7 @@ export const validateCoupon = createServerFn({ method: "GET" })
   .validator(z.object({ code: z.string().trim().min(2).max(40) }))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: row, error } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
+    const { data: row, error } = await sb.from("coupons").select("code,percent").eq("store_key", "papelemi").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
     if (error) throw new Error("Não foi possível consultar o cupom.");
     return row ? { code: row.code, percent: row.percent } : null;
   });
@@ -109,6 +107,7 @@ async function buildOrderQuote(input: QuoteInput) {
     .from("products")
     .select("*")
     .in("slug", slugs)
+    .eq("store_key", "papelemi")
     .eq("published", true);
 
   if (error) throw new Error("Não foi possível consultar os produtos. Tente novamente.");
@@ -121,6 +120,7 @@ async function buildOrderQuote(input: QuoteInput) {
     const { data: coupon, error: couponError } = await admin
       .from("coupons")
       .select("code,percent")
+      .eq("store_key", "papelemi")
       .eq("code", input.couponCode)
       .eq("active", true)
       .maybeSingle();
@@ -241,6 +241,44 @@ export const createOrder = createServerFn({ method: "POST" })
       orderId = existing.id as string;
     }
 
+    // Persist normalized CRM and order lines while retaining the original JSONB order snapshot.
+    const normalizedEmail = input.customer.email.trim().toLowerCase();
+    const { data: customer, error: customerError } = await admin.from("customers").upsert({
+      store_key: "papelemi",
+      name: input.customer.name,
+      email: input.customer.email,
+      email_normalized: normalizedEmail,
+      phone: input.customer.phone,
+      whatsapp: input.customer.phone,
+      city: input.address.city,
+      state: input.address.state,
+      source: "storefront",
+      status: "active",
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "store_key,email_normalized" }).select("id").single();
+    if (customerError || !customer?.id) throw new Error("Não foi possível atualizar o cadastro do cliente.");
+
+    const { error: customerLinkError } = await admin.from("orders")
+      .update({ customer_id: customer.id }).eq("id", orderId).eq("store_key", "papelemi");
+    if (customerLinkError) throw new Error("Não foi possível vincular o pedido ao cadastro do cliente.");
+
+    const orderItemRows = quote.items.map((item, index) => ({
+      store_key: "papelemi",
+      order_id: orderId,
+      line_number: index + 1,
+      product_slug: item.slug,
+      product_name: item.name,
+      quantity: item.qty,
+      unit_price: item.unit_price,
+      line_total: roundMoney(item.unit_price * item.qty),
+      personalization: item.options,
+    }));
+    const { error: orderItemsError } = await admin.from("order_items").upsert(orderItemRows, {
+      onConflict: "store_key,order_id,line_number",
+      ignoreDuplicates: true,
+    });
+    if (orderItemsError) throw new Error("Não foi possível registrar os itens do pedido.");
+
     let initPoint: string | null = null;
     const paymentReady = mpConfigured();
     if (paymentReady) {
@@ -329,35 +367,80 @@ export const listCustomers = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as unknown as SupabaseClient;
     const pageSize = 1000;
-    const maxOrders = 20000;
-    const rows: CustomerOrderRow[] = [];
-    let truncated = false;
+    const maxRows = 20000;
+    const customerRows: Record<string, unknown>[] = [];
+    let customersTruncated = false;
 
-    for (let offset = 0; offset < maxOrders; offset += pageSize) {
-      const { data, error } = await admin
-        .from("orders")
-        .select("customer_name,customer_email,customer_phone,status,created_at")
+    for (let offset = 0; offset < maxRows; offset += pageSize) {
+      const { data, error } = await admin.from("customers")
+        .select("id,name,email,phone,city,state,source,status,tags,notes,created_at,updated_at")
+        .eq("store_key", "papelemi")
+        .order("updated_at", { ascending: false })
+        .range(offset, offset + pageSize - 1);
+      if (error) throw new Error(error.message);
+      const page = (data ?? []) as Record<string, unknown>[];
+      customerRows.push(...page);
+      if (page.length < pageSize) break;
+      if (offset + page.length >= maxRows) customersTruncated = true;
+    }
+
+    const orderStats = new Map<string, { count: number; firstOrderAt: string; lastOrderAt: string; lastOrderStatus: string }>();
+    let scannedOrders = 0;
+    let ordersTruncated = false;
+    for (let offset = 0; offset < maxRows; offset += pageSize) {
+      const { data, error } = await admin.from("orders")
+        .select("customer_id,status,created_at")
         .eq("store_key", "papelemi")
         .order("created_at", { ascending: false })
         .range(offset, offset + pageSize - 1);
-
       if (error) throw new Error(error.message);
-      const page = (data ?? []).map((row) => ({
-        customer_name: String(row.customer_name ?? ""),
-        customer_email: String(row.customer_email ?? ""),
-        customer_phone: String(row.customer_phone ?? ""),
-        status: String(row.status ?? ""),
-        created_at: String(row.created_at ?? ""),
-      }));
-      rows.push(...page);
+      const page = (data ?? []) as Record<string, unknown>[];
+      scannedOrders += page.length;
+      for (const row of page) {
+        const customerId = String(row.customer_id ?? "");
+        if (!customerId) continue;
+        const createdAt = String(row.created_at ?? "");
+        const status = String(row.status ?? "");
+        const current = orderStats.get(customerId);
+        if (!current) {
+          orderStats.set(customerId, { count: 1, firstOrderAt: createdAt, lastOrderAt: createdAt, lastOrderStatus: status });
+          continue;
+        }
+        current.count += 1;
+        if (createdAt && (!current.firstOrderAt || createdAt < current.firstOrderAt)) current.firstOrderAt = createdAt;
+        if (createdAt >= current.lastOrderAt) {
+          current.lastOrderAt = createdAt;
+          current.lastOrderStatus = status;
+        }
+      }
       if (page.length < pageSize) break;
-      if (offset + page.length >= maxOrders) truncated = true;
+      if (offset + page.length >= maxRows) ordersTruncated = true;
     }
 
     return {
-      customers: buildCustomerSummaries(rows),
-      scannedOrders: rows.length,
-      truncated,
+      customers: customerRows.map((row) => {
+        const id = String(row.id ?? "");
+        const stats = orderStats.get(id);
+        const createdAt = String(row.created_at ?? row.updated_at ?? "");
+        return {
+          id,
+          email: String(row.email ?? ""),
+          name: String(row.name ?? ""),
+          phone: String(row.phone ?? ""),
+          ordersCount: stats?.count ?? 0,
+          firstOrderAt: stats?.firstOrderAt ?? createdAt,
+          lastOrderAt: stats?.lastOrderAt ?? createdAt,
+          lastOrderStatus: stats?.lastOrderStatus ?? "no_orders",
+          city: String(row.city ?? ""),
+          state: String(row.state ?? ""),
+          source: String(row.source ?? ""),
+          status: String(row.status ?? "active"),
+          tags: Array.isArray(row.tags) ? row.tags.map((tag) => String(tag)) : [],
+          notes: String(row.notes ?? ""),
+        };
+      }),
+      scannedOrders,
+      truncated: customersTruncated || ordersTruncated,
     };
   });
 
@@ -402,7 +485,7 @@ export const listAdminProducts = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context);
     const { productFromRow } = await import("@/lib/catalog.repository.server");
-    const { data, error } = await context.supabase.from("products").select("*").order("name");
+    const { data, error } = await context.supabase.from("products").select("*").eq("store_key", "papelemi").order("name");
     if (error) throw new Error(error.message);
     return (data ?? []).map((r) => ({ ...productFromRow(r), minQty: r.min_qty ?? null }));
   });
@@ -412,8 +495,9 @@ export const saveProduct = createServerFn({ method: "POST" })
   .validator(productInput)
   .handler(async ({ context, data: p }) => {
     await requireAdmin(context);
-    const { data: existing } = await context.supabase.from("products").select("personalization").eq("slug", p.slug).maybeSingle();
+    const { data: existing } = await context.supabase.from("products").select("personalization").eq("store_key", "papelemi").eq("slug", p.slug).maybeSingle();
     const { error } = await context.supabase.from("products").upsert({
+      store_key: "papelemi",
       slug: p.slug,
       category_slug: p.categorySlug,
       name: p.name,
@@ -431,7 +515,7 @@ export const saveProduct = createServerFn({ method: "POST" })
       personalizable: p.personalizable,
       min_qty: p.minQty,
       personalization: existing?.personalization ?? [],
-    });
+    }, { onConflict: "store_key,slug" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -441,7 +525,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
   .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("products").delete().eq("slug", data.slug);
+    const { error } = await context.supabase.from("products").delete().eq("store_key", "papelemi").eq("slug", data.slug);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -458,7 +542,7 @@ export const listAdminCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("categories").select("*").order("sort");
+    const { data, error } = await context.supabase.from("categories").select("*").eq("store_key", "papelemi").order("sort");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -468,7 +552,7 @@ export const saveCategory = createServerFn({ method: "POST" })
   .validator(categoryInput)
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("categories").upsert({ slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort });
+    const { error } = await context.supabase.from("categories").upsert({ store_key: "papelemi", slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort }, { onConflict: "store_key,slug" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -478,7 +562,7 @@ export const deleteCategory = createServerFn({ method: "POST" })
   .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("categories").delete().eq("slug", data.slug);
+    const { error } = await context.supabase.from("categories").delete().eq("store_key", "papelemi").eq("slug", data.slug);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -487,7 +571,7 @@ export const listAdminPhrases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("curated_phrases").select("*").order("created_at", { ascending: false });
+    const { data, error } = await context.supabase.from("curated_phrases").select("*").eq("store_key", "papelemi").order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -502,9 +586,9 @@ export const savePhrase = createServerFn({ method: "POST" })
   }))
   .handler(async ({ context, data: p }) => {
     await requireAdmin(context);
-    const row = { phrase: p.phrase, occasion: p.occasion, active: p.active };
+    const row = { store_key: "papelemi", phrase: p.phrase, occasion: p.occasion, active: p.active };
     const { error } = p.id
-      ? await context.supabase.from("curated_phrases").update(row).eq("id", p.id)
+      ? await context.supabase.from("curated_phrases").update(row).eq("store_key", "papelemi").eq("id", p.id)
       : await context.supabase.from("curated_phrases").insert(row);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -515,7 +599,7 @@ export const deletePhrase = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.string().uuid() }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("curated_phrases").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("curated_phrases").delete().eq("store_key", "papelemi").eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -524,7 +608,7 @@ export const listAdminCoupons = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("coupons").select("*").order("code");
+    const { data, error } = await context.supabase.from("coupons").select("*").eq("store_key", "papelemi").order("code");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -538,7 +622,7 @@ export const saveCoupon = createServerFn({ method: "POST" })
   }))
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("coupons").upsert({ code: c.code, percent: c.percent, active: c.active });
+    const { error } = await context.supabase.from("coupons").upsert({ store_key: "papelemi", code: c.code, percent: c.percent, active: c.active }, { onConflict: "store_key,code" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -548,7 +632,7 @@ export const deleteCoupon = createServerFn({ method: "POST" })
   .validator(z.object({ code: z.string().min(2).max(40) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("coupons").delete().eq("code", data.code);
+    const { error } = await context.supabase.from("coupons").delete().eq("store_key", "papelemi").eq("code", data.code);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
