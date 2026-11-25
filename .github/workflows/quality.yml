@@ -51,12 +51,24 @@ jobs:
       - name: Production build
         run: bun run build
 
-      - name: Install Chromium for Preview QA
+      - name: Start local SSR server for responsive QA
+        run: |
+          (bun run dev -- --host 127.0.0.1 --port 4173 > /tmp/papelemi-vite.log 2>&1 &)
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/produto/caderneta-saude-ursinho-clean > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/papelemi-vite.log
+          exit 1
+
+      - name: Install Chromium for SSR QA
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install --with-deps chromium
 
-      - name: SSR and responsive Preview QA
+      - name: SSR and responsive QA
         env:
-          PREVIEW_URL: https://papelemi-git-feat-catalog-source-of-truth-01a-20261125-msolus.vercel.app
+          BASE_URL: http://127.0.0.1:4173
         run: node scripts/qa/papelemi-preview.mjs
