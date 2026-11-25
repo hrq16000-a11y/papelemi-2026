@@ -55,7 +55,7 @@ export const validateCoupon = createServerFn({ method: "GET" })
   .validator(z.object({ code: z.string().trim().min(2).max(40) }))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: row } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
+    const { data: row } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
     return row ? { code: row.code, percent: row.percent } : null;
   });
 
@@ -99,7 +99,7 @@ export const createOrder = createServerFn({ method: "POST" })
     const { productFromRow } = await import("@/lib/catalog.repository.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const slugs = input.items.map((i) => i.slug);
-    const { data: rows, error } = await supabaseAdmin.from("products").select("*").in("slug", slugs);
+    const { data: rows, error } = await supabaseAdmin.from("products").select("*").in("slug", slugs).filter("store_key", "eq", "papelemi");
     if (error) throw new Error(error.message);
     const bySlug = new Map((rows ?? []).map((r) => [r.slug, productFromRow(r)]));
     const items = input.items.map((i) => {
@@ -114,24 +114,39 @@ export const createOrder = createServerFn({ method: "POST" })
     let discount = 0;
     let couponCode: string | null = null;
     if (input.couponCode) {
-      const { data: c } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).maybeSingle();
+      const { data: c } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
       if (c) { couponCode = c.code; discount = Math.round(subtotal * c.percent) / 100; }
     }
     const total = Math.round((subtotal - discount + shipping) * 100) / 100;
 
-    const { data: order, error: insErr } = await supabaseAdmin.from("orders").insert({
+    const orderPayload: Database["public"]["Tables"]["orders"]["Insert"] & {
+      store_key: string;
+      customer_notes: string;
+      accepted_privacy: boolean;
+      privacy_consent_at: string;
+      source: string;
+    } = {
       customer_name: input.customer.name,
       customer_email: input.customer.email,
       customer_phone: input.customer.phone,
       address: input.address,
       items,
-      subtotal, shipping, discount, coupon_code: couponCode, total,
+      subtotal,
+      shipping,
+      discount,
+      coupon_code: couponCode,
+      total,
       store_key: "papelemi",
       customer_notes: input.customerNotes,
       accepted_privacy: input.acceptedPrivacy,
       privacy_consent_at: new Date().toISOString(),
       source: "storefront",
-    }).select("id").single();
+    };
+    const { data: order, error: insErr } = await supabaseAdmin
+      .from("orders")
+      .insert(orderPayload)
+      .select("id")
+      .single();
     if (insErr || !order) throw new Error(insErr?.message ?? "Não foi possível criar o pedido");
 
     let initPoint: string | null = null;
@@ -194,7 +209,7 @@ export const listOrders = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select("*")
-      .eq("store_key", "papelemi")
+      .filter("store_key", "eq", "papelemi")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
@@ -212,7 +227,7 @@ export const setOrderStatus = createServerFn({ method: "POST" })
       .from("orders")
       .update({ status: data.status })
       .eq("id", data.id)
-      .eq("store_key", "papelemi");
+      .filter("store_key", "eq", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
