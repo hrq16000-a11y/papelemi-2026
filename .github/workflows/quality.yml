@@ -42,11 +42,7 @@ jobs:
             echo "No changed TypeScript files."
           fi
 
-      - name: Print formatted catalog module for review
-        run: bunx prettier src/lib/catalog.repository.server.ts
-
       - name: Check formatting of newly added modules
-        continue-on-error: true
         run: bunx prettier --check src/lib/catalog.repository.server.ts src/test/catalog-repository.test.ts
 
       - name: Unit tests
