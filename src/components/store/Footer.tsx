@@ -20,7 +20,11 @@ export function Footer() {
             <li><Link to="/loja" className="hover:text-primary">Loja</Link></li>
             <li><Link to="/personalizados" className="hover:text-primary">Personalizados</Link></li>
             <li><Link to="/sobre" className="hover:text-primary">Nossa história</Link></li>
+            <li><Link to="/kits" className="hover:text-primary">Kits</Link></li>
+            <li><Link to="/presentes" className="hover:text-primary">Presentes</Link></li>
             <li><Link to="/contato" className="hover:text-primary">Atendimento</Link></li>
+            <li><Link to="/politica-de-privacidade" className="hover:text-primary">Política de privacidade</Link></li>
+            <li><Link to="/termos-de-uso" className="hover:text-primary">Termos de uso</Link></li>
           </ul>
         </div>
         <div>

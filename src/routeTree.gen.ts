@@ -12,9 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as ContatoRouteImport } from './routes/contato'
+import { Route as KitsRouteImport } from './routes/kits'
 import { Route as LojaRouteImport } from './routes/loja'
 import { Route as PersonalizadosRouteImport } from './routes/personalizados'
+import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
+import { Route as PresentesRouteImport } from './routes/presentes'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as TermosDeUsoRouteImport } from './routes/termos-de-uso'
 import { Route as CategoriaSlugRouteImport } from './routes/categoria.$slug'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 
@@ -33,6 +37,11 @@ const ContatoRoute = ContatoRouteImport.update({
   path: '/contato',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KitsRoute = KitsRouteImport.update({
+  id: '/kits',
+  path: '/kits',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LojaRoute = LojaRouteImport.update({
   id: '/loja',
   path: '/loja',
@@ -43,9 +52,24 @@ const PersonalizadosRoute = PersonalizadosRouteImport.update({
   path: '/personalizados',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PoliticaDePrivacidadeRoute = PoliticaDePrivacidadeRouteImport.update({
+  id: '/politica-de-privacidade',
+  path: '/politica-de-privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PresentesRoute = PresentesRouteImport.update({
+  id: '/presentes',
+  path: '/presentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SobreRoute = SobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
+  id: '/termos-de-uso',
+  path: '/termos-de-uso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriaSlugRoute = CategoriaSlugRouteImport.update({
@@ -63,9 +87,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/carrinho': typeof CarrinhoRoute
   '/contato': typeof ContatoRoute
+  '/kits': typeof KitsRoute
   '/loja': typeof LojaRoute
   '/personalizados': typeof PersonalizadosRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/presentes': typeof PresentesRoute
   '/sobre': typeof SobreRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
 }
@@ -73,9 +101,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/carrinho': typeof CarrinhoRoute
   '/contato': typeof ContatoRoute
+  '/kits': typeof KitsRoute
   '/loja': typeof LojaRoute
   '/personalizados': typeof PersonalizadosRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/presentes': typeof PresentesRoute
   '/sobre': typeof SobreRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
 }
@@ -84,9 +116,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/carrinho': typeof CarrinhoRoute
   '/contato': typeof ContatoRoute
+  '/kits': typeof KitsRoute
   '/loja': typeof LojaRoute
   '/personalizados': typeof PersonalizadosRoute
+  '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
+  '/presentes': typeof PresentesRoute
   '/sobre': typeof SobreRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
 }
@@ -96,9 +132,13 @@ export interface FileRouteTypes {
     | '/'
     | '/carrinho'
     | '/contato'
+    | '/kits'
     | '/loja'
     | '/personalizados'
+    | '/politica-de-privacidade'
+    | '/presentes'
     | '/sobre'
+    | '/termos-de-uso'
     | '/categoria/$slug'
     | '/produto/$slug'
   fileRoutesByTo: FileRoutesByTo
@@ -106,9 +146,13 @@ export interface FileRouteTypes {
     | '/'
     | '/carrinho'
     | '/contato'
+    | '/kits'
     | '/loja'
     | '/personalizados'
+    | '/politica-de-privacidade'
+    | '/presentes'
     | '/sobre'
+    | '/termos-de-uso'
     | '/categoria/$slug'
     | '/produto/$slug'
   id:
@@ -116,9 +160,13 @@ export interface FileRouteTypes {
     | '/'
     | '/carrinho'
     | '/contato'
+    | '/kits'
     | '/loja'
     | '/personalizados'
+    | '/politica-de-privacidade'
+    | '/presentes'
     | '/sobre'
+    | '/termos-de-uso'
     | '/categoria/$slug'
     | '/produto/$slug'
   fileRoutesById: FileRoutesById
@@ -127,9 +175,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CarrinhoRoute: typeof CarrinhoRoute
   ContatoRoute: typeof ContatoRoute
+  KitsRoute: typeof KitsRoute
   LojaRoute: typeof LojaRoute
   PersonalizadosRoute: typeof PersonalizadosRoute
+  PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
+  PresentesRoute: typeof PresentesRoute
   SobreRoute: typeof SobreRoute
+  TermosDeUsoRoute: typeof TermosDeUsoRoute
   CategoriaSlugRoute: typeof CategoriaSlugRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
 }
@@ -157,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContatoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/kits': {
+      id: '/kits'
+      path: '/kits'
+      fullPath: '/kits'
+      preLoaderRoute: typeof KitsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/loja': {
       id: '/loja'
       path: '/loja'
@@ -171,11 +230,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PersonalizadosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/politica-de-privacidade': {
+      id: '/politica-de-privacidade'
+      path: '/politica-de-privacidade'
+      fullPath: '/politica-de-privacidade'
+      preLoaderRoute: typeof PoliticaDePrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/presentes': {
+      id: '/presentes'
+      path: '/presentes'
+      fullPath: '/presentes'
+      preLoaderRoute: typeof PresentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sobre': {
       id: '/sobre'
       path: '/sobre'
       fullPath: '/sobre'
       preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos-de-uso': {
+      id: '/termos-de-uso'
+      path: '/termos-de-uso'
+      fullPath: '/termos-de-uso'
+      preLoaderRoute: typeof TermosDeUsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categoria/$slug': {
@@ -199,9 +279,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CarrinhoRoute: CarrinhoRoute,
   ContatoRoute: ContatoRoute,
+  KitsRoute: KitsRoute,
   LojaRoute: LojaRoute,
   PersonalizadosRoute: PersonalizadosRoute,
+  PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
+  PresentesRoute: PresentesRoute,
   SobreRoute: SobreRoute,
+  TermosDeUsoRoute: TermosDeUsoRoute,
   CategoriaSlugRoute: CategoriaSlugRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
 }
