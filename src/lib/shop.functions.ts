@@ -374,7 +374,7 @@ export const listCustomers = createServerFn({ method: "GET" })
 
     for (let offset = 0; offset < maxRows; offset += pageSize) {
       const { data, error } = await admin.from("customers")
-        .select("id,name,email,phone,city,state,source,status,tags,notes,created_at,updated_at")
+        .select("id,name,email,phone,whatsapp,city,state,source,status,tags,notes,created_at,updated_at")
         .eq("store_key", "papelemi")
         .order("updated_at", { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -428,6 +428,7 @@ export const listCustomers = createServerFn({ method: "GET" })
           email: String(row["email"] ?? ""),
           name: String(row["name"] ?? ""),
           phone: String(row["phone"] ?? ""),
+          whatsapp: String(row["whatsapp"] ?? ""),
           ordersCount: stats?.count ?? 0,
           firstOrderAt: stats?.firstOrderAt ?? createdAt,
           lastOrderAt: stats?.lastOrderAt ?? createdAt,
@@ -443,6 +444,79 @@ export const listCustomers = createServerFn({ method: "GET" })
       scannedOrders,
       truncated: customersTruncated || ordersTruncated,
     };
+  });
+
+const customerInput = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().max(254).refine((value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "E-mail inválido").default(""),
+  phone: z.string().trim().max(40).default(""),
+  whatsapp: z.string().trim().max(40).default(""),
+  city: z.string().trim().max(100).default(""),
+  state: z.string().trim().max(2).default(""),
+  status: z.enum(["active", "inactive"]).default("active"),
+  tags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
+  notes: z.string().trim().max(2000).default(""),
+});
+
+export const saveCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(customerInput)
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const email = data.email || null;
+    const values = {
+      store_key: "papelemi",
+      name: data.name,
+      email,
+      email_normalized: email ? email.toLowerCase() : null,
+      phone: data.phone || null,
+      whatsapp: data.whatsapp || null,
+      city: data.city || null,
+      state: data.state.toUpperCase() || null,
+      status: data.status,
+      tags: data.tags,
+      notes: data.notes || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const result = data.id
+      ? await admin.from("customers").update(values).eq("id", data.id).eq("store_key", "papelemi").select("id").maybeSingle()
+      : await admin.from("customers").insert({ ...values, created_by: context.userId, source: "admin" }).select("id").single();
+
+    if (result.error?.code === "23505") {
+      throw new Error("Já existe um cliente da PapeLemi com esse e-mail.");
+    }
+    if (result.error) throw new Error(result.error.message);
+    if (!result.data?.id) throw new Error("Cliente não encontrado ou fora da PapeLemi.");
+    return { id: result.data.id };
+  });
+
+const orderDetailInput = z.object({ id: z.string().uuid() });
+
+export const getOrderDetails = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator(orderDetailInput)
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { data: order, error: orderError } = await admin.from("orders")
+      .select("*")
+      .eq("id", data.id)
+      .eq("store_key", "papelemi")
+      .maybeSingle();
+    if (orderError) throw new Error(orderError.message);
+    if (!order) throw new Error("Pedido não encontrado nesta loja.");
+    const { data: items, error: itemsError } = await admin.from("order_items")
+      .select("id,line_number,product_name,product_slug,product_image,quantity,unit_price,line_total,personalization")
+      .eq("order_id", data.id)
+      .eq("store_key", "papelemi")
+      .order("line_number", { ascending: true });
+    if (itemsError) throw new Error(itemsError.message);
+    return { order, items: items ?? [] };
   });
 
 export const setOrderStatus = createServerFn({ method: "POST" })
