@@ -81,13 +81,18 @@ export const productFromRow = (row: ProductRow): Product => ({
 
 export async function getCatalogFromDatabase() {
   const sb = publicClient();
-  const [{ data: categoryRows, error: categoryError }, { data: productRows, error: productError }] = await Promise.all([
+  const [
+    { data: categoryRows, error: categoryError },
+    { data: productRows, error: productError },
+  ] = await Promise.all([
     sb.from("categories").select("*").order("sort"),
     sb.from("products").select("*").order("name"),
   ]);
 
   if (categoryError || productError) {
-    throw new Error(categoryError?.message ?? productError?.message ?? "Falha ao carregar catálogo");
+    throw new Error(
+      categoryError?.message ?? productError?.message ?? "Falha ao carregar catálogo",
+    );
   }
 
   return {
@@ -144,4 +149,3 @@ export async function getPublishedCategoryWithFallback(slug: string): Promise<Ca
     return getFallbackCategory(slug) ?? null;
   }
 }
-
