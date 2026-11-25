@@ -14,13 +14,13 @@ $$;
 
 revoke all on function public.has_role(uuid, public.app_role) from public, anon;
 grant execute on function public.has_role(uuid, public.app_role) to authenticated, service_role;
-do $
-begin
-  if to_regprocedure('public.rls_auto_enable()') is not null then
-    execute 'revoke all on function public.rls_auto_enable() from public, anon, authenticated';
-  end if;
-end;
-$;
+DO $optional_revoke$
+BEGIN
+  IF to_regprocedure('public.rls_auto_enable()') IS NOT NULL THEN
+    EXECUTE 'REVOKE ALL ON FUNCTION public.rls_auto_enable() FROM PUBLIC, anon, authenticated';
+  END IF;
+END;
+$optional_revoke$;
 
 drop policy if exists "Admins gerenciam categorias" on public.categories;
 drop policy if exists "Categorias visíveis a todos" on public.categories;
