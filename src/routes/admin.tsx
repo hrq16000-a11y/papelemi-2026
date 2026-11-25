@@ -10,6 +10,7 @@ import {
   saveCategory, saveCoupon, savePhrase, saveProduct, setOrderStatus,
 } from "@/lib/shop.functions";
 import { cn } from "@/lib/utils";
+import ShippingAdminPanel from "@/components/admin/ShippingAdminPanel";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [
@@ -24,7 +25,7 @@ const input = "w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm
 const btn = "inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-60";
 const btnGhost = "inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:border-primary disabled:opacity-60";
 
-type Tab = "dashboard" | "pedidos" | "clientes" | "produtos" | "categorias" | "frases" | "cupons" | "seguranca";
+type Tab = "dashboard" | "pedidos" | "clientes" | "produtos" | "categorias" | "frases" | "cupons" | "fretes" | "seguranca";
 
 function Admin() {
   const [stage, setStage] = useState<"loading" | "login" | "denied" | "ok">("loading");
@@ -65,6 +66,7 @@ function Admin() {
     { id: "categorias", label: "Categorias" },
     { id: "frases", label: "Frases" },
     { id: "cupons", label: "Cupons" },
+    { id: "fretes", label: "Fretes" },
     { id: "seguranca", label: "Segurança" },
   ];
 
@@ -90,6 +92,7 @@ function Admin() {
         {tab === "categorias" && <CategoriesTab />}
         {tab === "frases" && <PhrasesTab />}
         {tab === "cupons" && <CouponsTab />}
+        {tab === "fretes" && <ShippingAdminPanel />}
         {tab === "seguranca" && <PasswordTab />}
       </div>
     </div>

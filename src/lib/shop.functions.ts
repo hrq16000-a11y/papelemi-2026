@@ -637,3 +637,169 @@ export const deleteCoupon = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+
+// ===== Administração de fretes — sempre limitada ao tenant PapeLemi =====
+
+export const listShippingSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { data, error } = await admin.from("shipping_settings")
+      .select("*").eq("store_key", "papelemi").eq("singleton", true).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
+export const updateShippingSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({
+    id: z.string().uuid(),
+    origin_zip_code: z.string().trim().regex(/^(?:[0-9]{8})?$/).optional(),
+    is_enabled: z.boolean().optional(),
+    default_box_weight_kg: z.number().positive().max(30).optional(),
+    default_box_length_cm: z.number().positive().max(200).optional(),
+    default_box_width_cm: z.number().positive().max(200).optional(),
+    default_box_height_cm: z.number().positive().max(200).optional(),
+    handling_fee: z.number().min(0).max(10000).optional(),
+    shipping_markup_percentage: z.number().min(0).max(100).optional(),
+    pickup_enabled: z.boolean().optional(),
+    pickup_label: z.string().trim().min(1).max(80).optional(),
+    pickup_address: z.string().trim().max(240).optional(),
+    pickup_instructions: z.string().trim().max(500).optional(),
+    free_shipping_enabled: z.boolean().optional(),
+    free_shipping_threshold: z.number().min(0).max(100000).optional(),
+  }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { id, ...values } = data;
+    const { error } = await admin.from("shipping_settings")
+      .update({ ...values, updated_at: new Date().toISOString() })
+      .eq("id", id).eq("store_key", "papelemi");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listShippingProviders = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { data, error } = await admin.from("shipping_providers")
+      .select("id,provider_name,provider_code,is_active,endpoint_url,api_key,api_secret")
+      .eq("store_key", "papelemi").order("provider_name");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((provider) => ({
+      id: provider.id,
+      provider_name: provider.provider_name,
+      provider_code: provider.provider_code,
+      is_active: provider.is_active,
+      endpoint_url: provider.endpoint_url,
+      has_api_key: Boolean(provider.api_key),
+      has_api_secret: Boolean(provider.api_secret),
+    }));
+  });
+
+export const updateShippingProvider = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({
+    id: z.string().uuid(),
+    apiKey: z.string().trim().max(2000).optional(),
+    apiSecret: z.string().trim().max(2000).optional(),
+    endpointUrl: z.string().url().max(500).nullable().optional(),
+    isActive: z.boolean().optional(),
+  }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { data: current, error: readError } = await admin.from("shipping_providers")
+      .select("provider_code,api_key,endpoint_url").eq("id", data.id).eq("store_key", "papelemi").single();
+    if (readError || !current) throw new Error("Provedor não encontrado.");
+
+    const nextKey = data.apiKey?.trim() || current.api_key;
+    const nextEndpoint = data.endpointUrl !== undefined ? data.endpointUrl : current.endpoint_url;
+    if (data.isActive === true && current.provider_code === "melhor_envio" && (!nextKey || !nextEndpoint)) {
+      throw new Error("Configure a API Key e o endpoint antes de ativar o Melhor Envio.");
+    }
+
+    const patch: Database["public"]["Tables"]["shipping_providers"]["Update"] = {
+      updated_at: new Date().toISOString(),
+    };
+    if (data.apiKey?.trim()) patch.api_key = data.apiKey.trim();
+    if (data.apiSecret?.trim()) patch.api_secret = data.apiSecret.trim();
+    if (data.endpointUrl !== undefined) patch.endpoint_url = data.endpointUrl;
+    if (data.isActive !== undefined) patch.is_active = data.isActive;
+
+    const { error } = await admin.from("shipping_providers").update(patch)
+      .eq("id", data.id).eq("store_key", "papelemi");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listShippingRules = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { data, error } = await admin.from("shipping_rules").select("*")
+      .eq("store_key", "papelemi").order("priority", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const saveShippingRule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({
+    id: z.string().uuid().optional(),
+    rule_name: z.string().trim().min(2).max(100),
+    condition_type: z.enum(["min_cart_value", "specific_state", "zip_code_range"]),
+    condition_value: z.record(z.string(), z.unknown()),
+    discount_type: z.enum(["free_shipping", "fixed_discount", "percentage_discount"]),
+    discount_value: z.number().min(0).max(100000),
+    is_active: z.boolean(),
+    priority: z.number().int().min(-1000).max(1000),
+  }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { id, ...values } = data;
+    const row = { ...values, store_key: "papelemi", updated_at: new Date().toISOString() };
+    const { error } = id
+      ? await admin.from("shipping_rules").update(row).eq("id", id).eq("store_key", "papelemi")
+      : await admin.from("shipping_rules").insert(row);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteShippingRule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { error } = await admin.from("shipping_rules").delete()
+      .eq("id", data.id).eq("store_key", "papelemi");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listShippingAuditLogs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { data, error } = await admin.from("shipping_audit_logs").select("*")
+      .eq("store_key", "papelemi").order("created_at", { ascending: false }).limit(50);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });

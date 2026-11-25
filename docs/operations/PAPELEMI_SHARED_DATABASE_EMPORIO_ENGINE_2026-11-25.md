@@ -103,7 +103,7 @@ Consulta dos advisors Supabase no projeto central:
 Esses achados demonstram por que copiar as páginas administrativas sem adaptar a camada de dados não constitui integração funcional.
 
 
-## 11. Governança de migrations e aplicação
+## 11. Estado aplicado do motor central (25/11/2026)\n\n- Migration `20261125213419_add_store_scoped_crm_and_order_items` aplicada no Supabase dedicado PapeLemi.\n- Migration `20261125214907_add_store_scoped_shipping_engine` aplicada no mesmo projeto.\n- CRM, itens normalizados, tabelas de frete, regras, provedores, auditoria e rate limit existem no banco hospedado.\n- O módulo de frete permanece desabilitado até configurar CEP de origem e credenciais próprias do provedor.\n- Nenhum dado comercial, usuário, arquivo ou segredo do Empório foi importado.\n\n## 12. Governança de migrations e aplicação
 
 O bloco gerenciado do Lovable em `AGENTS.md` é preservado, mas o override explícito do proprietário autoriza este workstream a manter migrations versionadas no GitHub e aplicá-las de forma controlada ao Supabase dedicado PapeLemi.
 
