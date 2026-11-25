@@ -1,16 +1,16 @@
 name: PapeLemi quality gates
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-      - feat/catalog-source-of-truth-01a-20261125
+      - "feat/**"
 
 permissions:
   contents: read
 
 concurrency:
-  group: papelemi-quality-${{ github.event.pull_request.number || github.ref }}
+  group: papelemi-quality-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
       - name: Unit tests
         run: bun run test
 
-      # The repository-wide Prettier baseline is currently noisy; check the touched modules without reformatting unrelated pages.
+      # The repository-wide Prettier baseline is currently noisy; check touched modules without reformatting unrelated pages.
       - name: Targeted lint
         run: >-
           bunx eslint --rule 'prettier/prettier: off'
@@ -43,7 +43,7 @@ jobs:
           src/lib/shop.functions.ts
           src/lib/mp.ts
           src/routes/checkout.tsx
-          src/routes/'produto.$slug.tsx'
+          'src/routes/produto.$slug.tsx'
           src/test/cart-storage.test.ts
           src/test/order-integrity.test.ts
 
