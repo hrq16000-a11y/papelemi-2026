@@ -2,8 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -55,15 +56,31 @@ export const validateCoupon = createServerFn({ method: "GET" })
   .validator(z.object({ code: z.string().trim().min(2).max(40) }))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: row } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
+    const { data: row, error } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
+    if (error) throw new Error("Não foi possível consultar o cupom.");
     return row ? { code: row.code, percent: row.percent } : null;
   });
 
-const orderInput = z.object({
+const orderLineInput = z.object({
+  slug: z.string().trim().min(1).max(80),
+  qty: z.number().int().min(1).max(999),
+  options: z.record(z.string().max(60), z.string().max(500)).refine((options) => Object.keys(options).length <= 23, "Número de opções inválido."),
+});
+
+const quoteInput = z.object({
+  items: z.array(orderLineInput).min(1).max(50),
+  couponCode: z.string().trim().toUpperCase().min(2).max(40).optional(),
+});
+
+const orderInput = quoteInput.extend({
+  requestId: z.string().uuid(),
   customer: z.object({
     name: z.string().trim().min(2).max(80),
-    email: z.string().trim().email().max(120),
-    phone: z.string().trim().max(20).default(""),
+    email: z.string().trim().email().max(120).toLowerCase(),
+    phone: z.string().trim().min(10).max(20).refine((value) => {
+      const digits = value.replace(/\D/g, "");
+      return digits.length === 10 || digits.length === 11;
+    }, "Telefone inválido. Informe DDD e número."),
   }),
   address: z.object({
     cep: z.string().trim().regex(/^\d{5}-?\d{3}$/, "CEP inválido"),
@@ -72,18 +89,85 @@ const orderInput = z.object({
     complement: z.string().trim().max(80).default(""),
     district: z.string().trim().min(2).max(80),
     city: z.string().trim().min(2).max(80),
-    state: z.string().trim().length(2),
+    state: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "UF inválida"),
   }),
-  items: z.array(z.object({
-    slug: z.string().trim().min(1).max(80),
-    qty: z.number().int().min(1).max(999),
-    options: z.record(z.string().max(60), z.string().max(500)),
-  })).min(1).max(50),
-  couponCode: z.string().trim().max(40).optional(),
   origin: z.string().url().max(200).optional(),
   customerNotes: z.string().trim().max(1000).default(""),
   acceptedPrivacy: z.literal(true),
+  quoteToken: z.string().regex(/^[a-f0-9]{64}$/),
 });
+
+type QuoteInput = z.infer<typeof quoteInput>;
+
+async function buildOrderQuote(input: QuoteInput) {
+  const { productFromRow } = await import("@/lib/catalog.repository.server");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const admin = supabaseAdmin as unknown as SupabaseClient;
+  const slugs = [...new Set(input.items.map((item) => item.slug))];
+  const { data: rows, error } = await admin
+    .from("products")
+    .select("*")
+    .in("slug", slugs)
+    .eq("published", true);
+
+  if (error) throw new Error("Não foi possível consultar os produtos. Tente novamente.");
+  const products = (rows ?? []).map((row) => productFromRow(row));
+  const items = prepareOrderItems(products, input.items as OrderLineInput[]);
+
+  let couponCode: string | null = null;
+  let couponPercent: number | null = null;
+  if (input.couponCode) {
+    const { data: coupon, error: couponError } = await admin
+      .from("coupons")
+      .select("code,percent")
+      .eq("code", input.couponCode)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (couponError) throw new Error("Não foi possível revalidar o cupom. Tente novamente.");
+    if (!coupon) throw new Error("Cupom inválido ou inativo. Remova o cupom e tente novamente.");
+    couponCode = coupon.code;
+    couponPercent = Number(coupon.percent);
+  }
+
+  return {
+    items,
+    couponCode,
+    ...calculateOrderTotals(items, couponPercent),
+  };
+}
+
+async function createQuoteToken(quote: Awaited<ReturnType<typeof buildOrderQuote>>) {
+  const { createHash } = await import("node:crypto");
+  const payload = JSON.stringify({
+    items: quote.items,
+    couponCode: quote.couponCode,
+    subtotal: quote.subtotal,
+    discount: quote.discount,
+    shipping: quote.shipping,
+    total: quote.total,
+  });
+  return createHash("sha256").update(payload).digest("hex");
+}
+
+export const getOrderQuote = createServerFn({ method: "POST" })
+  .validator(quoteInput)
+  .handler(async ({ data }) => {
+    const quote = await buildOrderQuote(data);
+    const quoteToken = await createQuoteToken(quote);
+    return {
+      items: quote.items.map((item) => ({
+        ...item,
+        line_total: roundMoney(item.unit_price * item.qty),
+      })),
+      couponCode: quote.couponCode,
+      quoteToken,
+      subtotal: quote.subtotal,
+      discount: quote.discount,
+      shipping: quote.shipping,
+      total: quote.total,
+    };
+  });
 
 function safeOrigin(origin?: string) {
   try {
@@ -96,57 +180,80 @@ function safeOrigin(origin?: string) {
 export const createOrder = createServerFn({ method: "POST" })
   .validator(orderInput)
   .handler(async ({ data: input }) => {
-    const { productFromRow } = await import("@/lib/catalog.repository.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const slugs = input.items.map((i) => i.slug);
-    const { data: rows, error } = await supabaseAdmin.from("products").select("*").in("slug", slugs);
-    if (error) throw new Error(error.message);
-    const bySlug = new Map((rows ?? []).map((r) => [r.slug, productFromRow(r)]));
-    const items = input.items.map((i) => {
-      const p = bySlug.get(i.slug);
-      if (!p || !p.published) throw new Error(`Produto indisponível: ${i.slug}`);
-      const qty = Math.max(i.qty, p.minQty ?? 1);
-      return { slug: p.slug, name: p.name, qty, unit_price: p.promoPrice ?? p.price, options: i.options };
-    });
-    const subtotal = Math.round(items.reduce((s, i) => s + i.unit_price * i.qty, 0) * 100) / 100;
-    // O frete é confirmado pela PapeLemi após revisar o CEP; não estimar um valor não validado.
-    const shipping = 0;
-    let discount = 0;
-    let couponCode: string | null = null;
-    if (input.couponCode) {
-      const { data: c } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).maybeSingle();
-      if (c) { couponCode = c.code; discount = Math.round(subtotal * c.percent) / 100; }
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const quote = await buildOrderQuote(input);
+    if (await createQuoteToken(quote) !== input.quoteToken) {
+      throw new Error("PRICE_CHANGED: Os valores ou condições mudaram. O resumo foi atualizado; confira antes de enviar novamente.");
     }
-    const total = Math.round((subtotal - discount + shipping) * 100) / 100;
-
-    const { data: order, error: insErr } = await supabaseAdmin.from("orders").insert({
+    const orderValues = {
       customer_name: input.customer.name,
       customer_email: input.customer.email,
       customer_phone: input.customer.phone,
-      address: input.address,
-      items,
-      subtotal, shipping, discount, coupon_code: couponCode, total,
+      address: {
+        cep: input.address.cep.replace(/\D/g, ""),
+        street: input.address.street,
+        number: input.address.number,
+        complement: input.address.complement,
+        district: input.address.district,
+        city: input.address.city,
+        state: input.address.state,
+      },
+      items: quote.items,
+      subtotal: quote.subtotal,
+      shipping: quote.shipping,
+      discount: quote.discount,
+      coupon_code: quote.couponCode,
+      total: quote.total,
       store_key: "papelemi",
       customer_notes: input.customerNotes,
       accepted_privacy: input.acceptedPrivacy,
       privacy_consent_at: new Date().toISOString(),
       source: "storefront",
-    }).select("id").single();
-    if (insErr || !order) throw new Error(insErr?.message ?? "Não foi possível criar o pedido");
+    };
+
+    // The existing orders.id primary key is the idempotency key; no schema change is needed.
+    const { data: inserted, error: insertError } = await admin
+      .from("orders")
+      .upsert(
+        { id: input.requestId, ...orderValues },
+        { onConflict: "id", ignoreDuplicates: true },
+      )
+      .select("id")
+      .maybeSingle();
+
+    if (insertError) throw new Error("Não foi possível registrar a encomenda. Tente novamente.");
+
+    let orderId = inserted?.id as string | undefined;
+    if (!orderId) {
+      const { data: existing, error: lookupError } = await admin
+        .from("orders")
+        .select("*")
+        .eq("id", input.requestId)
+        .eq("store_key", "papelemi")
+        .maybeSingle();
+
+      if (lookupError) throw new Error("Não foi possível confirmar a solicitação anterior.");
+      if (!existing || !isSameOrderRequest(existing, orderValues)) {
+        throw new Error("ORDER_REQUEST_CONFLICT: Esta tentativa já foi usada com outros dados. Gere uma nova tentativa e envie novamente.");
+      }
+      orderId = existing.id as string;
+    }
 
     let initPoint: string | null = null;
-    if (mpConfigured()) {
+    const paymentReady = mpConfigured();
+    if (paymentReady) {
       const origin = safeOrigin(input.origin);
       const pref = (await mpRequest("checkout/preferences", {
         method: "POST",
-        idempotencyKey: `pref-${order.id}-1`,
+        idempotencyKey: `pref-${orderId}-1`,
         body: {
-          items: [{ title: `Pedido PapeLemi ${order.id.slice(0, 8)}`, quantity: 1, unit_price: total, currency_id: "BRL" }],
-          external_reference: order.id,
+          items: [{ title: `Pedido PapeLemi ${orderId.slice(0, 8)}`, quantity: 1, unit_price: quote.total, currency_id: "BRL" }],
+          external_reference: orderId,
           back_urls: {
-            success: `${origin}/pedido/${order.id}`,
-            pending: `${origin}/pedido/${order.id}`,
-            failure: `${origin}/pedido/${order.id}`,
+            success: `${origin}/pedido/${orderId}`,
+            pending: `${origin}/pedido/${orderId}`,
+            failure: `${origin}/pedido/${orderId}`,
           },
           auto_return: "approved",
           notification_url: `${PUBLISHED_ORIGIN}/api/public/mercadopago-webhook`,
@@ -154,18 +261,30 @@ export const createOrder = createServerFn({ method: "POST" })
       })) as { init_point?: string };
       initPoint = pref.init_point ?? null;
     }
-    return { orderId: order.id, initPoint, total, paymentReady: mpConfigured() };
+    return { orderId, initPoint, total: quote.total, paymentReady };
   });
 
 export const getOrderStatus = createServerFn({ method: "GET" })
   .validator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data }) => {
-    if (mpConfigured()) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const readOrder = () => admin
+      .from("orders")
+      .select("status,total")
+      .eq("id", data.orderId)
+      .eq("store_key", "papelemi")
+      .maybeSingle();
+
+    const { data: initial, error: initialError } = await readOrder();
+    if (initialError || !initial) throw new Error("Pedido não encontrado");
+
+    if (mpConfigured() && initial.status === "pending") {
       try { await confirmOrderByReference(data.orderId); } catch { /* segue com o status atual */ }
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: order } = await supabaseAdmin.from("orders").select("status,total").eq("id", data.orderId).single();
-    if (!order) throw new Error("Pedido não encontrado");
+
+    const { data: order, error } = await readOrder();
+    if (error || !order) throw new Error("Pedido não encontrado");
     return { status: !mpConfigured() && order.status === "pending" ? "received" : order.status, total: Number(order.total) };
   });
 

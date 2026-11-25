@@ -127,7 +127,7 @@ function ProductDetail({ p }: { p: Product }) {
             <div className="flex items-center rounded-full border border-border">
               <button type="button" aria-label="Diminuir" onClick={() => setQty(Math.max(p.minQty ?? 1, qty - 1))} className="p-3"><Minus className="size-4" /></button>
               <span className="w-10 text-center">{qty}</span>
-              <button type="button" aria-label="Aumentar" onClick={() => setQty(qty + 1)} className="p-3"><Plus className="size-4" /></button>
+              <button type="button" aria-label="Aumentar" onClick={() => setQty(Math.min(999, qty + 1))} className="p-3"><Plus className="size-4" /></button>
             </div>
             <button className="flex-1 rounded-full bg-primary py-3.5 text-sm font-medium text-primary-foreground shadow-soft transition-transform hover:-translate-y-0.5">Adicionar ao carrinho · {brl((p.promoPrice ?? p.price) * qty)}</button>
           </div>
