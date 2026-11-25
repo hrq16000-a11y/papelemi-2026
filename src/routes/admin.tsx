@@ -322,7 +322,8 @@ function PasswordTab() {
 
 type Order = Awaited<ReturnType<typeof listOrders>>[number];
 type OrderDetail = Awaited<ReturnType<typeof getOrderDetails>>;
-const ORDER_STATUS: Record<string, string> = {
+type OrderStatus = "pending" | "paid" | "shipped" | "delivered" | "cancelled";
+const ORDER_STATUS: Record<OrderStatus, string> = {
   pending: "Recebido / aguardando confirmação",
   paid: "Pago",
   shipped: "Enviado",
@@ -380,7 +381,7 @@ function OrdersTab() {
     }
   };
 
-  const updateStatus = async (id: string, status: keyof typeof ORDER_STATUS) => {
+  const updateStatus = async (id: string, status: OrderStatus) => {
     setUpdatingId(id);
     try {
       await setOrderStatus({ data: { id, status } });
@@ -472,9 +473,9 @@ function OrdersTab() {
                   </section>
                   <section className="border-t border-border pt-4">
                     <h4 className="text-sm font-semibold">Entrega</h4>
-                    <p className="mt-2 text-sm">{[address.street, address.number, address.complement].filter(Boolean).map(displayOrderValue).join(", ") || "Endereço não informado"}</p>
-                    <p className="text-sm text-muted-foreground">{[address.district, address.city, address.state].filter(Boolean).map(displayOrderValue).join(" · ")}</p>
-                    <p className="text-sm text-muted-foreground">CEP: {displayOrderValue(address.cep) || "—"}</p>
+                    <p className="mt-2 text-sm">{[address["street"], address["number"], address["complement"]].filter(Boolean).map(displayOrderValue).join(", ") || "Endereço não informado"}</p>
+                    <p className="text-sm text-muted-foreground">{[address["district"], address["city"], address["state"]].filter(Boolean).map(displayOrderValue).join(" · ")}</p>
+                    <p className="text-sm text-muted-foreground">CEP: {displayOrderValue(address["cep"]) || "—"}</p>
                     <p className="mt-2 text-sm">Frete: {Number(detail.order.shipping) === 0 ? "A confirmar" : brl(Number(detail.order.shipping))}</p>
                   </section>
                   <section className="border-t border-border pt-4">
@@ -545,7 +546,7 @@ function OrdersTab() {
                   <p className="mt-2 text-sm font-semibold">{brl(Number(order.total))}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <select value={order.status} disabled={updatingId === order.id} onChange={(event) => void updateStatus(order.id, event.target.value as keyof typeof ORDER_STATUS)} aria-label={"Status do pedido " + order.id.slice(0, 8)} className={cn(input, "min-w-0 flex-1 sm:w-64")}>
+                  <select value={order.status} disabled={updatingId === order.id} onChange={(event) => void updateStatus(order.id, event.target.value as OrderStatus)} aria-label={"Status do pedido " + order.id.slice(0, 8)} className={cn(input, "min-w-0 flex-1 sm:w-64")}>
                     {Object.entries(ORDER_STATUS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                   <button type="button" onClick={() => void openDetails(order.id)} className={btnGhost}>Ver pedido</button>
