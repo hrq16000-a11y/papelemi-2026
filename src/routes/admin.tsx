@@ -24,7 +24,7 @@ const input = "w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm
 const btn = "inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-60";
 const btnGhost = "inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:border-primary disabled:opacity-60";
 
-type Tab = "pedidos" | "produtos" | "categorias" | "frases" | "cupons";
+type Tab = "pedidos" | "produtos" | "categorias" | "frases" | "cupons" | "seguranca";
 
 function Admin() {
   const [stage, setStage] = useState<"loading" | "login" | "denied" | "ok">("loading");
@@ -63,6 +63,7 @@ function Admin() {
     { id: "categorias", label: "Categorias" },
     { id: "frases", label: "Frases" },
     { id: "cupons", label: "Cupons" },
+    { id: "seguranca", label: "Segurança" },
   ];
 
   return (
@@ -85,57 +86,102 @@ function Admin() {
         {tab === "categorias" && <CategoriesTab />}
         {tab === "frases" && <PhrasesTab />}
         {tab === "cupons" && <CouponsTab />}
+        {tab === "seguranca" && <PasswordTab />}
       </div>
     </div>
   );
 }
 
 function LoginForm() {
-  const [mode, setMode] = useState<"entrar" | "criar">("entrar");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
     try {
-      if (mode === "entrar") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) toast.error("E-mail ou senha incorretos");
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
-        if (error) toast.error(error.message);
-        else setSent(true);
-      }
-    } finally { setBusy(false); }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) toast.error("E-mail ou senha incorretos");
+    } finally {
+      setBusy(false);
+    }
   };
-
-  if (sent) return (
-    <div className="mx-auto max-w-md px-4 py-24 text-center">
-      <h1 className="text-4xl">Confirme seu e-mail</h1>
-      <p className="mt-3 text-muted-foreground">Enviamos um link de confirmação para {email}. Depois de confirmar, volte e entre no painel.</p>
-    </div>
-  );
 
   return (
     <div className="mx-auto max-w-md px-4 py-24">
-      <h1 className="text-center text-4xl">Painel da loja</h1>
-      <p className="mt-2 text-center text-sm text-muted-foreground">Acesso exclusivo da equipe PapeLemi.</p>
+      <p className="text-center text-xs uppercase tracking-[0.2em] text-primary">PapeLemi</p>
+      <h1 className="mt-2 text-center text-4xl">Painel administrativo</h1>
+      <p className="mt-2 text-center text-sm text-muted-foreground">Acesso restrito à equipe autorizada.</p>
       <form onSubmit={submit} className="mt-8 space-y-3">
-        <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" aria-label="E-mail" className={input} />
-        <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} placeholder="Senha" aria-label="Senha" className={input} />
+        <input required type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" aria-label="E-mail" className={input} />
+        <input required type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Senha" aria-label="Senha" className={input} />
         <button type="submit" disabled={busy} className={cn(btn, "w-full justify-center py-3 text-sm")}>
-          {busy ? <Loader2 className="size-4 animate-spin" /> : mode === "entrar" ? "Entrar" : "Criar conta"}
+          {busy ? <Loader2 className="size-4 animate-spin" /> : "Entrar"}
         </button>
       </form>
-      <button onClick={() => setMode(mode === "entrar" ? "criar" : "entrar")} className="mt-4 w-full text-center text-xs text-muted-foreground underline">
-        {mode === "entrar" ? "Primeiro acesso? Criar conta" : "Já tenho conta"}
-      </button>
-      <p className="mt-6 text-center text-xs text-muted-foreground"><Link to="/" className="underline">Voltar à loja</Link></p>
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        Contas administrativas são provisionadas pelo proprietário; não há cadastro público neste painel.
+      </p>
+      <p className="mt-4 text-center text-xs text-muted-foreground"><Link to="/" className="underline">Voltar à loja</Link></p>
     </div>
+  );
+}
+
+function PasswordTab() {
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (password.length < 12) {
+      toast.error("Use uma senha com pelo menos 12 caracteres.");
+      return;
+    }
+    if (password !== confirmation) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setPassword("");
+      setConfirmation("");
+      toast.success("Senha atualizada com sucesso.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a senha.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="max-w-2xl rounded-2xl border border-border bg-card p-6">
+      <p className="text-xs uppercase tracking-[0.2em] text-primary">Segurança</p>
+      <h2 className="mt-2 text-2xl">Alterar senha</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Atualize a senha da conta administrativa. Recomendamos uma senha exclusiva, longa e armazenada em um gerenciador de senhas.
+      </p>
+      <form onSubmit={save} className="mt-6 space-y-4">
+        <label className="block text-sm">
+          Nova senha
+          <input required type="password" autoComplete="new-password" minLength={12} value={password} onChange={(e) => setPassword(e.target.value)} className={cn(input, "mt-1")} />
+        </label>
+        <label className="block text-sm">
+          Confirmar nova senha
+          <input required type="password" autoComplete="new-password" minLength={12} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} className={cn(input, "mt-1")} />
+        </label>
+        <button type="submit" disabled={busy} className={btn}>
+          {busy ? <Loader2 className="size-3.5 animate-spin" /> : null}
+          Atualizar senha
+        </button>
+      </form>
+    </section>
   );
 }
 
