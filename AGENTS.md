@@ -28,3 +28,8 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- Catalog lives in `src/data/catalog.ts` as clearly-labelled demo data until the real catalog/backend is imported; per-product personalization options are declared there so each product configures its own fields.
+- AI phrase suggestions run only in the `suggestPhrases` server function (`src/lib/ai.functions.ts`) via the Lovable AI Gateway SDK; never call models from browser code.
+- Cart is client-side (localStorage) for round one; no real payments until a gateway is approved.
