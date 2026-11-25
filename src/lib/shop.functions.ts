@@ -445,6 +445,54 @@ export const listCustomers = createServerFn({ method: "GET" })
     };
   });
 
+const customerInput = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().max(254).refine((value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "E-mail inválido").default(""),
+  phone: z.string().trim().max(40).default(""),
+  whatsapp: z.string().trim().max(40).default(""),
+  city: z.string().trim().max(100).default(""),
+  state: z.string().trim().max(2).default(""),
+  status: z.enum(["active", "inactive"]).default("active"),
+  tags: z.array(z.string().trim().min(1).max(32)).max(20).default([]),
+  notes: z.string().trim().max(2000).default(""),
+});
+
+export const saveCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(customerInput)
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const email = data.email || null;
+    const values = {
+      store_key: "papelemi",
+      name: data.name,
+      email,
+      email_normalized: email ? email.toLowerCase() : null,
+      phone: data.phone || null,
+      whatsapp: data.whatsapp || data.phone || null,
+      city: data.city || null,
+      state: data.state.toUpperCase() || null,
+      status: data.status,
+      tags: data.tags,
+      notes: data.notes || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const result = data.id
+      ? await admin.from("customers").update(values).eq("id", data.id).eq("store_key", "papelemi").select("id").maybeSingle()
+      : await admin.from("customers").insert({ ...values, created_by: context.userId, source: "admin" }).select("id").single();
+
+    if (result.error?.code === "23505") {
+      throw new Error("Já existe um cliente da PapeLemi com esse e-mail.");
+    }
+    if (result.error) throw new Error(result.error.message);
+    if (!result.data?.id) throw new Error("Cliente não encontrado ou fora da PapeLemi.");
+    return { id: result.data.id };
+  });
+
 export const setOrderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(z.object({ id: z.string().uuid(), status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]) }))
