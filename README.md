@@ -1,34 +1,47 @@
-# Papelemi
+# PapeLemi
 
-Crie a loja virtual PapeLemi para papelaria afetiva e personalizados conforme os documentos em anexo, incluindo a funcionalidade de IA usando AI Gateway para sugerir frases e dedicatórias personalizadas nos itens.
+Loja de papelaria personalizada com afeto. O projeto usa TanStack Start, React, TypeScript e Tailwind CSS.
 
-Siga as diretrizes da Primeira Rodada de execução especificadas no documento:
-- Fundação visual acolhedora e elegante (rosa suave, off-white, creme, tipografia refinada e toque editorial).
-- Estrutura principal da loja (/ com Home completa, /loja com catálogo completo, categorias, página de produto /produto/:slug, /personalizados, /sobre, /contato, /carrinho).
-- Header elegante com busca, categorias e carrinho.
-- Catálogo demonstrativo estruturado por categorias (Agendas e planners, Cadernos, Lembranças, Kits, Brindes corporativos).
-- Experiência de personalização nos produtos com assistente de IA para sugerir frases, mensagens e dedicatórias com afeto.
-- Responsividade refinada para mobile e desktop.
+## Referência de produto e identidade
 
-This project was built with [Lovable](https://lovable.dev).
+A Home está sendo reconstruída a partir da vitrine original PapeLemi, usando a captura de tela enviada pelo proprietário em 25/11/2026 e o conteúdo recuperado da página pública.
 
-**Live app**: https://papelemi.lovable.app
+A estrutura visual contempla:
+- Cabeçalho editorial com busca, navegação por coleção e carrinho.
+- Hero dividido com mensagem de marca e fotografia.
+- Benefícios, quatro coleções e grade de oito produtos.
+- Seção editorial, instruções de encomenda, CTA, privacidade, FAQ e rodapé.
 
-## Build with Lovable
+## Catálogo de referência
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/823eb0e0-f279-48fa-bea8-45a106062765).
+A vitrine original apresenta oito itens em quatro coleções: Cadernetas, Planners & blocos, Mimos & lembranças e Brindes personalizados.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+Os preços e prazos são referências. A PapeLemi confirma disponibilidade, personalização, frete e pagamento antes da produção.
 
-## Development
+**Importante:** o catálogo no código ainda é conteúdo de referência, não uma integração com banco de dados. As imagens atualmente usadas são provisórias; os arquivos originais de fotografia precisam ser recuperados do backup do site antes da homologação visual final.
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## Personalização com IA
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+O assistente de dedicatórias funciona em sete etapas:
+1. Produto.
+2. Ocasião.
+3. Estilo.
+4. Detalhes opcionais.
+5. Geração de três sugestões.
+6. Edição, seleção e favoritos.
+7. Aplicação ao produto ou carrinho.
+
+As sugestões são executadas exclusivamente no servidor por meio do Lovable AI Gateway. O servidor resolve o produto e o limite de caracteres a partir do catálogo.
+
+## Estado funcional conhecido
+
+- Carrinho local no navegador.
+- Personalização e assistente de frases por IA.
+- Não há checkout, cobrança ou pagamento integrado nesta etapa.
+- A integração do banco multi-loja com Empório Lele Cute está planejada para uma etapa posterior, após inventário e backup integral dos dados e arquivos.
+
+## Desenvolvimento
+
+Instale as dependências com npm install, execute npm run dev para desenvolvimento e npm run build para a compilação.
+
+O projeto foi inicialmente criado no Lovable. A branch conectada ao editor é main; mudanças desta rodada ficam isoladas em branch de trabalho e PR Draft até homologação e autorização.

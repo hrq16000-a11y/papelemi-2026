@@ -22,6 +22,7 @@ export const OCCASIONS = [
   { id: "casamento", label: "Casamento", hint: "Amor que se celebra", icon: "Gem" },
   { id: "dia-das-maes", label: "Dia das Mães", hint: "Para quem cuida", icon: "Flower2" },
   { id: "dia-dos-pais", label: "Dia dos Pais", hint: "Gratidão e parceria", icon: "Coffee" },
+  { id: "dia-dos-professores", label: "Dia dos Professores", hint: "Reconhecimento e carinho", icon: "GraduationCap" },
   { id: "amizade", label: "Amizade", hint: "Quem está sempre perto", icon: "HeartHandshake" },
   { id: "formatura", label: "Formatura", hint: "Conquista e novos começos", icon: "GraduationCap" },
   { id: "agradecimento", label: "Agradecimento", hint: "Dizer obrigado com carinho", icon: "Heart" },
@@ -32,16 +33,33 @@ export const OCCASIONS = [
 
 type Profile = { theme: string; guidance: string; defaultStyle: StyleId; suggestedOccasions: string[] };
 const BY_CATEGORY: Record<string, Profile> = {
-  "agendas-e-planners": { theme: "Agendas e planners", guidance: "frases motivacionais sobre organização, propósito, constância e bons dias", defaultStyle: "inspirador", suggestedOccasions: ["uso-pessoal", "presente-especial", "aniversario"] },
-  cadernos: { theme: "Cadernos e diários", guidance: "reflexões, inspiração e mensagens pessoais para registrar ideias e memórias", defaultStyle: "delicado", suggestedOccasions: ["uso-pessoal", "amizade", "presente-especial"] },
-  lembrancas: { theme: "Lembranças", guidance: "mensagens curtas e marcantes para eventos, fáceis de ler em tags e cartões", defaultStyle: "afetuoso", suggestedOccasions: ["nascimento", "casamento", "agradecimento"] },
-  kits: { theme: "Kits e presentes personalizados", guidance: "dedicatórias para pessoas especiais e mensagens curtas para eventos", defaultStyle: "afetuoso", suggestedOccasions: ["presente-especial", "agradecimento", "aniversario"] },
-  "brindes-corporativos": { theme: "Brindes corporativos", guidance: "mensagens institucionais, profissionais e cordiais, sem intimidade excessiva", defaultStyle: "profissional", suggestedOccasions: ["corporativo", "agradecimento"] },
+  cadernetas: {
+    theme: "Cadernetas de saúde e bebê",
+    guidance: "mensagens afetivas sobre nascimento, maternidade, chegada e primeiros cuidados",
+    defaultStyle: "delicado",
+    suggestedOccasions: ["nascimento", "cha-de-bebe", "batizado"],
+  },
+  "planners-blocos": {
+    theme: "Planners & blocos",
+    guidance: "frases pessoais e inspiradoras para organizar, registrar ideias e celebrar pessoas",
+    defaultStyle: "inspirador",
+    suggestedOccasions: ["uso-pessoal", "dia-dos-pais", "presente-especial"],
+  },
+  "mimos-lembrancas": {
+    theme: "Mimos & lembranças",
+    guidance: "mensagens curtas e afetuosas para pequenos presentes, lembranças e agradecimentos",
+    defaultStyle: "afetuoso",
+    suggestedOccasions: ["dia-dos-professores", "agradecimento", "presente-especial"],
+  },
+  "brindes-personalizados": {
+    theme: "Brindes personalizados",
+    guidance: "mensagens curtas e acolhedoras para acompanhar presentes e pequenas celebrações",
+    defaultStyle: "afetuoso",
+    suggestedOccasions: ["dia-dos-professores", "agradecimento", "presente-especial"],
+  },
 };
-const BABY: Profile = { theme: "Cadernetas de saúde e bebê", guidance: "mensagens afetivas sobre nascimento, maternidade, chegada e primeiros cuidados", defaultStyle: "delicado", suggestedOccasions: ["nascimento", "cha-de-bebe", "batizado"] };
 
 export function getAiProfile(p: Pick<Product, "slug" | "category">): Profile {
-  if (/bebe|saude|maternidade/.test(p.slug)) return BABY;
-  return BY_CATEGORY[p.category] ?? BY_CATEGORY["kits"]!;
+  return BY_CATEGORY[p.category] ?? BY_CATEGORY["mimos-lembrancas"]!;
 }
 export const LENGTH_OPTIONS = [60, 100, 140, 180, 220];
