@@ -18,7 +18,7 @@ A vitrine original apresenta oito itens em quatro coleções: Cadernetas, Planne
 
 Os preços e prazos são referências. A PapeLemi confirma disponibilidade, personalização, frete e pagamento antes da produção.
 
-**Importante:** o catálogo no código ainda é conteúdo de referência, não uma integração com banco de dados. As imagens atualmente usadas são provisórias; os arquivos originais de fotografia precisam ser recuperados do backup do site antes da homologação visual final.
+**Importante:** o catálogo no código ainda é conteúdo de referência, não uma integração com banco de dados. As oito fotografias originais e as fontes DM Sans/DM Serif Display foram recuperadas do HTML integral da vitrine e agora são servidas localmente pelo projeto.
 
 ## Personalização com IA
 

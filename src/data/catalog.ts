@@ -1,10 +1,19 @@
 // Catálogo fiel à vitrine original da PapeLemi.
 // Preços e prazos são referências exibidas na vitrine; a loja confirma disponibilidade,
 // personalização, frete e pagamento antes da produção.
-// ATENÇÃO: as imagens atuais são provisórias. Substituir pelos arquivos originais assim que o
-// backup de ativos do site de origem estiver disponível.
-export const img = (id: string, w = 900) =>
-  "https://images.unsplash.com/photo-" + id + "?w=" + w + "&q=80&auto=format&fit=crop";
+// Fotografias originais recuperadas do HTML integral da vitrine PapeLemi.
+const ASSET_BY_SOURCE_ID: Record<string, string> = {
+  "1519337265831-281ec6cc8514": "/images/papelemi/caderneta-ursinho-clean.jpg",
+  "1531346878377-a5be20888e57": "/images/papelemi/caderneta-astronauta-luxo.jpg",
+  "1517842645767-c639042777db": "/images/papelemi/caderneta-raio-de-sol.jpg",
+  "1527239441953-caffd968d952": "/images/papelemi/planner-devocional-masculino.jpg",
+  "1452860606245-08befc0ff44b": "/images/papelemi/bloco-anotacoes-capa-dura.jpg",
+  "1586075010923-2dd4570fb338": "/images/papelemi/bloco-notas-9x11.jpg",
+  "1513201099705-a9746e1e201f": "/images/papelemi/marca-pagina-magnetico.jpg",
+  "1549465220-1a8b9238cd48": "/images/papelemi/caixa-porta-chocolate.jpg",
+};
+export const img = (id: string, _width = 900) =>
+  ASSET_BY_SOURCE_ID[id] ?? "/images/papelemi/caderneta-ursinho-clean.jpg";
 
 export type Category = { slug: string; name: string; description: string; image: string };
 export type PersonalizationOption =
@@ -34,7 +43,7 @@ export type Product = {
 
 export const categories: Category[] = [
   { slug: "cadernetas", name: "Cadernetas", description: "Para guardar cada fase.", image: img("1519337265831-281ec6cc8514") },
-  { slug: "planners-blocos", name: "Planners & blocos", description: "Ideias para o dia a dia.", image: img("1531346878377-a5be20888e57") },
+  { slug: "planners-blocos", name: "Planners & blocos", description: "Ideias para o dia a dia.", image: img("1527239441953-caffd968d952") },
   { slug: "mimos-lembrancas", name: "Mimos & lembranças", description: "Pequenos grandes gestos.", image: img("1513201099705-a9746e1e201f") },
   { slug: "brindes-personalizados", name: "Brindes personalizados", description: "Sua marca com afeto.", image: img("1549465220-1a8b9238cd48") },
 ];

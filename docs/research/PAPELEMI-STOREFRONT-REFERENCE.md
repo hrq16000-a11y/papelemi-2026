@@ -49,9 +49,17 @@ entrega e pagamento são confirmados antes da produção.
 - Rosa antigo como acento e grafite azulado no rodapé e nos botões principais.
 - Cartões de coleção e produtos com fotografia em destaque, sem molduras pesadas.
 
-## Pendência de fidelidade
+## Ativos originais recuperados
 
-Os nomes, preços, prazos e estrutura foram recuperados da página. Os arquivos originais das fotografias
-não estão presentes no repositório papelemi-2026. As imagens usadas nesta primeira implementação são
-temporárias e devem ser substituídas pelos arquivos originais antes de considerar a reprodução visual
-concluída. A captura de tela não tem resolução suficiente para substituir os arquivos de fotografia.
+O HTML integral da vitrine foi fornecido na conversa e contém as fotografias originais incorporadas em base64. Foram extraídas oito fotografias de produto, reaproveitadas também nas coleções e na seção editorial:
+
+- `public/images/papelemi/caderneta-ursinho-clean.jpg`
+- `public/images/papelemi/caderneta-astronauta-luxo.jpg`
+- `public/images/papelemi/caderneta-raio-de-sol.jpg`
+- `public/images/papelemi/planner-devocional-masculino.jpg`
+- `public/images/papelemi/bloco-anotacoes-capa-dura.jpg`
+- `public/images/papelemi/bloco-notas-9x11.jpg`
+- `public/images/papelemi/marca-pagina-magnetico.jpg`
+- `public/images/papelemi/caixa-porta-chocolate.jpg`
+
+Também foram recuperadas as fontes originais DM Sans e DM Serif Display, com seus subconjuntos Unicode. Fotografias e fontes são servidas localmente pelo projeto; a vitrine não depende de imagens Unsplash ou Google Fonts.

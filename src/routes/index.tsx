@@ -3,7 +3,7 @@ import { ArrowRight, Heart, Package, PenLine } from "lucide-react";
 import { img, publishedProducts } from "@/data/catalog";
 import { ProductGrid } from "@/components/store/ProductCard";
 
-const hero = img("1517842645767-c639042777db", 1600);
+const hero = img("1519337265831-281ec6cc8514", 1600);
 const storyImage = img("1527239441953-caffd968d952", 1400);
 
 export const Route = createFileRoute("/")({
