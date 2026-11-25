@@ -15,7 +15,6 @@ export const Route = createFileRoute("/categoria/$slug")({
 
 function CategoryPage() {
   const loaderCat = Route.useLoaderData();
-  const { slug } = Route.useParams();
   const { publishedProducts } = useCatalog();
   const c = loaderCat;
   if (!c) return (

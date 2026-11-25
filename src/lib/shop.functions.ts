@@ -2,19 +2,83 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
-import { getCatalogFromDatabase, getPublishedCategoryWithFallback, getPublishedProductWithFallback, publicClient, productFromRow } from "@/lib/catalog.repository.server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+import type { Category, Product } from "@/data/catalog";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
-export const getCatalog = createServerFn({ method: "GET" }).handler(async () => getCatalogFromDatabase());
+// Cliente público (somente leitura) para dados abertos da loja.
+function publicClient() {
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) throw new Error("Banco de dados não configurado");
+  return createClient<Database>(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
+        headers.set("apikey", key);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+}
+
+type ProductRow = Database["public"]["Tables"]["products"]["Row"];
+type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+
+const categoryFromRow = (r: CategoryRow): Category => ({
+  slug: r.slug, name: r.name, description: r.description, image: r.image,
+});
+
+const productFromRow = (r: ProductRow): Product => ({
+  slug: r.slug,
+  name: r.name,
+  category: r.category_slug,
+  description: r.description,
+  images: r.images,
+  price: Number(r.price),
+  ...(r.promo_price == null ? {} : { promoPrice: Number(r.promo_price) }),
+  colors: r.colors,
+  sizes: r.sizes,
+  finishes: r.finishes,
+  productionDays: r.production_days,
+  stock: r.stock,
+  published: r.published,
+  bestSeller: r.best_seller,
+  personalizable: r.personalizable,
+  personalization: (r.personalization ?? []) as Product["personalization"],
+  ...(r.min_qty == null ? {} : { minQty: r.min_qty }),
+});
+
+export const getCatalog = createServerFn({ method: "GET" }).handler(async () => {
+  const sb = publicClient();
+  const [{ data: cats, error: e1 }, { data: prods, error: e2 }] = await Promise.all([
+    sb.from("categories").select("*").order("sort"),
+    sb.from("products").select("*"),
+  ]);
+  if (e1 || e2) throw new Error(e1?.message ?? e2?.message ?? "Falha ao carregar catálogo");
+  return {
+    categories: (cats ?? []).map(categoryFromRow),
+    products: (prods ?? []).map(productFromRow),
+  };
+});
 
 export const getCatalogProduct = createServerFn({ method: "GET" })
   .validator(z.object({ slug: z.string().trim().min(1).max(80) }))
-  .handler(async ({ data }) => getPublishedProductWithFallback(data.slug));
+  .handler(async ({ data }) => {
+    const { getPublishedProductWithFallback } = await import("@/lib/catalog.repository.server");
+    return getPublishedProductWithFallback(data.slug);
+  });
 
 export const getCatalogCategory = createServerFn({ method: "GET" })
   .validator(z.object({ slug: z.string().trim().min(1).max(80) }))
-  .handler(async ({ data }) => getPublishedCategoryWithFallback(data.slug));
+  .handler(async ({ data }) => {
+    const { getPublishedCategoryWithFallback } = await import("@/lib/catalog.repository.server");
+    return getPublishedCategoryWithFallback(data.slug);
+  });
 
 export const getCuratedPhrases = createServerFn({ method: "GET" }).handler(async () => {
   const sb = publicClient();

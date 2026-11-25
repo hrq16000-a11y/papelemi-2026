@@ -1,10 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
-  categories as fallbackCategories,
   getCategory as getFallbackCategory,
   getProduct as getFallbackProduct,
-  products as fallbackProducts,
   type Category,
   type Product,
 } from "@/data/catalog";
@@ -147,8 +145,3 @@ export async function getPublishedCategoryWithFallback(slug: string): Promise<Ca
   }
 }
 
-// Used only as a fallback by the storefront provider when the database cannot be read.
-export const localCatalogFallback = {
-  categories: fallbackCategories,
-  products: fallbackProducts,
-};

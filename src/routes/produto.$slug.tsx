@@ -27,7 +27,6 @@ export const Route = createFileRoute("/produto/$slug")({
 
 function ProductPage() {
   const loaderP = Route.useLoaderData();
-  const { slug } = Route.useParams();
   const { publishedProducts } = useCatalog();
   const p = loaderP;
   if (!p) return (
