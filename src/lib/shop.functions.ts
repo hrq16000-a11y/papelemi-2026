@@ -4,7 +4,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import type { Category, Product } from "@/data/catalog";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -26,44 +25,9 @@ function publicClient() {
   });
 }
 
-type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
-
-const categoryFromRow = (r: CategoryRow): Category => ({
-  slug: r.slug, name: r.name, description: r.description, image: r.image,
-});
-
-const productFromRow = (r: ProductRow): Product => ({
-  slug: r.slug,
-  name: r.name,
-  category: r.category_slug,
-  description: r.description,
-  images: r.images,
-  price: Number(r.price),
-  ...(r.promo_price == null ? {} : { promoPrice: Number(r.promo_price) }),
-  colors: r.colors,
-  sizes: r.sizes,
-  finishes: r.finishes,
-  productionDays: r.production_days,
-  stock: r.stock,
-  published: r.published,
-  bestSeller: r.best_seller,
-  personalizable: r.personalizable,
-  personalization: (r.personalization ?? []) as Product["personalization"],
-  ...(r.min_qty == null ? {} : { minQty: r.min_qty }),
-});
-
 export const getCatalog = createServerFn({ method: "GET" }).handler(async () => {
-  const sb = publicClient();
-  const [{ data: cats, error: e1 }, { data: prods, error: e2 }] = await Promise.all([
-    sb.from("categories").select("*").order("sort"),
-    sb.from("products").select("*"),
-  ]);
-  if (e1 || e2) throw new Error(e1?.message ?? e2?.message ?? "Falha ao carregar catálogo");
-  return {
-    categories: (cats ?? []).map(categoryFromRow),
-    products: (prods ?? []).map(productFromRow),
-  };
+  const { getCatalogFromDatabase } = await import("@/lib/catalog.repository.server");
+  return getCatalogFromDatabase();
 });
 
 export const getCatalogProduct = createServerFn({ method: "GET" })
@@ -132,6 +96,7 @@ function safeOrigin(origin?: string) {
 export const createOrder = createServerFn({ method: "POST" })
   .validator(orderInput)
   .handler(async ({ data: input }) => {
+    const { productFromRow } = await import("@/lib/catalog.repository.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const slugs = input.items.map((i) => i.slug);
     const { data: rows, error } = await supabaseAdmin.from("products").select("*").in("slug", slugs);
@@ -275,6 +240,7 @@ export const listAdminProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
+    const { productFromRow } = await import("@/lib/catalog.repository.server");
     const { data, error } = await context.supabase.from("products").select("*").order("name");
     if (error) throw new Error(error.message);
     return (data ?? []).map((r) => ({ ...productFromRow(r), minQty: r.min_qty ?? null }));

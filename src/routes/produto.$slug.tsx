@@ -27,7 +27,6 @@ export const Route = createFileRoute("/produto/$slug")({
 
 function ProductPage() {
   const loaderP = Route.useLoaderData();
-  const { publishedProducts } = useCatalog();
   const p = loaderP;
   if (!p) return (
     <div className="mx-auto max-w-xl px-4 py-24 text-center">
