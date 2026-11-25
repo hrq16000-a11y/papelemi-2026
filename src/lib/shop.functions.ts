@@ -70,6 +70,9 @@ const orderLineInput = z.object({
 const quoteInput = z.object({
   items: z.array(orderLineInput).min(1).max(50),
   couponCode: z.string().trim().toUpperCase().min(2).max(40).optional(),
+  destinationZip: z.string().trim().regex(/^\d{5}-?\d{3}$/).optional(),
+  destinationState: z.string().trim().regex(/^[A-Za-z]{2}$/).optional(),
+  shippingOptionId: z.string().trim().min(8).max(64).optional(),
 });
 
 const orderInput = quoteInput.extend({
@@ -95,6 +98,11 @@ const orderInput = quoteInput.extend({
   customerNotes: z.string().trim().max(1000).default(""),
   acceptedPrivacy: z.literal(true),
   quoteToken: z.string().regex(/^[a-f0-9]{64}$/),
+  destinationZip: z.string().trim().regex(/^\d{5}-?\d{3}$/),
+  shippingOptionId: z.string().trim().min(8).max(64),
+}).refine((input) => input.destinationZip.replace(/\D/g, "") === input.address.cep.replace(/\D/g, ""), {
+  path: ["destinationZip"],
+  message: "O CEP utilizado na cotação precisa ser o mesmo do endereço de entrega.",
 });
 
 type QuoteInput = z.infer<typeof quoteInput>;
@@ -132,10 +140,29 @@ async function buildOrderQuote(input: QuoteInput) {
     couponPercent = Number(coupon.percent);
   }
 
+  const totals = calculateOrderTotals(items, couponPercent);
+  const { buildShippingQuote } = await import("@/lib/shipping-quote.server");
+  const shippingQuote = await buildShippingQuote({
+    admin,
+    destinationZip: input.destinationZip,
+    destinationState: input.destinationState,
+    items: input.items,
+    products: rows ?? [],
+    subtotal: totals.subtotal,
+    selectedOptionId: input.shippingOptionId,
+  });
   return {
     items,
     couponCode,
-    ...calculateOrderTotals(items, couponPercent),
+    subtotal: totals.subtotal,
+    discount: totals.discount,
+    shipping: shippingQuote.shipping,
+    total: roundMoney(totals.subtotal - totals.discount + shippingQuote.shipping),
+    shippingOptions: shippingQuote.options,
+    selectedShippingOption: shippingQuote.selectedOption,
+    selectedShippingOptionId: shippingQuote.selectedOptionId,
+    shippingSelectionChanged: shippingQuote.selectionChanged,
+    destinationZip: shippingQuote.destinationZip,
   };
 }
 
@@ -144,6 +171,8 @@ async function createQuoteToken(quote: Awaited<ReturnType<typeof buildOrderQuote
   const payload = JSON.stringify({
     items: quote.items,
     couponCode: quote.couponCode,
+    destinationZip: quote.destinationZip,
+    selectedShippingOption: quote.selectedShippingOption,
     subtotal: quote.subtotal,
     discount: quote.discount,
     shipping: quote.shipping,
@@ -168,6 +197,10 @@ export const getOrderQuote = createServerFn({ method: "POST" })
       discount: quote.discount,
       shipping: quote.shipping,
       total: quote.total,
+      shippingOptions: quote.shippingOptions,
+      selectedShippingOption: quote.selectedShippingOption,
+      selectedShippingOptionId: quote.selectedShippingOptionId,
+      shippingSelectionChanged: quote.shippingSelectionChanged,
     };
   });
 
@@ -185,6 +218,9 @@ export const createOrder = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const quote = await buildOrderQuote(input);
+    if (!quote.selectedShippingOption) {
+      throw new Error("SHIPPING_CHANGED: Selecione novamente uma opção de frete antes de registrar a encomenda.");
+    }
     if (await createQuoteToken(quote) !== input.quoteToken) {
       throw new Error("PRICE_CHANGED: Os valores ou condições mudaram. O resumo foi atualizado; confira antes de enviar novamente.");
     }
@@ -200,6 +236,16 @@ export const createOrder = createServerFn({ method: "POST" })
         district: input.address.district,
         city: input.address.city,
         state: input.address.state,
+        shipping: quote.selectedShippingOption ? {
+          option_id: quote.selectedShippingOption.id,
+          provider: quote.selectedShippingOption.provider,
+          service_name: quote.selectedShippingOption.service_name,
+          estimated_delivery_days: quote.selectedShippingOption.estimated_delivery_days,
+          estimated: quote.selectedShippingOption.estimated,
+          requires_confirmation: quote.selectedShippingOption.requiresConfirmation,
+          pickup_address: quote.selectedShippingOption.pickupAddress ?? "",
+          pickup_instructions: quote.selectedShippingOption.pickupInstructions ?? "",
+        } : null,
       },
       items: quote.items,
       subtotal: quote.subtotal,
@@ -281,7 +327,7 @@ export const createOrder = createServerFn({ method: "POST" })
     if (orderItemsError) throw new Error("Não foi possível registrar os itens do pedido.");
 
     let initPoint: string | null = null;
-    const paymentReady = mpConfigured();
+    const paymentReady = mpConfigured() && !quote.selectedShippingOption.requiresConfirmation;
     if (paymentReady) {
       const origin = safeOrigin(input.origin);
       const pref = (await mpRequest("checkout/preferences", {
@@ -301,7 +347,7 @@ export const createOrder = createServerFn({ method: "POST" })
       })) as { init_point?: string };
       initPoint = pref.init_point ?? null;
     }
-    return { orderId, initPoint, total: quote.total, paymentReady };
+    return { orderId, initPoint, total: quote.total, paymentReady, shippingRequiresConfirmation: quote.selectedShippingOption.requiresConfirmation };
   });
 
 export const getOrderStatus = createServerFn({ method: "GET" })
