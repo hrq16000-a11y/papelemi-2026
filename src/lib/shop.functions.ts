@@ -782,7 +782,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
       .select("id").eq("store_key", "papelemi").eq("product_slug", data.slug).limit(1);
     if (referenceError) throw new Error(referenceError.message);
     if (references?.length) throw new Error("Este produto aparece em pedidos históricos e não pode ser excluído. Mantenha-o arquivado.");
-    const { error } = await admin.from("products").delete().eq("store_key", "papelemi").eq("slug", data.slug).is("archived_at", "not.is", null);
+    const { error } = await admin.from("products").delete().eq("store_key", "papelemi").eq("slug", data.slug).not("archived_at", "is", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
