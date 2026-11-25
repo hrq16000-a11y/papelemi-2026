@@ -297,3 +297,36 @@ A intenção atual é compartilhar infraestrutura/banco e recursos de plataforma
 ## 15. Critério de conclusão
 
 A PapeLemi só pode ser considerada pronta quando catálogo e personalização funcionarem de ponta a ponta; pedidos forem persistidos; administração estiver protegida; frete e pagamento forem reais e comprovados (ou claramente indisponíveis); analytics receber eventos; políticas estiverem corretas; SEO e acessibilidade forem validados; mobile estiver homologado; e a publicação Production tiver SHA/URL confirmados. Tudo isso sem misturar dados da Empório Lele Cute e da PapeLemi.
+
+
+---
+
+## 16. Atualização de prioridade aprovada pelo proprietário — 25/11/2026
+
+Esta decisão mais recente **substitui temporariamente a ordem de execução multi-loja descrita na seção 9 e no prompt mestre antigo**.
+
+### Prioridade atual: paridade operacional Empório → PapeLemi
+
+A PapeLemi será a primeira loja a receber a estrutura operacional e o modelo de banco de dados da Empório Lele Cute, adaptados à marca e aos dados próprios da PapeLemi.
+
+- Reproduzir os módulos e fluxos operacionais reais da Empório na PapeLemi.
+- Usar as migrations e o código Empório como referência de estrutura e regras.
+- Preservar a stack TanStack Start atual da PapeLemi.
+- Manter o Supabase dedicado PapeLemi em São Paulo.
+- Criar estruturas PapeLemi próprias; não importar produtos, clientes, pedidos, preços, imagens, vídeos, conteúdo, campanhas ou credenciais do Empório.
+- Não usar mídia do Empório na PapeLemi.
+- Não fazer restore bruto do dump PostgreSQL nem copiar schemas internos/segredos do Supabase.
+
+### Adiado para fase futura
+
+A centralização definitiva de várias lojas, o seletor de loja em um clique para Letícia, a tenantização completa, as permissões globais e a migração do Empório ficam adiados até a PapeLemi operar de forma sólida como loja independente.
+
+### Primeira entrega de implementação
+
+A consolidação de trabalho existente em #4 (catálogo Supabase), #5 (segurança administrativa), #6 (integridade do checkout) e #7 (dashboard), mais o diretório inicial de clientes derivado dos pedidos.
+
+O diretório de clientes não substitui o CRM relacional da Empório; a tabela `customers` e os vínculos normalizados serão portados numa etapa de banco posterior.
+
+Documento operacional desta decisão: `docs/operations/PAPELEMI_EMPORIO_CORE_PARITY_DECISION_2026-11-25.md`.
+
+**Regra de precedência:** em caso de conflito com a seção 9 ou o prompt mestre anterior, seguir esta atualização mais recente. Não iniciar multi-loja antes de autorização e conclusão da paridade operacional da PapeLemi.
