@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(26);
+SELECT plan(28);
 SELECT has_table('public', 'stores', 'store registry exists');
 SELECT has_table('public', 'customers', 'normalized CRM table exists');
 SELECT has_table('public', 'order_items', 'normalized order items table exists');
@@ -24,6 +24,8 @@ SELECT ok(EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.orders'::re
 SELECT ok(EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.order_items'::regclass AND conname='order_items_store_order_fkey'), 'order items reference orders within the same store');
 SELECT ok(EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.customers'::regclass AND conname='customers_store_email_unique'), 'customer email uniqueness is store scoped');
 SELECT ok(EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.user_roles'::regclass AND conname='user_roles_store_user_role_key'), 'user roles are unique per store');
+SELECT ok(to_regclass('public.products_store_category_idx') IS NOT NULL,'product store/category foreign key is indexed');
+SELECT ok(to_regclass('public.user_roles_user_id_idx') IS NOT NULL,'user role user_id foreign key is indexed');
 SELECT ok(to_regclass('public.products_store_category_idx') IS NOT NULL,'product store/category foreign key is indexed');
 SELECT ok(to_regclass('public.user_roles_user_id_idx') IS NOT NULL,'user role user_id foreign key is indexed');
 SELECT * FROM finish();
