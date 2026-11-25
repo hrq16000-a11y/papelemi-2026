@@ -92,7 +92,7 @@ Projeto conectado e consultado: \`gpdpfoxpbferjwbppcmb\`.
 - Índices públicos: 11.
 - Buckets Storage: 0.
 - Edge Functions implantadas: 0.
-- Dados atuais: 4 categorias, 8 produtos, 10 frases; 0 pedidos, 0 cupons e 0 papéis administrativos.
+- Dados atuais: 4 categorias, 8 produtos, 10 frases; 0 pedidos, 0 cupons e 1 papel `admin` vinculado à primeira conta proprietária (UUID verificado em Auth e `public.user_roles`).
 
 Migrações aplicadas: 6.
 
