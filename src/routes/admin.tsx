@@ -6,7 +6,7 @@ import { brl, type Product } from "@/data/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   deleteCategory, deleteCoupon, deletePhrase, deleteProduct,
-  getMyRole, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders,
+  getMyRole, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders, saveCustomer,
   saveCategory, saveCoupon, savePhrase, saveProduct, setOrderStatus,
 } from "@/lib/shop.functions";
 import { cn } from "@/lib/utils";
@@ -364,9 +364,28 @@ function OrdersTab() {
 
 // ===== Clientes =====
 
-// Enquanto a tabela CRM canônica da Empório ainda não foi portada, o diretório
-// agrupa os snapshots de clientes existentes nos pedidos da própria PapeLemi.
+// Diretório do CRM relacional da PapeLemi, com histórico de pedidos vinculado.
 type Customer = Awaited<ReturnType<typeof listCustomers>>["customers"][number];
+
+type CustomerForm = {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+  city: string;
+  state: string;
+  status: "active" | "inactive";
+  tags: string;
+  notes: string;
+};
+
+const EMPTY_CUSTOMER_FORM: CustomerForm = {
+  name: "", email: "", phone: "", whatsapp: "", city: "", state: "",
+  status: "active", tags: "", notes: "",
+};
+
+const CUSTOMER_ACCOUNT_STATUS: Record<string, string> = { active: "Ativo", inactive: "Inativo" };
 
 const CUSTOMER_STATUS: Record<string, string> = {
   pending: "Aguardando confirmação",
@@ -382,6 +401,49 @@ function CustomersTab() {
   const [truncated, setTruncated] = useState(false);
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [form, setForm] = useState<CustomerForm | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const editCustomer = (customer: Customer) => setForm({
+    id: customer.id,
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone,
+    whatsapp: customer.phone,
+    city: customer.city,
+    state: customer.state,
+    status: customer.status === "inactive" ? "inactive" : "active",
+    tags: customer.tags.join(", "),
+    notes: customer.notes,
+  });
+
+  const submitCustomer = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!form || saving) return;
+    setSaving(true);
+    try {
+      const tags = [...new Set(form.tags.split(",").map((tag) => tag.trim()).filter(Boolean))];
+      await saveCustomer({ data: {
+        id: form.id,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        whatsapp: form.whatsapp,
+        city: form.city,
+        state: form.state,
+        status: form.status,
+        tags,
+        notes: form.notes,
+      } });
+      toast.success(form.id ? "Cadastro do cliente atualizado." : "Cliente cadastrado.");
+      setForm(null);
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o cliente.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setRefreshing(true);
@@ -419,11 +481,67 @@ function CustomersTab() {
             Cadastros persistentes do CRM da PapeLemi, com histórico de pedidos vinculado.
           </p>
         </div>
-        <button type="button" onClick={() => void load()} disabled={refreshing} className={btnGhost}>
-          {refreshing ? <Loader2 className="size-3.5 animate-spin" /> : null}
-          Atualizar
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setForm({ ...EMPTY_CUSTOMER_FORM })} className={btn}>
+            <Plus className="size-3.5" /> Novo cliente
+          </button>
+          <button type="button" onClick={() => void load()} disabled={refreshing} className={btnGhost}>
+            {refreshing ? <Loader2 className="size-3.5 animate-spin" /> : null}
+            Atualizar
+          </button>
+        </div>
       </div>
+
+      {form && (
+        <form onSubmit={submitCustomer} className="space-y-4 rounded-2xl border border-border bg-card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-medium">{form.id ? "Editar cliente" : "Novo cliente"}</h3>
+              <p className="text-xs text-muted-foreground">O cadastro fica restrito à loja PapeLemi.</p>
+            </div>
+            <button type="button" onClick={() => setForm(null)} className={btnGhost}>Cancelar</button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="block text-sm sm:col-span-2 lg:col-span-1">Nome
+              <input required minLength={2} maxLength={120} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={cn(input, "mt-1 w-full")} />
+            </label>
+            <label className="block text-sm">E-mail
+              <input type="email" maxLength={254} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className={cn(input, "mt-1 w-full")} />
+            </label>
+            <label className="block text-sm">Telefone
+              <input maxLength={40} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} className={cn(input, "mt-1 w-full")} />
+            </label>
+            <label className="block text-sm">WhatsApp
+              <input maxLength={40} value={form.whatsapp} onChange={(event) => setForm({ ...form, whatsapp: event.target.value })} className={cn(input, "mt-1 w-full")} />
+            </label>
+            <label className="block text-sm">Cidade
+              <input maxLength={100} value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} className={cn(input, "mt-1 w-full")} />
+            </label>
+            <label className="block text-sm">UF
+              <input maxLength={2} value={form.state} onChange={(event) => setForm({ ...form, state: event.target.value.toUpperCase() })} className={cn(input, "mt-1 w-full")} />
+            </label>
+            <label className="block text-sm">Situação do cadastro
+              <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as CustomerForm["status"] })} className={cn(input, "mt-1 w-full")}>
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+              </select>
+            </label>
+            <label className="block text-sm sm:col-span-2">Tags (separadas por vírgula)
+              <input maxLength={640} value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="Ex.: recorrente, presente, corporativo" className={cn(input, "mt-1 w-full")} />
+            </label>
+            <label className="block text-sm sm:col-span-2 lg:col-span-3">Observações internas
+              <textarea rows={3} maxLength={2000} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} className={cn(input, "mt-1 w-full resize-y")} />
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button type="button" onClick={() => setForm(null)} className={btnGhost}>Cancelar</button>
+            <button type="submit" disabled={saving} className={btn}>
+              {saving ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              {form.id ? "Salvar alterações" : "Cadastrar cliente"}
+            </button>
+          </div>
+        </form>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <input
@@ -461,6 +579,7 @@ function CustomersTab() {
                   <th className="px-4 py-3 font-medium">Pedidos</th>
                   <th className="px-4 py-3 font-medium">Última encomenda</th>
                   <th className="px-4 py-3 font-medium">Status recente</th>
+                  <th className="px-4 py-3 text-right font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -473,7 +592,15 @@ function CustomersTab() {
                     <td className="px-4 py-3 text-muted-foreground">{customer.phone || "—"}</td>
                     <td className="px-4 py-3 tabular-nums">{customer.ordersCount}</td>
                     <td className="px-4 py-3 text-muted-foreground">{new Date(customer.lastOrderAt).toLocaleDateString("pt-BR")}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{CUSTOMER_STATUS[customer.lastOrderStatus] ?? customer.lastOrderStatus}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <span>{CUSTOMER_STATUS[customer.lastOrderStatus] ?? customer.lastOrderStatus}</span>
+                      <span className="mt-1 block text-xs">{CUSTOMER_ACCOUNT_STATUS[customer.status] ?? customer.status}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button type="button" onClick={() => editCustomer(customer)} className={btnGhost} aria-label={"Editar cliente " + customer.name}>
+                        <Pencil className="size-3.5" /> Editar
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -490,7 +617,12 @@ function CustomersTab() {
                   <span>{customer.ordersCount} pedido(s)</span>
                   <span>Último: {new Date(customer.lastOrderAt).toLocaleDateString("pt-BR")}</span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{CUSTOMER_STATUS[customer.lastOrderStatus] ?? customer.lastOrderStatus}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {CUSTOMER_STATUS[customer.lastOrderStatus] ?? customer.lastOrderStatus} · {CUSTOMER_ACCOUNT_STATUS[customer.status] ?? customer.status}
+                </p>
+                <button type="button" onClick={() => editCustomer(customer)} className={cn(btnGhost, "mt-3 w-full justify-center")}>
+                  <Pencil className="size-3.5" /> Editar cadastro
+                </button>
               </li>
             ))}
           </ul>
