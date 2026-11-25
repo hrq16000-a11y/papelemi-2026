@@ -59,3 +59,10 @@ A restauração precisa ocorrer em um ambiente PostgreSQL isolado e compatível,
 A opção de criar uma development branch no projeto PapeLemi foi consultada. O preço retornado para a branch é **US$ 0,01344 por hora**. Nenhuma branch foi criada.
 
 A criação exige aprovação explícita do proprietário para esse custo recorrente. Uma branch Supabase também nasce sem os dados de produção; ela serve para testar migrações e RLS, não substitui o restore do backup Empório.
+
+
+## 9. Vercel Preview e acesso ao banco
+
+Foi consultado o inventário de variáveis do projeto Vercel PapeLemi sem descriptografar valores. As variáveis de Supabase e PostgreSQL retornadas estão direcionadas apenas a `production`; não foi encontrado conjunto Preview correspondente.
+
+O preview da branch de documentação foi gerado como `READY`, mas não recebeu as variáveis de produção no inventário consultado. Isso reduz o risco de a branch de documentação operar sobre o banco real. Não usar esse preview como homologação funcional autenticada.
