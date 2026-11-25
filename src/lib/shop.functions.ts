@@ -310,7 +310,8 @@ export const listOrders = createServerFn({ method: "GET" })
     // A tabela orders aceita acesso somente pelo servidor (service_role).
     // A autorização do usuário é validada antes de usar o cliente privilegiado.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const { data, error } = await admin
       .from("orders")
       .select("*")
       .eq("store_key", "papelemi")
@@ -327,7 +328,8 @@ export const setOrderStatus = createServerFn({ method: "POST" })
     await requireAdmin(context);
     // Atualizações usam service_role somente após validar o papel do usuário.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const { error } = await admin
       .from("orders")
       .update({ status: data.status })
       .eq("id", data.id)

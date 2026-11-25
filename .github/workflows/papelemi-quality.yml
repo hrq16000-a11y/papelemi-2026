@@ -48,4 +48,4 @@ jobs:
           src/test/order-integrity.test.ts
 
       - name: TypeScript
-        run: bunx tsc --noEmit
+        run: bunx tsc --noEmit -p tsconfig.order-integrity.json

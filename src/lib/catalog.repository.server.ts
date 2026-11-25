@@ -75,7 +75,7 @@ export const productFromRow = (row: ProductRow): Product => ({
   published: row.published,
   bestSeller: row.best_seller,
   personalizable: row.personalizable,
-  personalization: personalizationSchema.parse(row.personalization ?? []),
+  personalization: personalizationSchema.parse(row.personalization ?? []) as Product["personalization"],
   ...(row.min_qty == null ? {} : { minQty: row.min_qty }),
 });
 

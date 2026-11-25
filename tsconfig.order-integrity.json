@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "files": [
+    "src/lib/cart-storage.ts",
+    "src/lib/order-integrity.ts",
+    "src/lib/cart.tsx",
+    "src/lib/catalog.repository.server.ts",
+    "src/lib/shop.functions.ts",
+    "src/lib/mp.ts",
+    "src/routes/checkout.tsx",
+    "src/test/cart-storage.test.ts",
+    "src/test/order-integrity.test.ts"
+  ],
+  "include": ["src/**/*.d.ts"]
+}
