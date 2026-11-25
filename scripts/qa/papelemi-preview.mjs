@@ -45,6 +45,7 @@ async function inspectLayout(width) {
     documentWidth: document.documentElement.scrollWidth,
     bodyWidth: document.body.scrollWidth,
     description: document.querySelector('meta[name="description"]')?.getAttribute("content") ?? "",
+    robots: document.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "",
     jsonLd: Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
       .map((script) => script.textContent ?? "")
       .filter(Boolean),
@@ -80,6 +81,7 @@ try {
     const category = await inspectLayout(width);
     if (!categoryResponse.ok()) throw new Error(`Categoria retornou HTTP ${categoryResponse.status()}`);
     if (!category.h1.includes("Cadernetas")) throw new Error(`H1 de categoria inesperado em ${width}px: ${category.h1}`);
+    if (!category.description) throw new Error(`Meta description de categoria ausente em ${width}px`);
     if (category.documentWidth > width + 1 || category.bodyWidth > width + 1) {
       throw new Error(`Overflow horizontal na categoria em ${width}px`);
     }
@@ -100,6 +102,15 @@ try {
   if (!missing.h1.includes("Produto não encontrado")) {
     throw new Error(`Produto inexistente não foi tratado corretamente: ${missing.h1}`);
   }
+  if (!missing.robots.includes("noindex")) throw new Error("Produto inexistente não recebeu noindex");
+
+  const missingCategoryResponse = await openRoute("/categoria/qa-categoria-inexistente-20261125");
+  const missingCategory = await inspectLayout(390);
+  if (!missingCategoryResponse.ok()) throw new Error(`Categoria inexistente retornou HTTP ${missingCategoryResponse.status()}`);
+  if (!missingCategory.h1.includes("Categoria não encontrada")) {
+    throw new Error(`Categoria inexistente não foi tratada corretamente: ${missingCategory.h1}`);
+  }
+  if (!missingCategory.robots.includes("noindex")) throw new Error("Categoria inexistente não recebeu noindex");
 
   if (pageErrors.length) throw new Error(`Erros de hidratação/runtime: ${pageErrors.join(" | ")}`);
 
