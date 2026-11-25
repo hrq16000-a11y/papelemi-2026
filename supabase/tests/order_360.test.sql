@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(38);
+SELECT plan(44);
 
 SELECT ok(to_regtype('public.payment_status') IS NOT NULL, 'payment_status enum exists');
 SELECT has_column('public','orders','order_code','orders has a human-readable order code');
