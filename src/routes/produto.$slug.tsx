@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clock, Minus, Plus, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 import { brl, getProduct, type Product } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
-import { aiField, PhraseGenerator } from "@/components/store/PhraseGenerator";
+import { aiField } from "@/lib/product-personalization";
+const PhraseGenerator = lazy(() => import("@/components/store/PhraseGenerator").then((m) => ({ default: m.PhraseGenerator })));
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ProductGrid } from "@/components/store/ProductCard";
 
@@ -138,7 +139,7 @@ function ProductDetail({ p }: { p: Product }) {
         <DialogContent className="max-h-[92dvh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto rounded-3xl p-5 md:p-8">
           <DialogTitle className="sr-only">Assistente de dedicatórias</DialogTitle>
           <DialogDescription className="sr-only">Crie uma frase personalizada para {p.name}</DialogDescription>
-          {genOpen && <PhraseGenerator fixedProduct={p} onApply={(_, text, toCart) => {
+          {genOpen && <Suspense fallback={<p className="py-8 text-center text-sm text-muted-foreground">Preparando o assistente…</p>}><PhraseGenerator fixedProduct={p} onApply={(_, text, toCart) => {
             if (!ai) return;
             const next = { ...opts, [ai.key]: text };
             setOpts(next); setGenOpen(false);

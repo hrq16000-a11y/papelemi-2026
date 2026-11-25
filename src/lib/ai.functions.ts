@@ -87,7 +87,7 @@ function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number
 }
 
 export const suggestPhrases = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => Input.parse(d))
+  .validator((d: unknown) => Input.parse(d))
   .handler(async ({ data }): Promise<Result> => {
     const product = getProduct(data.productSlug);
     const field = product?.personalization.find((o) => o.key === data.fieldKey && o.type === "text" && o.ai);

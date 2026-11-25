@@ -3,7 +3,7 @@ import { ArrowRight, Minus, Plus, Trash2 } from "lucide-react";
 import { brl, finalPrice } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
-import { aiField } from "@/components/store/PhraseGenerator";
+import { aiField } from "@/lib/product-personalization";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({ meta: [

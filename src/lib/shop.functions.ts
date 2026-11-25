@@ -74,7 +74,7 @@ export const getCuratedPhrases = createServerFn({ method: "GET" }).handler(async
 });
 
 export const validateCoupon = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ code: z.string().trim().min(2).max(40) }))
+  .validator(z.object({ code: z.string().trim().min(2).max(40) }))
   .handler(async ({ data }) => {
     const sb = publicClient();
     const { data: row } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
@@ -116,7 +116,7 @@ function safeOrigin(origin?: string) {
 }
 
 export const createOrder = createServerFn({ method: "POST" })
-  .inputValidator(orderInput)
+  .validator(orderInput)
   .handler(async ({ data: input }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const slugs = input.items.map((i) => i.slug);
@@ -179,7 +179,7 @@ export const createOrder = createServerFn({ method: "POST" })
   });
 
 export const getOrderStatus = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ orderId: z.string().uuid() }))
+  .validator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data }) => {
     if (mpConfigured()) {
       try { await confirmOrderByReference(data.orderId); } catch { /* segue com o status atual */ }
@@ -216,7 +216,7 @@ export const listOrders = createServerFn({ method: "GET" })
 
 export const setOrderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ id: z.string().uuid(), status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]) }))
+  .validator(z.object({ id: z.string().uuid(), status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("orders").update({ status: data.status }).eq("id", data.id);
@@ -254,7 +254,7 @@ export const listAdminProducts = createServerFn({ method: "GET" })
 
 export const saveProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(productInput)
+  .validator(productInput)
   .handler(async ({ context, data: p }) => {
     await requireAdmin(context);
     const { data: existing } = await context.supabase.from("products").select("personalization").eq("slug", p.slug).maybeSingle();
@@ -283,7 +283,7 @@ export const saveProduct = createServerFn({ method: "POST" })
 
 export const deleteProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ slug: z.string().min(1).max(80) }))
+  .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("products").delete().eq("slug", data.slug);
@@ -310,7 +310,7 @@ export const listAdminCategories = createServerFn({ method: "GET" })
 
 export const saveCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(categoryInput)
+  .validator(categoryInput)
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("categories").upsert({ slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort });
@@ -320,7 +320,7 @@ export const saveCategory = createServerFn({ method: "POST" })
 
 export const deleteCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ slug: z.string().min(1).max(80) }))
+  .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("categories").delete().eq("slug", data.slug);
@@ -339,7 +339,7 @@ export const listAdminPhrases = createServerFn({ method: "GET" })
 
 export const savePhrase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({
+  .validator(z.object({
     id: z.string().uuid().optional(),
     phrase: z.string().trim().min(3).max(220),
     occasion: z.string().trim().max(60).default(""),
@@ -357,7 +357,7 @@ export const savePhrase = createServerFn({ method: "POST" })
 
 export const deletePhrase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ id: z.string().uuid() }))
+  .validator(z.object({ id: z.string().uuid() }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("curated_phrases").delete().eq("id", data.id);
@@ -376,7 +376,7 @@ export const listAdminCoupons = createServerFn({ method: "GET" })
 
 export const saveCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({
+  .validator(z.object({
     code: z.string().trim().min(2).max(40).regex(/^[A-Z0-9]+$/, "Use letras maiúsculas e números"),
     percent: z.number().int().min(1).max(90),
     active: z.boolean().default(true),
@@ -390,7 +390,7 @@ export const saveCoupon = createServerFn({ method: "POST" })
 
 export const deleteCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ code: z.string().min(2).max(40) }))
+  .validator(z.object({ code: z.string().min(2).max(40) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("coupons").delete().eq("code", data.code);
