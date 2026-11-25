@@ -94,6 +94,38 @@ jobs:
         working-directory: emporio
         run: sed -i 's/^\[inbucket\]/[local_smtp]/' supabase/config.toml
 
+      - name: Guard cron cleanup for empty local database
+        if: steps.marker.outputs.run == 'true'
+        working-directory: emporio
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("supabase/migrations/20260814154716_b2258712-76bd-49f4-b81e-5854d32e5bd9.sql")
+          sql = path.read_text()
+          replacements = {
+              "SELECT cron.unschedule('submit-sitemap-weekly');":
+                  "SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'submit-sitemap-weekly';",
+              "SELECT cron.unschedule('weekly-sitemap-submission');":
+                  "SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'weekly-sitemap-submission';",
+              "SELECT cron.unschedule('submit-sitemap-12h');":
+                  "SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'submit-sitemap-12h';",
+              "SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'seo-sitemap-auto-resubmit-15m'), schedule := '7 * * * *');":
+                  "SELECT cron.alter_job(jobid, schedule := '7 * * * *') FROM cron.job WHERE jobname = 'seo-sitemap-auto-resubmit-15m';",
+              "SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'telemetry-alert-monitor-15m'), schedule := '23 * * * *');":
+                  "SELECT cron.alter_job(jobid, schedule := '23 * * * *') FROM cron.job WHERE jobname = 'telemetry-alert-monitor-15m';",
+              "SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'instagram-sync-hourly'), schedule := '0 */6 * * *');":
+                  "SELECT cron.alter_job(jobid, schedule := '0 */6 * * *') FROM cron.job WHERE jobname = 'instagram-sync-hourly';",
+              "SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'instagram-bulk-refresh-hourly'), schedule := '17 */6 * * *');":
+                  "SELECT cron.alter_job(jobid, schedule := '17 */6 * * *') FROM cron.job WHERE jobname = 'instagram-bulk-refresh-hourly';",
+          }
+          for old, new in replacements.items():
+              if old not in sql:
+                  raise SystemExit(f"Expected cron statement not found: {old}")
+              sql = sql.replace(old, new)
+          path.write_text(sql)
+          PY
+
       - name: Start isolated local Supabase
         if: steps.marker.outputs.run == 'true'
         working-directory: emporio
@@ -124,6 +156,7 @@ jobs:
             echo "- Source SHA: $(git rev-parse HEAD)"
             echo "- Migration files: $(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)"
             echo "- Generated from local migrations only; no hosted database was queried."
+            echo "- Local replay only: absent cron jobs were guarded in the temporary checkout; Emporio source migrations were not modified."
             echo "- No row data, auth users, credentials or secrets are included."
           } > ../docs/operations/reference/EMPORIO_SCHEMA_SNAPSHOT_README.md
 
