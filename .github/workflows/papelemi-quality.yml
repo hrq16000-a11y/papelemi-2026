@@ -89,10 +89,8 @@ jobs:
         working-directory: emporio
         run: |
           mkdir -p ../docs/operations/reference
-          supabase db dump --local --schema public \\
-            -f ../docs/operations/reference/EMPORIO_PUBLIC_SCHEMA_2026-11-25.sql
-          supabase gen types typescript --local --schema public \\
-            > ../docs/operations/reference/EMPORIO_DATABASE_TYPES_2026-11-25.ts
+          supabase db dump --local --schema public -f ../docs/operations/reference/EMPORIO_PUBLIC_SCHEMA_2026-11-25.sql
+          supabase gen types typescript --local --schema public > ../docs/operations/reference/EMPORIO_DATABASE_TYPES_2026-11-25.ts
 
       - name: Record migration reconstruction metadata
         working-directory: emporio
