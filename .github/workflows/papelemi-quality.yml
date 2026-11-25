@@ -48,7 +48,7 @@ jobs:
           'src/routes/produto.$slug.tsx'
           src/test/cart-storage.test.ts
           src/test/order-integrity.test.ts
-          src/test/customer-summary.test.ts
+          src/test/customer-summary.test.ts src/lib/shipping-quote.ts src/lib/shipping-quote.server.ts src/test/shipping-quote.test.ts
 
       - name: TypeScript
         run: bunx tsc --noEmit -p tsconfig.order-integrity.json
