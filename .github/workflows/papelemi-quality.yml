@@ -43,7 +43,7 @@ jobs:
           src/lib/shop.functions.ts
           src/lib/mp.ts
           src/routes/checkout.tsx
-          src/routes/produto.$slug.tsx
+          src/routes/'produto.$slug.tsx'
           src/test/cart-storage.test.ts
           src/test/order-integrity.test.ts
 
