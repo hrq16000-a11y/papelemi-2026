@@ -163,6 +163,7 @@ async function buildOrderQuote(input: QuoteInput) {
     selectedShippingOptionId: shippingQuote.selectedOptionId,
     shippingSelectionChanged: shippingQuote.selectionChanged,
     destinationZip: shippingQuote.destinationZip,
+    destinationState: shippingQuote.destinationState,
   };
 }
 
@@ -172,6 +173,7 @@ async function createQuoteToken(quote: Awaited<ReturnType<typeof buildOrderQuote
     items: quote.items,
     couponCode: quote.couponCode,
     destinationZip: quote.destinationZip,
+    destinationState: quote.destinationState,
     selectedShippingOption: quote.selectedShippingOption,
     subtotal: quote.subtotal,
     discount: quote.discount,
