@@ -124,17 +124,16 @@ jobs:
                   raise SystemExit(f"Expected cron statement not found: {old}")
               sql = sql.replace(old, new)
           path.write_text(sql)
+
+          seed = Path("supabase/seed.sql")
+          if seed.exists():
+              seed.rename("supabase/seed.sql.disabled")
           PY
 
       - name: Start isolated local Supabase
         if: steps.marker.outputs.run == 'true'
         working-directory: emporio
         run: supabase start
-
-      - name: Apply all versioned Emporio migrations locally
-        if: steps.marker.outputs.run == 'true'
-        working-directory: emporio
-        run: supabase db reset --local --skip-seed
 
       - name: Export schema-only snapshot and generated types
         if: steps.marker.outputs.run == 'true'
@@ -158,7 +157,7 @@ jobs:
             echo "- Generated from local migrations only; no hosted database was queried."
             echo "- Local replay only: absent cron jobs were guarded in the temporary checkout; Emporio source migrations were not modified."
             echo "- No row data, auth users, credentials or secrets are included."
-            echo "- Emporio seed.sql was deliberately skipped to avoid importing any commercial data."
+            echo "- Emporio seed.sql was disabled in the temporary checkout to avoid importing any commercial data."
           } > ../docs/operations/reference/EMPORIO_SCHEMA_SNAPSHOT_README.md
 
       - name: Stop local Supabase
