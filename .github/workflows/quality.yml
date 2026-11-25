@@ -16,7 +16,7 @@ jobs:
   quality:
     name: Changed-file lint, tests, TypeScript and production build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,3 +50,13 @@ jobs:
 
       - name: Production build
         run: bun run build
+
+      - name: Install Chromium for Preview QA
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: SSR and responsive Preview QA
+        env:
+          PREVIEW_URL: https://papelemi-git-feat-catalog-source-of-truth-01a-20261125-msolus.vercel.app
+        run: node scripts/qa/papelemi-preview.mjs
