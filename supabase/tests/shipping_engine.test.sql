@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(25);
+SELECT plan(29);
 SELECT has_table('public','shipping_settings','shipping settings table exists');
 SELECT has_table('public','shipping_providers','shipping providers table exists');
 SELECT has_table('public','shipping_quote_cache','shipping cache table exists');
@@ -26,5 +26,8 @@ SELECT ok(NOT has_table_privilege('anon','public.shipping_audit_logs','SELECT'),
 SELECT ok(NOT has_table_privilege('anon','public.shipping_quote_cache','SELECT'),'anonymous users cannot read shipping cache');
 SELECT ok(to_regprocedure('public.consume_shipping_quote_rate_limit(text,timestamptz,integer)') IS NOT NULL,'server-side quote rate limiter exists');
 SELECT ok((SELECT count(*)=1 FROM public.shipping_settings WHERE store_key='papelemi' AND singleton=true),'PapeLemi has one default shipping settings row');
+SELECT ok(NOT has_table_privilege('anon','public.shipping_quote_rate_limits','SELECT'),'anonymous users cannot access shipping rate-limit buckets');
+SELECT ok(EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='shipping_settings' AND policyname='shipping_settings_admin_select' AND qual ILIKE '%papelemi%'),'shipping settings policy is scoped to PapeLemi');
+SELECT ok(NOT has_function_privilege('anon','public.consume_shipping_quote_rate_limit(text,timestamptz,integer)','EXECUTE'),'anonymous users cannot execute the quote rate limiter');
 SELECT * FROM finish();
 ROLLBACK;
