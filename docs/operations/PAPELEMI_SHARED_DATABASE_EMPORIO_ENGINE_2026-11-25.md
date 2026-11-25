@@ -86,3 +86,16 @@ Cada etapa deve ser entregue em micro-PR, com build, testes e validação de ban
 ## 9. Critério de 100%
 
 Somente declarar concluído após validar schema/RLS/Storage, todos os módulos administrativos, Edge Functions, persistência, autenticação, pagamentos, frete, webhooks, privacidade, dados próprios PapeLemi, responsividade 390/768/1440 e fluxos reais de ponta a ponta.
+
+
+## 10. Achados de segurança/compatibilidade do Supabase PapeLemi — 25/11/2026
+
+Consulta dos advisors Supabase no projeto central:
+
+- \`public.orders\`: RLS habilitado, sem políticas. O advisor classifica como INFO. A implementação atual protege pedidos com acesso server-side; a função \`listOrders\` usa cliente privilegiado somente depois de \`requireAdmin\`.
+- O painel Empório atual consulta pedidos diretamente do browser em componentes como \`AdminDashboard\` e \`AdminOrders\`. Essas consultas não funcionarão sem adaptação no PapeLemi.
+- **Decisão técnica para a portabilidade:** manter pedidos privados no browser e adaptar os módulos administrativos para server functions com autorização de administrador, salvo se uma política RLS administrativa estreita e comprovadamente segura for necessária. Não abrir leitura pública de pedidos.
+- Auth: proteção contra senhas vazadas está desabilitada (advisor WARN). Deve ser habilitada antes da liberação comercial.
+- Quatro índices foram classificados como não utilizados. Como a loja ainda tem zero pedidos, não remover índices neste momento; reavaliar após tráfego real.
+
+Esses achados demonstram por que copiar as páginas administrativas sem adaptar a camada de dados não constitui integração funcional.
