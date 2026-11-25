@@ -6,7 +6,7 @@ import { brl, type Product } from "@/data/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   deleteCategory, deleteCoupon, deletePhrase, deleteProduct,
-  getMyRole, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listOrders,
+  getMyRole, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders,
   saveCategory, saveCoupon, savePhrase, saveProduct, setOrderStatus,
 } from "@/lib/shop.functions";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,7 @@ const input = "w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm
 const btn = "inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-60";
 const btnGhost = "inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:border-primary disabled:opacity-60";
 
-type Tab = "dashboard" | "pedidos" | "produtos" | "categorias" | "frases" | "cupons" | "seguranca";
+type Tab = "dashboard" | "pedidos" | "clientes" | "produtos" | "categorias" | "frases" | "cupons" | "seguranca";
 
 function Admin() {
   const [stage, setStage] = useState<"loading" | "login" | "denied" | "ok">("loading");
@@ -60,6 +60,7 @@ function Admin() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "dashboard", label: "Visão geral" },
     { id: "pedidos", label: "Pedidos" },
+    { id: "clientes", label: "Clientes" },
     { id: "produtos", label: "Produtos" },
     { id: "categorias", label: "Categorias" },
     { id: "frases", label: "Frases" },
@@ -84,6 +85,7 @@ function Admin() {
       <div className="mt-8">
         {tab === "dashboard" && <DashboardTab onNavigate={setTab} />}
         {tab === "pedidos" && <OrdersTab />}
+        {tab === "clientes" && <CustomersTab />}
         {tab === "produtos" && <ProductsTab />}
         {tab === "categorias" && <CategoriesTab />}
         {tab === "frases" && <PhrasesTab />}
@@ -97,25 +99,29 @@ function Admin() {
 type DashboardOrder = Awaited<ReturnType<typeof listOrders>>[number];
 type DashboardProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
 type DashboardCategory = Awaited<ReturnType<typeof listAdminCategories>>[number];
+type DashboardCustomer = Awaited<ReturnType<typeof listCustomers>>["customers"][number];
 
 function DashboardTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const [orders, setOrders] = useState<DashboardOrder[]>([]);
   const [products, setProducts] = useState<DashboardProduct[]>([]);
   const [categories, setCategories] = useState<DashboardCategory[]>([]);
+  const [customers, setCustomers] = useState<DashboardCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [nextOrders, nextProducts, nextCategories] = await Promise.all([
+      const [nextOrders, nextProducts, nextCategories, nextCustomers] = await Promise.all([
         listOrders(),
         listAdminProducts(),
         listAdminCategories(),
+        listCustomers(),
       ]);
       setOrders(nextOrders);
       setProducts(nextProducts);
       setCategories(nextCategories);
+      setCustomers(nextCustomers.customers);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível carregar o resumo da loja.");
     } finally {
@@ -131,16 +137,16 @@ function DashboardTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const pendingOrders = orders.filter((order) => order.status === "pending").length;
   const publishedProducts = products.filter((product) => product.published).length;
   const hiddenProducts = products.length - publishedProducts;
-  const customers = new Set(orders.map((order) => order.customer_email.trim().toLowerCase()).filter(Boolean)).size;
   const stats = [
     { label: "Encomendas", value: orders.length, detail: "Solicitações registradas" },
     { label: "Aguardando confirmação", value: pendingOrders, detail: "Pedidos em aberto" },
     { label: "Produtos publicados", value: publishedProducts, detail: hiddenProducts + " ocultos" },
     { label: "Categorias", value: categories.length, detail: "Organização do catálogo" },
-    { label: "Clientes identificados", value: customers, detail: "E-mails únicos nos pedidos" },
+    { label: "Clientes identificados", value: customers.length, detail: "Agrupados pelo histórico de pedidos" },
   ];
   const shortcuts: { id: Tab; label: string }[] = [
     { id: "pedidos", label: "Gerenciar encomendas" },
+    { id: "clientes", label: "Consultar clientes" },
     { id: "produtos", label: "Gerenciar produtos" },
     { id: "categorias", label: "Gerenciar categorias" },
     { id: "cupons", label: "Gerenciar cupons" },
@@ -353,6 +359,143 @@ function OrdersTab() {
         </li>
       ))}
     </ul>
+  );
+}
+
+// ===== Clientes =====
+
+// Enquanto a tabela CRM canônica da Empório ainda não foi portada, o diretório
+// agrupa os snapshots de clientes existentes nos pedidos da própria PapeLemi.
+type Customer = Awaited<ReturnType<typeof listCustomers>>["customers"][number];
+
+const CUSTOMER_STATUS: Record<string, string> = {
+  pending: "Aguardando confirmação",
+  paid: "Pago",
+  shipped: "Enviado",
+  delivered: "Entregue",
+  cancelled: "Cancelado",
+};
+
+function CustomersTab() {
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [truncated, setTruncated] = useState(false);
+  const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const result = await listCustomers();
+      setCustomers(result.customers);
+      setTruncated(result.truncated);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível carregar os clientes.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  if (!customers) {
+    return <div className="flex min-h-48 items-center justify-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
+  }
+
+  const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR");
+  const filtered = customers.filter((customer) =>
+    [customer.name, customer.email, customer.phone].some((value) =>
+      value.toLocaleLowerCase("pt-BR").includes(normalizedSearch),
+    ),
+  );
+
+  return (
+    <section className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary">Relacionamento</p>
+          <h2 className="mt-1 text-3xl">Clientes</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Contatos identificados a partir do histórico de encomendas da PapeLemi.
+          </p>
+        </div>
+        <button type="button" onClick={() => void load()} disabled={refreshing} className={btnGhost}>
+          {refreshing ? <Loader2 className="size-3.5 animate-spin" /> : null}
+          Atualizar
+        </button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar por nome, e-mail ou telefone"
+          aria-label="Buscar clientes"
+          className={cn(input, "min-w-0 flex-1 sm:max-w-md")}
+        />
+        <p className="text-xs text-muted-foreground">{filtered.length} de {customers.length} clientes</p>
+      </div>
+
+      {truncated && (
+        <p role="status" className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          O histórico consultado atingiu o limite de 20.000 pedidos. Esta lista pode não incluir clientes mais antigos.
+        </p>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border px-6 py-14 text-center">
+          <p className="font-medium">{customers.length === 0 ? "Nenhum cliente identificado ainda." : "Nenhum cliente encontrado."}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {customers.length === 0 ? "Os contatos aparecerão aqui quando houver encomendas registradas." : "Experimente outro nome, e-mail ou telefone."}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="hidden overflow-x-auto rounded-2xl border border-border bg-card md:block">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Cliente</th>
+                  <th className="px-4 py-3 font-medium">Telefone</th>
+                  <th className="px-4 py-3 font-medium">Pedidos</th>
+                  <th className="px-4 py-3 font-medium">Última encomenda</th>
+                  <th className="px-4 py-3 font-medium">Status recente</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filtered.map((customer) => (
+                  <tr key={customer.email.toLowerCase()} className="align-top">
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{customer.name || "Cliente sem nome"}</p>
+                      <a href={`mailto:${customer.email}`} className="text-xs text-muted-foreground underline underline-offset-2">{customer.email}</a>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{customer.phone || "—"}</td>
+                    <td className="px-4 py-3 tabular-nums">{customer.ordersCount}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{new Date(customer.lastOrderAt).toLocaleDateString("pt-BR")}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{CUSTOMER_STATUS[customer.lastOrderStatus] ?? customer.lastOrderStatus}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className="grid gap-3 md:hidden">
+            {filtered.map((customer) => (
+              <li key={customer.email.toLowerCase()} className="rounded-2xl border border-border bg-card p-4">
+                <p className="font-medium">{customer.name || "Cliente sem nome"}</p>
+                <a href={`mailto:${customer.email}`} className="mt-1 block break-all text-xs text-muted-foreground underline underline-offset-2">{customer.email}</a>
+                <p className="mt-2 text-sm text-muted-foreground">{customer.phone || "Telefone não informado"}</p>
+                <div className="mt-3 flex flex-wrap justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                  <span>{customer.ordersCount} pedido(s)</span>
+                  <span>Último: {new Date(customer.lastOrderAt).toLocaleDateString("pt-BR")}</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{CUSTOMER_STATUS[customer.lastOrderStatus] ?? customer.lastOrderStatus}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }
 

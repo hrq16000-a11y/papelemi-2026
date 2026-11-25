@@ -12,13 +12,15 @@
     "src/lib/lovable-error-reporting.ts",
     "src/lib/cart-storage.ts",
     "src/lib/order-integrity.ts",
+    "src/lib/customer-summary.ts",
     "src/lib/cart.tsx",
     "src/lib/catalog.repository.server.ts",
     "src/lib/shop.functions.ts",
     "src/lib/mp.ts",
     "src/routes/checkout.tsx",
     "src/test/cart-storage.test.ts",
-    "src/test/order-integrity.test.ts"
+    "src/test/order-integrity.test.ts",
+    "src/test/customer-summary.test.ts"
   ],
   "include": [
     "src/**/*.d.ts"

@@ -5,6 +5,7 @@ import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
+import { buildCustomerSummaries, type CustomerOrderRow } from "@/lib/customer-summary";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -319,6 +320,45 @@ export const listOrders = createServerFn({ method: "GET" })
       .limit(200);
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+
+export const listCustomers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const pageSize = 1000;
+    const maxOrders = 20000;
+    const rows: CustomerOrderRow[] = [];
+    let truncated = false;
+
+    for (let offset = 0; offset < maxOrders; offset += pageSize) {
+      const { data, error } = await admin
+        .from("orders")
+        .select("customer_name,customer_email,customer_phone,status,created_at")
+        .eq("store_key", "papelemi")
+        .order("created_at", { ascending: false })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) throw new Error(error.message);
+      const page = (data ?? []).map((row) => ({
+        customer_name: String(row.customer_name ?? ""),
+        customer_email: String(row.customer_email ?? ""),
+        customer_phone: String(row.customer_phone ?? ""),
+        status: String(row.status ?? ""),
+        created_at: String(row.created_at ?? ""),
+      }));
+      rows.push(...page);
+      if (page.length < pageSize) break;
+      if (offset + page.length >= maxOrders) truncated = true;
+    }
+
+    return {
+      customers: buildCustomerSummaries(rows),
+      scannedOrders: rows.length,
+      truncated,
+    };
   });
 
 export const setOrderStatus = createServerFn({ method: "POST" })
