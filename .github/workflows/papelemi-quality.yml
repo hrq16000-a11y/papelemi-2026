@@ -53,9 +53,10 @@ jobs:
       - name: TypeScript
         run: bunx tsc --noEmit -p tsconfig.order-integrity.json
 
+
   reconstruct-emporio-schema:
     name: Reconstruct Emporio schema locally (no production access)
-    if: github.ref == 'refs/heads/feat/papelemi-emp-or-core-baseline-01' && hashFiles('docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md') != ''
+    if: github.ref == 'refs/heads/feat/papelemi-emp-or-core-baseline-01'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -64,7 +65,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check one-time import marker
+        id: marker
+        run: |
+          if [ -f docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout Emporio source
+        if: steps.marker.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           repository: hrq16000-a11y/emporiolelecute-2026
@@ -73,19 +84,28 @@ jobs:
           fetch-depth: 1
 
       - name: Install Supabase CLI
+        if: steps.marker.outputs.run == 'true'
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
+      - name: Update local-only config for current Supabase CLI
+        if: steps.marker.outputs.run == 'true'
+        working-directory: emporio
+        run: sed -i 's/^\[inbucket\]/[local_smtp]/' supabase/config.toml
+
       - name: Start isolated local Supabase
+        if: steps.marker.outputs.run == 'true'
         working-directory: emporio
         run: supabase start
 
       - name: Apply all versioned Emporio migrations locally
+        if: steps.marker.outputs.run == 'true'
         working-directory: emporio
         run: supabase db reset --local
 
       - name: Export schema-only snapshot and generated types
+        if: steps.marker.outputs.run == 'true'
         working-directory: emporio
         run: |
           mkdir -p ../docs/operations/reference
@@ -93,6 +113,7 @@ jobs:
           supabase gen types typescript --local --schema public > ../docs/operations/reference/EMPORIO_DATABASE_TYPES_2026-11-25.ts
 
       - name: Record migration reconstruction metadata
+        if: steps.marker.outputs.run == 'true'
         working-directory: emporio
         run: |
           {
@@ -107,11 +128,12 @@ jobs:
           } > ../docs/operations/reference/EMPORIO_SCHEMA_SNAPSHOT_README.md
 
       - name: Stop local Supabase
-        if: always()
+        if: always() && steps.marker.outputs.run == 'true'
         working-directory: emporio
         run: supabase stop --no-backup || true
 
       - name: Commit generated schema reference
+        if: steps.marker.outputs.run == 'true'
         run: |
           rm -f docs/operations/IMPORT_EMP_ORIO_SCHEMA_SNAPSHOT.md
           git config user.name "github-actions[bot]"
