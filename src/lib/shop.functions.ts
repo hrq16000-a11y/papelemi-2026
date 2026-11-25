@@ -374,7 +374,7 @@ export const listCustomers = createServerFn({ method: "GET" })
 
     for (let offset = 0; offset < maxRows; offset += pageSize) {
       const { data, error } = await admin.from("customers")
-        .select("id,name,email,phone,city,state,source,status,tags,notes,created_at,updated_at")
+        .select("id,name,email,phone,whatsapp,city,state,source,status,tags,notes,created_at,updated_at")
         .eq("store_key", "papelemi")
         .order("updated_at", { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -428,6 +428,7 @@ export const listCustomers = createServerFn({ method: "GET" })
           email: String(row["email"] ?? ""),
           name: String(row["name"] ?? ""),
           phone: String(row["phone"] ?? ""),
+          whatsapp: String(row["whatsapp"] ?? ""),
           ordersCount: stats?.count ?? 0,
           firstOrderAt: stats?.firstOrderAt ?? createdAt,
           lastOrderAt: stats?.lastOrderAt ?? createdAt,
@@ -472,7 +473,7 @@ export const saveCustomer = createServerFn({ method: "POST" })
       email,
       email_normalized: email ? email.toLowerCase() : null,
       phone: data.phone || null,
-      whatsapp: data.whatsapp || data.phone || null,
+      whatsapp: data.whatsapp || null,
       city: data.city || null,
       state: data.state.toUpperCase() || null,
       status: data.status,
