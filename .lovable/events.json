@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "events": {
+    "project.add_to_cart": {
+      "event_schema_version": 1,
+      "description": "A product was added to the cart.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_slug",
+          "qty"
+        ],
+        "properties": {
+          "product_slug": {
+            "type": "string"
+          },
+          "qty": {
+            "type": "integer"
+          },
+          "has_dedication": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.phrase_chosen": {
+      "event_schema_version": 1,
+      "description": "A suggested phrase was applied to a product.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_slug",
+          "add_to_cart"
+        ],
+        "properties": {
+          "product_slug": {
+            "type": "string"
+          },
+          "add_to_cart": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.phrase_generator_started": {
+      "event_schema_version": 1,
+      "description": "The dedication assistant was opened.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "context"
+        ],
+        "properties": {
+          "context": {
+            "type": "string",
+            "enum": [
+              "product_page",
+              "personalizados"
+            ]
+          }
+        }
+      }
+    },
+    "project.phrase_suggestions_generated": {
+      "event_schema_version": 1,
+      "description": "The assistant returned phrase suggestions.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_slug",
+          "count"
+        ],
+        "properties": {
+          "product_slug": {
+            "type": "string"
+          },
+          "occasion": {
+            "type": "string"
+          },
+          "style": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

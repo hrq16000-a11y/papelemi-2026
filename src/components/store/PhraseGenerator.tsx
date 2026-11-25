@@ -1,7 +1,7 @@
 import { useServerFn } from "@tanstack/react-start";
 import * as Icons from "lucide-react";
 import { ArrowLeft, ArrowRight, Check, Copy, Loader2, RefreshCw, ShoppingBag, Sparkles, Star } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getAiProfile, LENGTH_OPTIONS, OCCASIONS, STYLES, type StyleId } from "@/data/ai-config";
 import { publishedProducts, type Product } from "@/data/catalog";
@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
 export const aiField = (p: Product) => p.personalization.find((o) => o.type === "text" && o.ai) as Extract<Product["personalization"][number], { type: "text" }> | undefined;
 const STEP_NAMES = ["Produto", "Ocasião", "Estilo", "Detalhes", "Gerar", "Editar", "Aplicar"];
 type Suggestion = { id: number; text: string; fav: boolean };
+type SavedFav = { text: string; slug: string };
+const FAV_KEY = "papelemi-frases-favoritas";
+const readFavs = (): SavedFav[] => { try { const v = JSON.parse(localStorage.getItem(FAV_KEY) ?? "[]"); return Array.isArray(v) ? v.filter((x) => typeof x?.text === "string") : []; } catch { return []; } };
+const writeFavs = (f: SavedFav[]) => { try { localStorage.setItem(FAV_KEY, JSON.stringify(f.slice(0, 50))); } catch { /* ignore */ } };
 
 export function PhraseGenerator({ fixedProduct, onApply }: { fixedProduct?: Product; onApply: (p: Product, text: string, addToCart: boolean) => void }) {
   const run = useServerFn(suggestPhrases);
@@ -28,6 +32,23 @@ export function PhraseGenerator({ fixedProduct, onApply }: { fixedProduct?: Prod
   const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<SavedFav[]>([]);
+  useEffect(() => {
+    setSaved(readFavs());
+    window.__lovableEvents?.track?.("project.phrase_generator_started", { context: fixedProduct ? "product_page" : "personalizados" });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const isSaved = (text: string) => saved.some((f) => f.text === text.trim());
+  const toggleSaved = (text: string) => {
+    const t = text.trim(); if (!t || !product) return;
+    const next = isSaved(t) ? saved.filter((f) => f.text !== t) : [{ text: t, slug: product.slug }, ...saved];
+    setSaved(next); writeFavs(next);
+  };
+  const useSaved = (text: string) => {
+    const existing = list.find((s) => s.text === text);
+    if (existing) { setSelected(existing.id); return; }
+    const id = nextId.current++;
+    setList([{ id, text: text.slice(0, fieldMax), fav: true }, ...list]); setSelected(id); setStep(6);
+  };
   const busy = useRef(false);
   const nextId = useRef(1);
   const profile = product ? getAiProfile(product) : undefined;
@@ -49,6 +70,7 @@ export function PhraseGenerator({ fixedProduct, onApply }: { fixedProduct?: Prod
         const keep = list.filter((s) => s.fav);
         setList([...keep, ...r.suggestions.map((text) => ({ id: nextId.current++, text, fav: false }))]);
         setStep(6);
+        window.__lovableEvents?.track?.("project.phrase_suggestions_generated", { product_slug: product.slug, occasion: occasion === "custom" ? "custom" : occasion, style, count: r.suggestions.length });
       }
     } catch {
       setError("Confira os dados informados e tente novamente.");
@@ -156,14 +178,14 @@ export function PhraseGenerator({ fixedProduct, onApply }: { fixedProduct?: Prod
             {loading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} Gerar novas
           </button>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">Toque para selecionar. Favoritas ficam guardadas ao gerar novas.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Toque para selecionar. Favoritas ficam salvas neste navegador para suas próximas visitas.</p>
         <ul className="mt-4 space-y-3">
           {list.map((s) => (
             <li key={s.id} onClick={() => setSelected(s.id)} className={cn("cursor-pointer rounded-2xl border p-4 transition-colors", selected === s.id ? "border-primary bg-secondary" : "border-border bg-card")}>
               <textarea value={s.text} maxLength={fieldMax} rows={3} aria-label="Editar sugestão" onChange={(e) => setList(list.map((x) => (x.id === s.id ? { ...x, text: e.target.value } : x)))} className="min-h-24 w-full resize-none bg-transparent [field-sizing:content] font-display text-xl italic leading-snug outline-none" />
               <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                 <span className={cn(s.text.length > maxLength && "text-destructive")}>{s.text.length}/{maxLength}</span>
-                <button type="button" aria-label="Favoritar" onClick={(e) => { e.stopPropagation(); setList(list.map((x) => (x.id === s.id ? { ...x, fav: !x.fav } : x))); }} className="ml-auto rounded-full p-2 hover:bg-background"><Star className={cn("size-4", s.fav && "fill-primary text-primary")} /></button>
+                <button type="button" aria-label="Favoritar" onClick={(e) => { e.stopPropagation(); setList(list.map((x) => (x.id === s.id ? { ...x, fav: !x.fav } : x))); if (s.fav === isSaved(s.text)) toggleSaved(s.text); }} className="ml-auto rounded-full p-2 hover:bg-background"><Star className={cn("size-4", s.fav && "fill-primary text-primary")} /></button>
                 <button type="button" aria-label="Copiar" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(s.text).then(() => toast.success("Frase copiada")); }} className="rounded-full p-2 hover:bg-background"><Copy className="size-4" /></button>
                 <span className={cn("ml-1 inline-flex items-center gap-1 rounded-full px-3 py-1", selected === s.id ? "bg-primary text-primary-foreground" : "border border-border")}>{selected === s.id ? <><Check className="size-3" /> Escolhida</> : "Escolher"}</span>
               </div>
@@ -179,10 +201,25 @@ export function PhraseGenerator({ fixedProduct, onApply }: { fixedProduct?: Prod
           <div className="min-w-0"><p className="text-xs uppercase tracking-wider text-muted-foreground">{product.name} · {field?.label}</p><p className="mt-1 break-words font-display text-xl italic">“{chosen.text}”</p></div>
         </div>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <button type="button" onClick={() => onApply(product, chosen.text.trim(), false)} className="flex-1 rounded-full border border-primary px-6 py-3.5 text-sm text-primary hover:bg-secondary">{fixedProduct ? "Inserir no produto" : "Continuar personalizando"}</button>
-          <button type="button" onClick={() => onApply(product, chosen.text.trim(), true)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm text-primary-foreground shadow-soft"><ShoppingBag className="size-4" /> Aplicar e adicionar ao carrinho</button>
+          <button type="button" onClick={() => { window.__lovableEvents?.track?.("project.phrase_chosen", { product_slug: product.slug, add_to_cart: false }); onApply(product, chosen.text.trim(), false); }} className="flex-1 rounded-full border border-primary px-6 py-3.5 text-sm text-primary hover:bg-secondary">{fixedProduct ? "Inserir no produto" : "Continuar personalizando"}</button>
+          <button type="button" onClick={() => { window.__lovableEvents?.track?.("project.phrase_chosen", { product_slug: product.slug, add_to_cart: true }); onApply(product, chosen.text.trim(), true); }} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm text-primary-foreground shadow-soft"><ShoppingBag className="size-4" /> Aplicar e adicionar ao carrinho</button>
         </div>
       </>)}
+
+      {(step === 5 || step === 6) && saved.length > 0 && (
+        <details className="mt-6 rounded-2xl border border-border bg-card p-4">
+          <summary className="cursor-pointer text-sm font-medium"><Star className="mr-1 inline size-4 fill-primary text-primary" /> Minhas frases favoritas ({saved.length})</summary>
+          <ul className="mt-3 space-y-2">
+            {saved.map((f) => (
+              <li key={f.text} className="flex items-start gap-2 rounded-xl bg-cream p-3">
+                <p className="min-w-0 flex-1 break-words font-display text-lg italic leading-snug">{f.text}</p>
+                <button type="button" onClick={() => useSaved(f.text)} className="shrink-0 rounded-full border border-primary px-3 py-1 text-xs text-primary hover:bg-secondary">Usar</button>
+                <button type="button" aria-label="Remover dos favoritos" onClick={() => { const n = saved.filter((x) => x.text !== f.text); setSaved(n); writeFavs(n); }} className="shrink-0 p-1 text-muted-foreground hover:text-destructive"><Icons.X className="size-4" /></button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {error && <p role="alert" className="mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
 
