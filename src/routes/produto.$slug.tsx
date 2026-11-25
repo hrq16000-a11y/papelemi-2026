@@ -91,7 +91,21 @@ function ProductPage() {
                   )}
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground">Em breve: pré-visualização da personalização.</p>
+              {ai && (
+                <div aria-live="polite">
+                  <p className="mb-2 text-sm font-medium">Prévia da personalização</p>
+                  <div className="relative overflow-hidden rounded-2xl">
+                    <img src={p.images[image]} alt="" className="aspect-[4/3] w-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-foreground/15 p-4">
+                      <div className="max-w-[85%] rounded-xl bg-background/90 px-5 py-4 text-center shadow-soft backdrop-blur-sm">
+                        {opts["nome"] || opts["name"] ? <p className="text-[11px] uppercase tracking-[0.25em] text-primary">{opts["nome"] || opts["name"]}</p> : null}
+                        <p className={`break-words font-display italic leading-snug ${(opts[ai.key] ?? "").length > 90 ? "text-base" : "text-xl"}`}>{opts[ai.key]?.trim() ? `“${opts[ai.key]}”` : <span className="text-muted-foreground">Sua dedicatória aparece aqui</span>}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">Ilustração aproximada; a arte final é ajustada pela nossa equipe.</p>
+                </div>
+              )}
             </div>
           )}
           <div className="flex items-center gap-3">

@@ -15,7 +15,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartCtx.Provider value={{
       items,
       count: items.reduce((s, i) => s + i.qty, 0),
-      add: (i) => save([...items, { ...i, id: crypto.randomUUID() }]),
+      add: (i) => {
+        save([...items, { ...i, id: crypto.randomUUID() }]);
+        window.__lovableEvents?.track?.("project.add_to_cart", { product_slug: i.slug, qty: i.qty, has_dedication: Object.keys(i.options).some((k) => /frase|dedicat|mensagem/i.test(k) && !!i.options[k]) });
+      },
       setQty: (id, q) => save(items.map((i) => (i.id === id ? { ...i, qty: Math.max(1, q) } : i))),
       remove: (id) => save(items.filter((i) => i.id !== id)),
     }}>{children}</CartCtx.Provider>
