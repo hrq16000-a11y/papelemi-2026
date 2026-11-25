@@ -14,7 +14,7 @@ const Input = z.object({
   feeling: short(240),
   maxLength: z.number().int().min(30).max(400),
 });
-export type SuggestInput = z.input<typeof Input>;
+export type SuggestInput = z.output<typeof Input>;
 type Result = { suggestions: string[]; error: string | null };
 
 function fit(text: string, limit: number) {
@@ -81,7 +81,7 @@ function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number
     ],
   };
 
-  const candidates = byStyle[style] ?? byStyle.afetuoso;
+  const candidates = byStyle[style] ?? byStyle["afetuoso"] ?? [];
   return [...new Set(candidates.map((s) => fit(s, limit)))].slice(0, 3);
 }
 
@@ -101,7 +101,7 @@ export const suggestPhrases = createServerFn({ method: "POST" })
 
     // O Lovable AI Gateway só está ativo quando a chave de servidor existe no ambiente.
     // Sem a chave, o fluxo continua utilizável com sugestões editáveis e sem erro de checkout.
-    if (!process.env.LOVABLE_API_KEY) {
+    if (!process.env["LOVABLE_API_KEY"]) {
       return { suggestions: fallback, error: "A geração por IA ainda não está conectada neste ambiente. Estas sugestões de apoio podem ser editadas livremente." };
     }
 
