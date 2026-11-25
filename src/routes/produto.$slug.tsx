@@ -144,7 +144,7 @@ function ProductDetail({ p }: { p: Product }) {
             const next = { ...opts, [ai.key]: text };
             setOpts(next); setGenOpen(false);
             if (toCart) addToCart(next); else toast.success("Dedicatória inserida no produto");
-          }} />}
+          }} /></Suspense>}
         </DialogContent>
       </Dialog>
       <section className="mt-24"><h2 className="mb-8 text-4xl">Você também pode gostar</h2><ProductGrid items={publishedProducts.filter((x) => x.category === p.category && x.slug !== p.slug).concat(publishedProducts.filter((x) => x.bestSeller && x.slug !== p.slug)).filter((x, i, a) => a.indexOf(x) === i).slice(0, 4)} /></section>
