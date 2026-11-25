@@ -24,11 +24,11 @@ const input = "w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm
 const btn = "inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-60";
 const btnGhost = "inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs hover:border-primary disabled:opacity-60";
 
-type Tab = "pedidos" | "produtos" | "categorias" | "frases" | "cupons" | "seguranca";
+type Tab = "dashboard" | "pedidos" | "produtos" | "categorias" | "frases" | "cupons" | "seguranca";
 
 function Admin() {
   const [stage, setStage] = useState<"loading" | "login" | "denied" | "ok">("loading");
-  const [tab, setTab] = useState<Tab>("pedidos");
+  const [tab, setTab] = useState<Tab>("dashboard");
 
   useEffect(() => {
     let active = true;
@@ -58,6 +58,7 @@ function Admin() {
   );
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: "dashboard", label: "Visão geral" },
     { id: "pedidos", label: "Pedidos" },
     { id: "produtos", label: "Produtos" },
     { id: "categorias", label: "Categorias" },
@@ -81,12 +82,135 @@ function Admin() {
         ))}
       </div>
       <div className="mt-8">
+        {tab === "dashboard" && <DashboardTab onNavigate={setTab} />}
         {tab === "pedidos" && <OrdersTab />}
         {tab === "produtos" && <ProductsTab />}
         {tab === "categorias" && <CategoriesTab />}
         {tab === "frases" && <PhrasesTab />}
         {tab === "cupons" && <CouponsTab />}
         {tab === "seguranca" && <PasswordTab />}
+      </div>
+    </div>
+  );
+}
+
+type DashboardOrder = Awaited<ReturnType<typeof listOrders>>[number];
+type DashboardProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
+type DashboardCategory = Awaited<ReturnType<typeof listAdminCategories>>[number];
+
+function DashboardTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
+  const [orders, setOrders] = useState<DashboardOrder[]>([]);
+  const [products, setProducts] = useState<DashboardProduct[]>([]);
+  const [categories, setCategories] = useState<DashboardCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [nextOrders, nextProducts, nextCategories] = await Promise.all([
+        listOrders(),
+        listAdminProducts(),
+        listAdminCategories(),
+      ]);
+      setOrders(nextOrders);
+      setProducts(nextProducts);
+      setCategories(nextCategories);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível carregar o resumo da loja.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  if (loading) return <div className="flex min-h-48 items-center justify-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
+
+  const pendingOrders = orders.filter((order) => order.status === "pending").length;
+  const publishedProducts = products.filter((product) => product.published).length;
+  const hiddenProducts = products.length - publishedProducts;
+  const customers = new Set(orders.map((order) => order.customer_email.trim().toLowerCase()).filter(Boolean)).size;
+  const stats = [
+    { label: "Encomendas", value: orders.length, detail: "Solicitações registradas" },
+    { label: "Aguardando confirmação", value: pendingOrders, detail: "Pedidos em aberto" },
+    { label: "Produtos publicados", value: publishedProducts, detail: hiddenProducts + " ocultos" },
+    { label: "Categorias", value: categories.length, detail: "Organização do catálogo" },
+    { label: "Clientes identificados", value: customers, detail: "E-mails únicos nos pedidos" },
+  ];
+  const shortcuts: { id: Tab; label: string }[] = [
+    { id: "pedidos", label: "Gerenciar encomendas" },
+    { id: "produtos", label: "Gerenciar produtos" },
+    { id: "categorias", label: "Gerenciar categorias" },
+    { id: "cupons", label: "Gerenciar cupons" },
+    { id: "frases", label: "Gerenciar frases" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary">Operação da loja</p>
+          <h2 className="mt-1 text-3xl">Visão geral</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Acompanhe encomendas, catálogo e atividade administrativa da PapeLemi.</p>
+        </div>
+        <button type="button" onClick={() => void load()} disabled={refreshing} className={btnGhost}>
+          {refreshing ? <Loader2 className="size-3.5 animate-spin" /> : null}
+          Atualizar dados
+        </button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {stats.map((stat) => (
+          <article key={stat.label} className="rounded-2xl border border-border bg-card p-5">
+            <p className="text-sm text-muted-foreground">{stat.label}</p>
+            <p className="mt-2 text-3xl font-semibold tabular-nums">{stat.value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{stat.detail}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-medium">Encomendas recentes</h3>
+              <p className="text-xs text-muted-foreground">Últimas solicitações recebidas</p>
+            </div>
+            <button type="button" onClick={() => onNavigate("pedidos")} className="text-xs text-primary underline underline-offset-4">Ver pedidos</button>
+          </div>
+          {orders.length === 0 ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma encomenda registrada ainda.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-border">
+              {orders.slice(0, 5).map((order) => (
+                <li key={order.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{order.customer_name || "Cliente"}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString("pt-BR")}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium tabular-nums">{brl(Number(order.total))}</p>
+                    <p className="text-xs text-muted-foreground">{order.status === "pending" ? "Aguardando confirmação" : order.status === "paid" ? "Pago" : order.status === "shipped" ? "Enviado" : order.status === "delivered" ? "Entregue" : order.status === "cancelled" ? "Cancelado" : order.status}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <h3 className="text-lg font-medium">Atalhos de gestão</h3>
+          <p className="text-xs text-muted-foreground">Acesse as rotinas disponíveis no painel.</p>
+          <div className="mt-4 grid gap-2">
+            {shortcuts.map((shortcut) => (
+              <button key={shortcut.id} type="button" onClick={() => onNavigate(shortcut.id)} className="rounded-xl border border-border px-4 py-3 text-left text-sm transition-colors hover:border-primary hover:bg-primary/5">
+                {shortcut.label}
+              </button>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );
