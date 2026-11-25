@@ -19,6 +19,18 @@ export const Route = createFileRoute("/checkout")({
 
 const input = "w-full border border-input bg-background px-3 py-3 text-base outline-none transition-colors focus:border-primary md:text-sm";
 
+type CheckoutShippingOption = {
+  id: string;
+  provider: string;
+  service_name: string;
+  price: number;
+  estimated_delivery_days: string;
+  estimated: boolean;
+  requiresConfirmation: boolean;
+  pickupAddress?: string;
+  pickupInstructions?: string;
+};
+
 type CheckoutQuote = {
   items: Array<{ slug: string; name: string; qty: number; unit_price: number; line_total: number; options: Record<string, string> }>;
   couponCode: string | null;
@@ -27,6 +39,10 @@ type CheckoutQuote = {
   discount: number;
   shipping: number;
   total: number;
+  shippingOptions: CheckoutShippingOption[];
+  selectedShippingOption: CheckoutShippingOption | null;
+  selectedShippingOptionId: string | null;
+  shippingSelectionChanged: boolean;
 };
 
 const ORDER_REQUEST_KEY = "papelemi-order-request-v1";
@@ -72,6 +88,7 @@ function Checkout() {
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [selectedShippingOptionId, setSelectedShippingOptionId] = useState("");
   const [requestId, setRequestId] = useState<string | null>(null);
   const checkoutTracked = useRef(false);
 
@@ -84,16 +101,8 @@ function Checkout() {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState<{ orderId: string; paymentReady: boolean; total: number } | null>(null);
 
-  useEffect(() => {
-    setRequestId(loadOrderRequestId());
-  }, []);
-
-  useEffect(() => {
-    if (items.length && !checkoutTracked.current) {
-      window.__lovableEvents?.track?.("project.checkout_started", { items: items.length });
-      checkoutTracked.current = true;
-    }
-  }, [items.length]);
+  const normalizedCep = form.cep.replace(/\D/g, "");
+  const validCep = /^\d{8}$/.test(normalizedCep);
 
   useEffect(() => {
     let active = true;
@@ -105,29 +114,35 @@ function Checkout() {
     }
     setQuoteLoading(true);
     setQuoteError(null);
-    getOrderQuote({ data: { items: quoteItems, couponCode: coupon?.code } })
+    getOrderQuote({ data: {
+      items: quoteItems,
+      couponCode: coupon?.code,
+      ...(validCep ? { destinationZip: normalizedCep } : {}),
+      ...(form.state.trim().length === 2 ? { destinationState: form.state.toUpperCase() } : {}),
+      ...(selectedShippingOptionId ? { shippingOptionId: selectedShippingOptionId } : {}),
+    } })
       .then((result) => {
         if (active) {
           setQuote(result);
           setQuoteError(null);
+          if (selectedShippingOptionId && !result.selectedShippingOption) setSelectedShippingOptionId("");
         }
       })
       .catch((error: unknown) => {
         if (active) {
           setQuote(null);
-          setQuoteError(error instanceof Error ? error.message : "Não foi possível validar os produtos do carrinho.");
+          setQuoteError(error instanceof Error ? error.message : "Não foi possível validar os produtos e o frete.");
         }
       })
       .finally(() => {
         if (active) setQuoteLoading(false);
       });
     return () => { active = false; };
-  }, [quoteItems, coupon?.code]);
-
+  }, [quoteItems, coupon?.code, normalizedCep, form.state, selectedShippingOptionId, validCep]);
   const subtotal = quote?.subtotal ?? 0;
   const discount = quote?.discount ?? 0;
   const total = quote?.total ?? 0;
-  const set = (k: keyof typeof form) => (e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
+  const set = (k: keyof typeof form) => (e: ChangeEvent<HTMLInputElement>) => { const value = e.target.value; setForm((current) => ({ ...current, [k]: value })); if (k === "cep") setSelectedShippingOptionId(""); };
 
   const applyCoupon = async () => {
     if (!couponInput.trim() || checkingCoupon) return;
@@ -142,7 +157,7 @@ function Checkout() {
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (sending || !items.length || !quote || quoteLoading || quoteError) return;
+    if (sending || !items.length || !quote || quoteLoading || quoteError || !validCep || !selectedShippingOptionId || !quote.selectedShippingOption) return;
     if (!acceptedPrivacy) { toast.error("É necessário aceitar o uso dos dados para atendimento da encomenda."); return; }
     setSending(true);
     try {
@@ -155,6 +170,9 @@ function Checkout() {
         items: quoteItems,
         couponCode: coupon?.code,
         quoteToken: quote.quoteToken,
+        destinationZip: normalizedCep,
+        destinationState: form.state.toUpperCase(),
+        shippingOptionId: selectedShippingOptionId,
         origin: window.location.origin,
         customerNotes,
         acceptedPrivacy: true,
@@ -169,7 +187,13 @@ function Checkout() {
       const message = err instanceof Error ? err.message : "Não foi possível registrar sua encomenda. Confira os dados e tente novamente.";
       if (message.includes("PRICE_CHANGED")) {
         try {
-          const refreshed = await getOrderQuote({ data: { items: quoteItems, couponCode: coupon?.code } });
+          const refreshed = await getOrderQuote({ data: {
+            items: quoteItems,
+            couponCode: coupon?.code,
+            destinationZip: normalizedCep,
+            destinationState: form.state.toUpperCase(),
+            shippingOptionId: selectedShippingOptionId,
+          } });
           setQuote(refreshed);
           setQuoteError(null);
           toast.error("O preço ou as condições mudaram. Atualizamos o resumo; confira os novos valores antes de enviar novamente.");
@@ -178,6 +202,9 @@ function Checkout() {
           setQuoteError(refreshError instanceof Error ? refreshError.message : "Não foi possível atualizar o resumo.");
           toast.error("Não foi possível atualizar os valores do carrinho.");
         }
+      } else if (message.includes("SHIPPING_CHANGED")) {
+        setSelectedShippingOptionId("");
+        toast.error("A cotação de frete mudou. Selecione novamente a opção de entrega.");
       } else if (message.includes("ORDER_REQUEST_CONFLICT")) {
         const nextId = createOrderRequestId();
         saveOrderRequestId(nextId);
@@ -267,12 +294,37 @@ function Checkout() {
         </div>
         <div className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
           <div className="flex justify-between"><span>Subtotal de referência</span><span>{brl(subtotal)}</span></div>
-          <div className="flex justify-between text-muted-foreground"><span>Frete</span><span>A confirmar</span></div>
+          <section className="mt-4 border-t border-border pt-4">
+            <h3 className="text-sm font-medium">Opções de entrega</h3>
+            {!validCep ? (
+              <p className="mt-2 text-xs text-muted-foreground">Informe um CEP válido para consultar as opções de entrega.</p>
+            ) : quoteLoading ? (
+              <p className="mt-2 text-xs text-muted-foreground" role="status">Consultando frete…</p>
+            ) : quote?.shippingOptions.length ? (
+              <div className="mt-2 space-y-2">
+                {quote.shippingOptions.map((option) => (
+                  <label key={option.id} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors", selectedShippingOptionId === option.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50")}>
+                    <input type="radio" name="shippingOption" value={option.id} checked={selectedShippingOptionId === option.id} onChange={() => setSelectedShippingOptionId(option.id)} className="mt-1 accent-primary" />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-start justify-between gap-2 text-xs font-medium">
+                        <span>{option.provider} · {option.service_name}</span>
+                        <span>{option.requiresConfirmation ? "A confirmar" : option.price === 0 ? "Grátis" : brl(option.price)}</span>
+                      </span>
+                      <span className="mt-1 block text-[10px] text-muted-foreground">{option.estimated_delivery_days}{option.estimated ? " · estimativa, não cotação oficial" : ""}</span>
+                      {option.pickupAddress ? <span className="mt-1 block text-[10px] text-muted-foreground">{option.pickupAddress}</span> : null}
+                      {option.pickupInstructions ? <span className="mt-1 block text-[10px] text-muted-foreground">{option.pickupInstructions}</span> : null}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : <p className="mt-2 text-xs text-muted-foreground">Não há opções de entrega disponíveis para este CEP.</p>}
+          </section>
           {discount > 0 && <div className="flex justify-between text-primary"><span>Cupom {quote?.couponCode}</span><span>−{brl(discount)}</span></div>}
+          <div className="flex justify-between text-muted-foreground"><span>Frete</span><span>{quote?.selectedShippingOption ? (quote.selectedShippingOption.requiresConfirmation ? "A confirmar" : quote.shipping === 0 ? "Grátis" : brl(quote.shipping)) : "Selecione uma opção"}</span></div>
           <div className="flex justify-between pt-2 text-lg font-medium"><span>Total de referência</span><span>{brl(total)}</span></div>
         </div>
-        <p className="mt-4 text-[10px] leading-5 text-muted-foreground">Os valores são referências. Frete, disponibilidade, personalização e condições finais serão confirmados pela PapeLemi. Nenhuma cobrança é feita agora.</p>
-        <button type="submit" disabled={sending || !acceptedPrivacy || quoteLoading || !quote || Boolean(quoteError)} className="mt-5 inline-flex w-full items-center justify-center gap-2 bg-primary py-3.5 text-xs font-medium text-primary-foreground disabled:opacity-60">
+        <p className="mt-4 text-[10px] leading-5 text-muted-foreground">{quote?.selectedShippingOption?.requiresConfirmation ? "Esta opção é uma estimativa ou frete a combinar. A equipe confirmará o valor final antes de qualquer cobrança." : quote?.selectedShippingOption ? "A opção de entrega foi cotada para o CEP informado. Disponibilidade e prazo serão confirmados no processamento do pedido." : "Selecione uma opção de entrega para concluir a solicitação. Nenhuma cobrança é feita antes da confirmação."}</p>
+        <button type="submit" disabled={sending || !acceptedPrivacy || quoteLoading || !quote || Boolean(quoteError) || !validCep || !selectedShippingOptionId || !quote.selectedShippingOption} className="mt-5 inline-flex w-full items-center justify-center gap-2 bg-primary py-3.5 text-xs font-medium text-primary-foreground disabled:opacity-60">
           {sending ? <><Loader2 className="size-4 animate-spin" /> Registrando encomenda…</> : quoteLoading ? "Conferindo valores…" : "Registrar solicitação"}
         </button>
         <button type="button" onClick={() => navigate({ to: "/carrinho" })} className="mt-3 w-full text-center text-xs text-muted-foreground underline">Voltar ao carrinho</button>
