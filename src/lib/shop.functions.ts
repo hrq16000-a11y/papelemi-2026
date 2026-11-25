@@ -564,7 +564,106 @@ export const getOrderDetails = createServerFn({ method: "GET" })
       .eq("store_key", "papelemi")
       .order("line_number", { ascending: true });
     if (itemsError) throw new Error(itemsError.message);
-    return { order, items: items ?? [] };
+    const operationsAdmin = supabaseAdmin as unknown as SupabaseClient;
+    const [historyResult, paymentResult, trackingResult] = await Promise.all([
+      operationsAdmin.from("order_status_history").select("id,from_status,to_status,note,changed_by,created_at").eq("store_key", "papelemi").eq("order_id", data.id).order("created_at", { ascending: false }).limit(50),
+      operationsAdmin.from("payment_events").select("id,provider,payment_id,provider_status,applied_status,result,error_message,duration_ms,created_at").eq("store_key", "papelemi").eq("order_id", data.id).order("created_at", { ascending: false }).limit(30),
+      operationsAdmin.from("tracking_email_log").select("id,email_type,recipient_email,status,tracking_carrier,tracking_code,error_message,created_at").eq("store_key", "papelemi").eq("order_id", data.id).order("created_at", { ascending: false }).limit(30),
+    ]);
+    const operationsSchemaReady = !historyResult.error && !paymentResult.error && !trackingResult.error;
+    return {
+      order,
+      items: items ?? [],
+      statusHistory: historyResult.error ? [] : historyResult.data ?? [],
+      paymentEvents: paymentResult.error ? [] : paymentResult.data ?? [],
+      trackingEmailLog: trackingResult.error ? [] : trackingResult.data ?? [],
+      operationsSchemaReady,
+    };
+  });
+
+const orderOperationsInput = z.object({
+  id: z.string().uuid(),
+  status: z.enum(["pending", "paid", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
+  shippingMethod: z.string().trim().max(100).optional(),
+  shippingCompany: z.string().trim().max(100).optional(),
+  shippingDays: z.string().trim().max(60).optional(),
+  shippingPrice: z.number().min(0).max(99999).optional(),
+  trackingCode: z.string().trim().max(100).optional(),
+  trackingCarrier: z.string().trim().max(100).optional(),
+  trackingUrl: z.string().trim().max(400).or(z.literal("")).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+
+export const updateOrderOperations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(orderOperationsInput)
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const operationsAdmin = supabaseAdmin as unknown as SupabaseClient;
+    const { data: current, error: currentError } = await admin.from("orders")
+      .select("id,address,subtotal,discount,shipping,status")
+      .eq("id", data.id)
+      .eq("store_key", "papelemi")
+      .maybeSingle();
+    if (currentError) throw new Error(currentError.message);
+    if (!current) throw new Error("Pedido não encontrado nesta loja.");
+    const address = current.address && typeof current.address === "object" && !Array.isArray(current.address)
+      ? current.address as Record<string, unknown>
+      : {};
+    const currentShipping = address["shipping"] && typeof address["shipping"] === "object" && !Array.isArray(address["shipping"])
+      ? address["shipping"] as Record<string, unknown>
+      : {};
+    const row = current as unknown as Record<string, unknown>;
+    const shippingMethod = data.shippingMethod ?? String(row["shipping_method"] ?? currentShipping["service_name"] ?? "Frete a combinar");
+    const shippingCompany = data.shippingCompany ?? String(row["shipping_company"] ?? currentShipping["provider"] ?? "");
+    const shippingDays = data.shippingDays ?? String(row["shipping_days"] ?? currentShipping["estimated_delivery_days"] ?? "");
+    const shippingPrice = data.shippingPrice ?? Number(current.shipping);
+    const trackingCode = data.trackingCode ?? String(row["tracking_code"] ?? currentShipping["tracking_code"] ?? "");
+    const trackingCarrier = data.trackingCarrier ?? String(row["tracking_carrier"] ?? currentShipping["tracking_carrier"] ?? "");
+    const trackingUrl = data.trackingUrl ?? String(row["tracking_url"] ?? currentShipping["tracking_url"] ?? "");
+    const notes = data.notes ?? String(row["notes"] ?? address["admin_notes"] ?? "");
+
+    const rpcResult = await operationsAdmin.rpc("admin_update_order", {
+      _actor_id: context.userId,
+      _order_id: data.id,
+      _status: data.status,
+      _shipping_method: shippingMethod || null,
+      _shipping_company: shippingCompany || null,
+      _shipping_days: shippingDays || null,
+      _shipping_price: shippingPrice,
+      _tracking_code: trackingCode || null,
+      _tracking_carrier: trackingCarrier || null,
+      _tracking_url: trackingUrl || null,
+      _notes: notes || null,
+    });
+    if (!rpcResult.error) return { ok: true, operationsSchemaReady: true };
+    if (!["PGRST202", "PGRST204", "42883"].includes(rpcResult.error.code ?? "")) throw new Error(rpcResult.error.message);
+
+    const nextAddress = {
+      ...address,
+      admin_notes: notes,
+      shipping: {
+        ...currentShipping,
+        provider: shippingCompany,
+        service_name: shippingMethod,
+        estimated_delivery_days: shippingDays,
+        tracking_code: trackingCode,
+        tracking_carrier: trackingCarrier,
+        tracking_url: trackingUrl,
+      },
+    };
+    const total = roundMoney(Number(current.subtotal) - Number(current.discount) + shippingPrice);
+    const { data: updated, error: updateError } = await admin.from("orders")
+      .update({ status: data.status, shipping: shippingPrice, total, address: nextAddress })
+      .eq("id", data.id)
+      .eq("store_key", "papelemi")
+      .select("id")
+      .maybeSingle();
+    if (updateError) throw new Error(updateError.message);
+    if (!updated?.id) throw new Error("Não foi possível atualizar o pedido.");
+    return { ok: true, operationsSchemaReady: false };
   });
 
 export const setOrderStatus = createServerFn({ method: "POST" })
