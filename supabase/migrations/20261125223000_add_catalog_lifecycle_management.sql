@@ -12,6 +12,10 @@ DROP POLICY IF EXISTS "Categorias públicas anon" ON public.categories;
 DROP POLICY IF EXISTS "Categorias públicas autenticadas" ON public.categories;
 CREATE POLICY "Categorias públicas anon" ON public.categories FOR SELECT TO anon USING (store_key='papelemi' AND active=true AND archived_at IS NULL);
 CREATE POLICY "Categorias públicas autenticadas" ON public.categories FOR SELECT TO authenticated USING (store_key='papelemi' AND active=true AND archived_at IS NULL);
+DROP POLICY IF EXISTS "Admins leem todas categorias" ON public.categories;
+CREATE POLICY "Admins leem todas categorias" ON public.categories
+  FOR SELECT TO authenticated
+  USING (store_key='papelemi' AND public.has_store_role((SELECT auth.uid()), 'admin'::public.app_role, 'papelemi'));
 DROP POLICY IF EXISTS "Produtos publicados anon" ON public.products;
 DROP POLICY IF EXISTS "Produtos publicados ou admin autenticado" ON public.products;
 CREATE POLICY "Produtos publicados anon" ON public.products FOR SELECT TO anon USING (
