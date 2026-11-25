@@ -43,6 +43,7 @@ jobs:
           src/lib/catalog.repository.server.ts
           src/lib/shop.functions.ts
           src/lib/mp.ts
+          src/routes/admin.tsx
           src/routes/checkout.tsx
           'src/routes/produto.$slug.tsx'
           src/test/cart-storage.test.ts
