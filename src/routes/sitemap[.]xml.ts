@@ -39,7 +39,7 @@ async function catalogSlugs() {
 
 const escapeXml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
 
-export const Route = createFileRoute("/sitemap.xml")({
+export const Route = createFileRoute("/sitemap.xml" as never)({
   server: {
     handlers: {
       GET: async () => {
