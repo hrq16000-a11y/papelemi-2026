@@ -60,10 +60,10 @@ O inventário abaixo vem do catálogo do arquivo custom, não de uma restauraç�
 | Definições de tabelas | 199 |
 | Entradas de dados de tabela (COPY) | 201 |
 | Tabelas no schema \`public\` | 150 |
-| Funções PostgreSQL | 143 |
-| Triggers | 108 |
-| Índices | 403 |
-| Políticas | 250 |
+| Funções PostgreSQL | 143 (88 em public) |
+| Triggers | 108 (95 em public) |
+| Índices | 403 (309 em public) |
+| Políticas | 250 (242 em public) |
 | Views | 4 |
 | Materialized views | 1 |
 | Foreign keys | 68 |
