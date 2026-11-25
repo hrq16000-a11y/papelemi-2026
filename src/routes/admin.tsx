@@ -142,7 +142,7 @@ function LoginForm() {
 // ===== Pedidos =====
 
 type Order = Awaited<ReturnType<typeof listOrders>>[number];
-const ORDER_STATUS: Record<string, string> = { pending: "Aguardando", paid: "Pago", shipped: "Enviado", delivered: "Entregue", cancelled: "Cancelado" };
+const ORDER_STATUS: Record<string, string> = { pending: "Recebido / aguardando confirmação", paid: "Pago", shipped: "Enviado", delivered: "Entregue", cancelled: "Cancelado" };
 
 function OrdersTab() {
   const [orders, setOrders] = useState<Order[] | null>(null);
@@ -177,7 +177,7 @@ function OrdersTab() {
             ))}
           </ul>
           <p className="mt-2 text-xs text-muted-foreground">
-            Subtotal {brl(Number(o.subtotal))} · Frete {Number(o.shipping) === 0 ? "grátis" : brl(Number(o.shipping))}
+            Subtotal {brl(Number(o.subtotal))} · Frete {Number(o.shipping) === 0 ? "A confirmar" : brl(Number(o.shipping))}
             {Number(o.discount) > 0 && <> · Cupom {o.coupon_code} (−{brl(Number(o.discount))})</>}
           </p>
         </li>

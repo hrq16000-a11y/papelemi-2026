@@ -6,9 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Category, Product } from "@/data/catalog";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 
-const PUBLISHED_ORIGIN = "https://papelemi.lovable.app";
-const FREE_SHIPPING_FROM = 199;
-const SHIPPING_FLAT = 19.9;
+const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
 // Cliente público (somente leitura) para dados abertos da loja.
 function publicClient() {
@@ -76,7 +74,7 @@ export const getCuratedPhrases = createServerFn({ method: "GET" }).handler(async
 });
 
 export const validateCoupon = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ code: z.string().trim().min(2).max(40) }))
+  .validator(z.object({ code: z.string().trim().min(2).max(40) }))
   .handler(async ({ data }) => {
     const sb = publicClient();
     const { data: row } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
@@ -105,17 +103,20 @@ const orderInput = z.object({
   })).min(1).max(50),
   couponCode: z.string().trim().max(40).optional(),
   origin: z.string().url().max(200).optional(),
+  customerNotes: z.string().trim().max(1000).default(""),
+  acceptedPrivacy: z.literal(true),
 });
 
 function safeOrigin(origin?: string) {
   try {
-    if (origin && new URL(origin).host === new URL(PUBLISHED_ORIGIN).host) return origin;
+    const parsed = new URL(origin ?? "");
+    if (parsed.protocol === "https:" && ["papelemi.com.br", "www.papelemi.com.br"].includes(parsed.hostname)) return parsed.origin;
   } catch { /* ignora */ }
   return PUBLISHED_ORIGIN;
 }
 
 export const createOrder = createServerFn({ method: "POST" })
-  .inputValidator(orderInput)
+  .validator(orderInput)
   .handler(async ({ data: input }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const slugs = input.items.map((i) => i.slug);
@@ -129,7 +130,8 @@ export const createOrder = createServerFn({ method: "POST" })
       return { slug: p.slug, name: p.name, qty, unit_price: p.promoPrice ?? p.price, options: i.options };
     });
     const subtotal = Math.round(items.reduce((s, i) => s + i.unit_price * i.qty, 0) * 100) / 100;
-    const shipping = subtotal >= FREE_SHIPPING_FROM ? 0 : SHIPPING_FLAT;
+    // O frete é confirmado pela PapeLemi após revisar o CEP; não estimar um valor não validado.
+    const shipping = 0;
     let discount = 0;
     let couponCode: string | null = null;
     if (input.couponCode) {
@@ -145,6 +147,11 @@ export const createOrder = createServerFn({ method: "POST" })
       address: input.address,
       items,
       subtotal, shipping, discount, coupon_code: couponCode, total,
+      store_key: "papelemi",
+      customer_notes: input.customerNotes,
+      accepted_privacy: input.acceptedPrivacy,
+      privacy_consent_at: new Date().toISOString(),
+      source: "storefront",
     }).select("id").single();
     if (insErr || !order) throw new Error(insErr?.message ?? "Não foi possível criar o pedido");
 
@@ -172,7 +179,7 @@ export const createOrder = createServerFn({ method: "POST" })
   });
 
 export const getOrderStatus = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ orderId: z.string().uuid() }))
+  .validator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data }) => {
     if (mpConfigured()) {
       try { await confirmOrderByReference(data.orderId); } catch { /* segue com o status atual */ }
@@ -180,7 +187,7 @@ export const getOrderStatus = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin.from("orders").select("status,total").eq("id", data.orderId).single();
     if (!order) throw new Error("Pedido não encontrado");
-    return { status: order.status, total: Number(order.total) };
+    return { status: !mpConfigured() && order.status === "pending" ? "received" : order.status, total: Number(order.total) };
   });
 
 // ===== Administração (exige papel de admin) =====
@@ -202,17 +209,31 @@ export const listOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(200);
+    // A tabela orders aceita acesso somente pelo servidor (service_role).
+    // A autorização do usuário é validada antes de usar o cliente privilegiado.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("store_key", "papelemi")
+      .order("created_at", { ascending: false })
+      .limit(200);
     if (error) throw new Error(error.message);
     return data ?? [];
   });
 
 export const setOrderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ id: z.string().uuid(), status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]) }))
+  .validator(z.object({ id: z.string().uuid(), status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("orders").update({ status: data.status }).eq("id", data.id);
+    // Atualizações usam service_role somente após validar o papel do usuário.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .update({ status: data.status })
+      .eq("id", data.id)
+      .eq("store_key", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -247,7 +268,7 @@ export const listAdminProducts = createServerFn({ method: "GET" })
 
 export const saveProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(productInput)
+  .validator(productInput)
   .handler(async ({ context, data: p }) => {
     await requireAdmin(context);
     const { data: existing } = await context.supabase.from("products").select("personalization").eq("slug", p.slug).maybeSingle();
@@ -276,7 +297,7 @@ export const saveProduct = createServerFn({ method: "POST" })
 
 export const deleteProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ slug: z.string().min(1).max(80) }))
+  .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("products").delete().eq("slug", data.slug);
@@ -303,7 +324,7 @@ export const listAdminCategories = createServerFn({ method: "GET" })
 
 export const saveCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(categoryInput)
+  .validator(categoryInput)
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("categories").upsert({ slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort });
@@ -313,7 +334,7 @@ export const saveCategory = createServerFn({ method: "POST" })
 
 export const deleteCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ slug: z.string().min(1).max(80) }))
+  .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("categories").delete().eq("slug", data.slug);
@@ -332,7 +353,7 @@ export const listAdminPhrases = createServerFn({ method: "GET" })
 
 export const savePhrase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({
+  .validator(z.object({
     id: z.string().uuid().optional(),
     phrase: z.string().trim().min(3).max(220),
     occasion: z.string().trim().max(60).default(""),
@@ -350,7 +371,7 @@ export const savePhrase = createServerFn({ method: "POST" })
 
 export const deletePhrase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ id: z.string().uuid() }))
+  .validator(z.object({ id: z.string().uuid() }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("curated_phrases").delete().eq("id", data.id);
@@ -369,7 +390,7 @@ export const listAdminCoupons = createServerFn({ method: "GET" })
 
 export const saveCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({
+  .validator(z.object({
     code: z.string().trim().min(2).max(40).regex(/^[A-Z0-9]+$/, "Use letras maiúsculas e números"),
     percent: z.number().int().min(1).max(90),
     active: z.boolean().default(true),
@@ -383,7 +404,7 @@ export const saveCoupon = createServerFn({ method: "POST" })
 
 export const deleteCoupon = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ code: z.string().min(2).max(40) }))
+  .validator(z.object({ code: z.string().min(2).max(40) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { error } = await context.supabase.from("coupons").delete().eq("code", data.code);

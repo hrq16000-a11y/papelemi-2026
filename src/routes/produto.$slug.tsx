@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clock, Minus, Plus, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 import { brl, getProduct, type Product } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
-import { aiField, PhraseGenerator } from "@/components/store/PhraseGenerator";
+import { aiField } from "@/lib/product-personalization";
+const PhraseGenerator = lazy(() => import("@/components/store/PhraseGenerator").then((m) => ({ default: m.PhraseGenerator })));
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ProductGrid } from "@/components/store/ProductCard";
 
@@ -78,7 +79,7 @@ function ProductDetail({ p }: { p: Product }) {
           <div>
             <h1 className="text-4xl leading-tight md:text-5xl">{p.name}</h1>
             <p className="mt-3 text-2xl">{p.promoPrice ? <><span className="mr-3 text-lg text-muted-foreground line-through">{brl(p.price)}</span><span className="text-primary">{brl(p.promoPrice)}</span></> : brl(p.price)}{p.minQty && <span className="text-sm text-muted-foreground"> por unidade</span>}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Preço demonstrativo</p>
+            <p className="mt-1 text-xs text-muted-foreground">Preço de referência. Disponibilidade e condições serão confirmadas pela PapeLemi.</p>
             <p className="mt-4 text-muted-foreground">{p.description}</p>
             <p className="mt-3 flex items-center gap-2 text-sm"><Clock className="size-4 text-primary" /> Produção: {p.productionDays}</p>
           </div>
@@ -138,12 +139,12 @@ function ProductDetail({ p }: { p: Product }) {
         <DialogContent className="max-h-[92dvh] w-[calc(100%-1rem)] max-w-3xl overflow-y-auto rounded-3xl p-5 md:p-8">
           <DialogTitle className="sr-only">Assistente de dedicatórias</DialogTitle>
           <DialogDescription className="sr-only">Crie uma frase personalizada para {p.name}</DialogDescription>
-          {genOpen && <PhraseGenerator fixedProduct={p} onApply={(_, text, toCart) => {
+          {genOpen && <Suspense fallback={<p className="py-8 text-center text-sm text-muted-foreground">Preparando o assistente…</p>}><PhraseGenerator fixedProduct={p} onApply={(_, text, toCart) => {
             if (!ai) return;
             const next = { ...opts, [ai.key]: text };
             setOpts(next); setGenOpen(false);
             if (toCart) addToCart(next); else toast.success("Dedicatória inserida no produto");
-          }} />}
+          }} /></Suspense>}
         </DialogContent>
       </Dialog>
       <section className="mt-24"><h2 className="mb-8 text-4xl">Você também pode gostar</h2><ProductGrid items={publishedProducts.filter((x) => x.category === p.category && x.slug !== p.slug).concat(publishedProducts.filter((x) => x.bestSeller && x.slug !== p.slug)).filter((x, i, a) => a.indexOf(x) === i).slice(0, 4)} /></section>

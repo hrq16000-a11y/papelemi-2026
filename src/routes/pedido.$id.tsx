@@ -15,7 +15,8 @@ export const Route = createFileRoute("/pedido/$id")({
 });
 
 const LABELS: Record<string, string> = {
-  pending: "Aguardando pagamento",
+  pending: "Aguardando confirmação",
+  received: "Encomenda recebida",
   paid: "Pagamento confirmado",
   shipped: "Pedido enviado",
   delivered: "Pedido entregue",
@@ -64,8 +65,11 @@ function OrderPage() {
       {icon}
       <h1 className="mt-4 text-4xl">{LABELS[state.status] ?? state.status}</h1>
       <p className="mt-3 text-muted-foreground">Pedido <span className="font-medium text-foreground">{id.slice(0, 8)}</span> · Total {brl(state.total)}</p>
+      {state.status === "received" && (
+        <p className="mt-2 text-sm text-muted-foreground">A PapeLemi confirmará disponibilidade, personalização, prazo, frete e pagamento pelo contato informado.</p>
+      )}
       {state.status === "pending" && (
-        <p className="mt-2 text-sm text-muted-foreground">Se você já pagou, a confirmação pode levar alguns instantes. Esta página atualiza sozinha.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Se você iniciou um pagamento online, a confirmação pode levar alguns instantes. Esta página atualiza sozinha.</p>
       )}
       {state.status === "paid" && (
         <p className="mt-2 text-sm text-muted-foreground">Obrigada! Vamos preparar tudo com carinho e avisar quando enviar.</p>
