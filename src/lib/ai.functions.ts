@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getProduct } from "@/data/catalog";
 import { getAiProfile, OCCASIONS, STYLES } from "@/data/ai-config";
+import { getPublishedProductWithFallback } from "@/lib/catalog.repository.server";
 
 const short = (n: number) => z.string().trim().max(n).default("");
 const Input = z.object({
@@ -89,7 +89,7 @@ function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number
 export const suggestPhrases = createServerFn({ method: "POST" })
   .validator((d: unknown) => Input.parse(d))
   .handler(async ({ data }): Promise<Result> => {
-    const product = getProduct(data.productSlug);
+    const product = await getPublishedProductWithFallback(data.productSlug);
     const field = product?.personalization.find((o) => o.key === data.fieldKey && o.type === "text" && o.ai);
     if (!product || !field || field.type !== "text") return { suggestions: [], error: "Este produto não aceita sugestões de frase." };
 

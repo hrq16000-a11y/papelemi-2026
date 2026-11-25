@@ -30,7 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 ## Project rules
-- Catalog lives in `src/data/catalog.ts` as clearly-labelled demo data until the real catalog/backend is imported; per-product personalization options are declared there so each product configures its own fields.
+- The live catalog source of truth is Supabase (`categories` and `products`). `src/data/catalog.ts` is a local fallback/reference only; never treat it as authoritative when the database is available. Keep per-product personalization options in the database and validate them server-side.
 - AI phrase suggestions run only in the `suggestPhrases` server function (`src/lib/ai.functions.ts`) via the Lovable AI Gateway SDK; never call models from browser code.
 - Cart is client-side (localStorage) for round one; no real payments until a gateway is approved.
-- AI writing context (styles, occasions, per-category/product profiles) lives in `src/data/ai-config.ts`; the server resolves the product and field limit from the catalog by slug, so clients cannot inject product context or exceed field limits.
+- AI writing context (styles, occasions, per-category/product profiles) lives in `src/data/ai-config.ts`; the server resolves the published product and field limit from the live Supabase catalog by slug, so clients cannot inject product context or exceed field limits.
