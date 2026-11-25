@@ -26,9 +26,9 @@ function fit(text: string, limit: number) {
 }
 
 function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number) {
-  const recipient = data.recipientName.trim() || "você";
-  const giver = data.giverName.trim();
-  const feeling = data.feeling.trim();
+  const recipient = data.recipientName?.trim() || "você";
+  const giver = data.giverName?.trim() ?? "";
+  const feeling = data.feeling?.trim() ?? "";
   const feelingText = feeling ? feeling : "carinho";
   const event = occasion.toLowerCase();
   const style = data.style;
@@ -81,7 +81,7 @@ function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number
     ],
   };
 
-  const candidates = byStyle[style] ?? byStyle.afetuoso;
+  const candidates = byStyle[style] ?? byStyle["afetuoso"] ?? [];
   return [...new Set(candidates.map((s) => fit(s, limit)))].slice(0, 3);
 }
 

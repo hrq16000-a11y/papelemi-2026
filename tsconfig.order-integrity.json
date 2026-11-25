@@ -1,6 +1,15 @@
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "vite/client",
+      "vitest/globals",
+      "node"
+    ]
+  },
   "files": [
+    "src/routeTree.gen.ts",
+    "src/lib/lovable-error-reporting.ts",
     "src/lib/cart-storage.ts",
     "src/lib/order-integrity.ts",
     "src/lib/cart.tsx",
@@ -11,5 +20,7 @@
     "src/test/cart-storage.test.ts",
     "src/test/order-integrity.test.ts"
   ],
-  "include": ["src/**/*.d.ts"]
+  "include": [
+    "src/**/*.d.ts"
+  ]
 }
