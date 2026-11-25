@@ -15,6 +15,7 @@ export type ShippingQuoteResult = {
   selectionChanged: boolean;
   shipping: number;
   destinationZip: string | null;
+  destinationState: string | null;
 };
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -36,8 +37,8 @@ function createOptionId(option: ShippingOptionDraft): string {
 function getClientIpHash(): string {
   let request: Request | undefined;
   try { request = getRequest(); } catch { /* server context may be unavailable in isolated tests */ }
-  const forwarded = request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const rawIp = (forwarded || request?.headers.get("x-real-ip") || "unknown").slice(0, 64);
+  const forwarded = request?.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
+  const rawIp = (request?.headers.get("x-real-ip") || forwarded || "unknown").slice(0, 64);
   return createHash("sha256").update(rawIp).digest("hex");
 }
 
@@ -162,7 +163,7 @@ export async function buildShippingQuote(input: {
 }): Promise<ShippingQuoteResult> {
   const destinationZip = input.destinationZip?.replace(/\D/g, "") ?? "";
   if (!/^\d{8}$/.test(destinationZip)) {
-    return { options: [], selectedOption: null, selectedOptionId: null, selectionChanged: Boolean(input.selectedOptionId), shipping: 0, destinationZip: null };
+    return { options: [], selectedOption: null, selectedOptionId: null, selectionChanged: Boolean(input.selectedOptionId), shipping: 0, destinationZip: null, destinationState: input.destinationState?.toUpperCase() ?? null };
   }
 
   const { data: attempts, error: limitError } = await input.admin.rpc("consume_shipping_quote_rate_limit", {
@@ -218,6 +219,7 @@ export async function buildShippingQuote(input: {
       if (provider?.api_key && provider.endpoint_url) {
         const cachePayload = JSON.stringify({
           originZip, destinationZip, totalWeight, shippableSubtotal,
+          providerId: provider.id, providerUpdatedAt: provider.updated_at,
           box: [settings.default_box_width_cm, settings.default_box_height_cm, settings.default_box_length_cm],
         });
         const cacheKey = createHash("sha256").update(cachePayload).digest("hex");
@@ -295,5 +297,6 @@ export async function buildShippingQuote(input: {
     selectionChanged: Boolean(input.selectedOptionId && !selectedOption),
     shipping: selectedOption ? roundShippingMoney(selectedOption.price) : 0,
     destinationZip,
+    destinationState: input.destinationState?.toUpperCase() ?? null,
   };
 }
