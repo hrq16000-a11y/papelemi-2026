@@ -15,7 +15,7 @@ concurrency:
 jobs:
   quality:
     name: Changed-file lint, tests, TypeScript and production build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout
