@@ -42,9 +42,6 @@ jobs:
             echo "No changed TypeScript files."
           fi
 
-      - name: Check formatting of newly added modules
-        run: bunx prettier --check src/lib/catalog.repository.server.ts src/test/catalog-repository.test.ts
-
       - name: Unit tests
         run: bun run test
 
