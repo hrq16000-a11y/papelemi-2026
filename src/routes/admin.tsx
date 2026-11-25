@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Loader2, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { brl, type Product } from "@/data/catalog";
+import { brl, type PersonalizationOption } from "@/data/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   deleteCategory, deleteCoupon, deletePhrase, deleteProduct,
@@ -847,19 +847,34 @@ function CustomersTab() {
 
 type AdminProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
 type ProductForm = {
+  originalSlug?: string;
   slug: string; categorySlug: string; name: string; description: string; images: string;
   price: string; promoPrice: string; colors: string; sizes: string; finishes: string;
   productionDays: string; stock: string; published: boolean; bestSeller: boolean; personalizable: boolean; minQty: string;
+  personalization: PersonalizationOption[];
+  weightKg: string; lengthCm: string; widthCm: string; heightCm: string; requiresShipping: boolean;
 };
 
-const emptyProduct: ProductForm = { slug: "", categorySlug: "", name: "", description: "", images: "", price: "", promoPrice: "", colors: "", sizes: "", finishes: "", productionDays: "", stock: "0", published: true, bestSeller: false, personalizable: false, minQty: "" };
+const emptyProduct: ProductForm = {
+  slug: "", categorySlug: "", name: "", description: "", images: "", price: "", promoPrice: "",
+  colors: "", sizes: "", finishes: "", productionDays: "", stock: "0", published: true,
+  bestSeller: false, personalizable: false, minQty: "", personalization: [],
+  weightKg: "", lengthCm: "", widthCm: "", heightCm: "", requiresShipping: true,
+};
 
 const toForm = (p: AdminProduct): ProductForm => ({
+  originalSlug: p.slug,
   slug: p.slug, categorySlug: p.category, name: p.name, description: p.description,
   images: p.images.join("\n"), price: String(p.price), promoPrice: p.promoPrice == null ? "" : String(p.promoPrice),
   colors: p.colors.join(", "), sizes: p.sizes.join(", "), finishes: p.finishes.join(", "),
   productionDays: p.productionDays, stock: String(p.stock), published: p.published,
   bestSeller: p.bestSeller ?? false, personalizable: p.personalizable, minQty: p.minQty == null ? "" : String(p.minQty),
+  personalization: p.personalization ?? [],
+  weightKg: p.weightKg == null ? "" : String(p.weightKg),
+  lengthCm: p.lengthCm == null ? "" : String(p.lengthCm),
+  widthCm: p.widthCm == null ? "" : String(p.widthCm),
+  heightCm: p.heightCm == null ? "" : String(p.heightCm),
+  requiresShipping: p.requiresShipping !== false,
 });
 
 const split = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
@@ -876,18 +891,93 @@ function ProductsTab() {
   }, []);
   useEffect(load, [load]);
 
+  const updatePersonalizationIdentity = (index: number, property: "key" | "label", value: string) => {
+    setEditing((current) => current ? {
+      ...current,
+      personalization: current.personalization.map((field, fieldIndex) =>
+        fieldIndex === index ? { ...field, [property]: value } : field,
+      ),
+    } : current);
+  };
+
+  const changePersonalizationType = (index: number, type: PersonalizationOption["type"]) => {
+    setEditing((current) => {
+      if (!current) return current;
+      const field = current.personalization[index];
+      if (!field) return current;
+      const common = { key: field.key, label: field.label };
+      const next: PersonalizationOption = type === "text"
+        ? { ...common, type: "text", maxLength: 140 }
+        : type === "choice"
+          ? { ...common, type: "choice", options: [] }
+          : { ...common, type: "notes" };
+      return {
+        ...current,
+        personalization: current.personalization.map((item, fieldIndex) => fieldIndex === index ? next : item),
+      };
+    });
+  };
+
+  const updatePersonalizationText = (index: number, patch: { maxLength?: number; ai?: boolean }) => {
+    setEditing((current) => current ? {
+      ...current,
+      personalization: current.personalization.map((field, fieldIndex) =>
+        fieldIndex === index && field.type === "text" ? { ...field, ...patch } : field,
+      ),
+    } : current);
+  };
+
+  const updatePersonalizationChoices = (index: number, value: string) => {
+    setEditing((current) => current ? {
+      ...current,
+      personalization: current.personalization.map((field, fieldIndex) =>
+        fieldIndex === index && field.type === "choice"
+          ? { ...field, options: value.split("\n").map((option) => option.trim()).filter(Boolean).slice(0, 50) }
+          : field,
+      ),
+    } : current);
+  };
+
+  const addPersonalizationField = () => {
+    setEditing((current) => {
+      if (!current) return current;
+      let suffix = current.personalization.length + 1;
+      while (current.personalization.some((field) => field.key === "campo-" + suffix)) suffix += 1;
+      return {
+        ...current,
+        personalization: [
+          ...current.personalization,
+          { type: "text", key: "campo-" + suffix, label: "Campo " + suffix, maxLength: 140 },
+        ],
+      };
+    });
+  };
+
+  const removePersonalizationField = (index: number) => {
+    setEditing((current) => current ? {
+      ...current,
+      personalization: current.personalization.filter((_, fieldIndex) => fieldIndex !== index),
+    } : current);
+  };
+
   const save = async () => {
     if (!editing || busy) return;
     setBusy(true);
     try {
       await saveProduct({ data: {
-        slug: editing.slug, categorySlug: editing.categorySlug, name: editing.name, description: editing.description,
+        originalSlug: editing.originalSlug, slug: editing.slug, categorySlug: editing.categorySlug, name: editing.name, description: editing.description,
         images: editing.images.split("\n").map((x) => x.trim()).filter(Boolean),
         price: Number(editing.price), promoPrice: editing.promoPrice ? Number(editing.promoPrice) : null,
         colors: split(editing.colors), sizes: split(editing.sizes), finishes: split(editing.finishes),
         productionDays: editing.productionDays, stock: Number(editing.stock) || 0,
         published: editing.published, bestSeller: editing.bestSeller, personalizable: editing.personalizable,
         minQty: editing.minQty ? Number(editing.minQty) : null,
+        personalization: editing.personalization,
+        weightKg: editing.weightKg.trim() ? Number(editing.weightKg) : null,
+        lengthCm: editing.lengthCm.trim() ? Number(editing.lengthCm) : null,
+        widthCm: editing.widthCm.trim() ? Number(editing.widthCm) : null,
+        heightCm: editing.heightCm.trim() ? Number(editing.heightCm) : null,
+        requiresShipping: editing.requiresShipping,
       } });
       toast.success("Produto salvo");
       setEditing(null);
@@ -900,7 +990,7 @@ function ProductsTab() {
 
   if (editing) return (
     <div className="rounded-2xl border border-border bg-card p-6">
-      <h2 className="text-2xl">{products.some((p) => p.slug === editing.slug) ? "Editar produto" : "Novo produto"}</h2>
+      <h2 className="text-2xl">{editing.originalSlug ? "Editar produto" : "Novo produto"}</h2>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <label className="text-xs text-muted-foreground">Identificador (slug)<input value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} className={cn(input, "mt-1")} placeholder="ex.: caderno-afeto" /></label>
         <label className="text-xs text-muted-foreground">Categoria
@@ -920,6 +1010,88 @@ function ProductsTab() {
         <label className="text-xs text-muted-foreground">Prazo de produção<input value={editing.productionDays} onChange={(e) => setEditing({ ...editing, productionDays: e.target.value })} className={cn(input, "mt-1")} placeholder="ex.: 5 a 7 dias úteis" /></label>
         <label className="text-xs text-muted-foreground">Estoque<input type="number" min="0" value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: e.target.value })} className={cn(input, "mt-1")} /></label>
         <label className="text-xs text-muted-foreground">Quantidade mínima (opcional)<input type="number" min="1" value={editing.minQty} onChange={(e) => setEditing({ ...editing, minQty: e.target.value })} className={cn(input, "mt-1")} /></label>
+        <section className="sm:col-span-2 rounded-2xl border border-border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Envio e embalagem</p>
+              <p className="text-xs text-muted-foreground">Dados usados pelo cálculo de frete. Não informe medidas estimadas como se fossem definitivas.</p>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={editing.requiresShipping} onChange={(e) => setEditing({ ...editing, requiresShipping: e.target.checked })} />
+              Exige envio
+            </label>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <label className="text-xs text-muted-foreground">Peso (kg)
+              <input type="number" min="0" max="100" step="0.001" value={editing.weightKg} onChange={(e) => setEditing({ ...editing, weightKg: e.target.value })} className={cn(input, "mt-1")} placeholder="Ex.: 0,250" />
+            </label>
+            <label className="text-xs text-muted-foreground">Comprimento (cm)
+              <input type="number" min="0.1" max="300" step="0.1" value={editing.lengthCm} onChange={(e) => setEditing({ ...editing, lengthCm: e.target.value })} className={cn(input, "mt-1")} />
+            </label>
+            <label className="text-xs text-muted-foreground">Largura (cm)
+              <input type="number" min="0.1" max="300" step="0.1" value={editing.widthCm} onChange={(e) => setEditing({ ...editing, widthCm: e.target.value })} className={cn(input, "mt-1")} />
+            </label>
+            <label className="text-xs text-muted-foreground">Altura (cm)
+              <input type="number" min="0.1" max="300" step="0.1" value={editing.heightCm} onChange={(e) => setEditing({ ...editing, heightCm: e.target.value })} className={cn(input, "mt-1")} />
+            </label>
+          </div>
+        </section>
+        <section className="sm:col-span-2 rounded-2xl border border-border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Campos de personalização</p>
+              <p className="text-xs text-muted-foreground">Configure nome, dedicatória, escolhas e observações que serão validados no servidor.</p>
+            </div>
+            <button type="button" onClick={addPersonalizationField} className={btnGhost}>
+              <Plus className="size-3.5" /> Adicionar campo
+            </button>
+          </div>
+          {!editing.personalizable ? <p className="mt-3 text-xs text-muted-foreground">Ative “Personalizável” para exibir estes campos na página do produto.</p> : null}
+          {editing.personalization.length === 0 ? (
+            <p className="mt-3 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">Nenhum campo configurado. Produtos personalizáveis precisam de campos para coletar os detalhes da encomenda.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {editing.personalization.map((field, index) => (
+                <div key={field.key + "-" + index} className="rounded-xl border border-border p-3">
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <label className="text-xs text-muted-foreground">Tipo
+                      <select value={field.type} onChange={(e) => changePersonalizationType(index, e.target.value as PersonalizationOption["type"])} className={cn(input, "mt-1")}>
+                        <option value="text">Texto livre</option>
+                        <option value="choice">Escolha</option>
+                        <option value="notes">Observações</option>
+                      </select>
+                    </label>
+                    <label className="text-xs text-muted-foreground">Chave técnica
+                      <input value={field.key} maxLength={40} onChange={(e) => updatePersonalizationIdentity(index, "key", e.target.value)} className={cn(input, "mt-1")} />
+                    </label>
+                    <label className="text-xs text-muted-foreground">Rótulo exibido
+                      <input value={field.label} maxLength={120} onChange={(e) => updatePersonalizationIdentity(index, "label", e.target.value)} className={cn(input, "mt-1")} />
+                    </label>
+                  </div>
+                  {field.type === "text" ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-4">
+                      <label className="text-xs text-muted-foreground">Limite de caracteres
+                        <input type="number" min="1" max="400" value={field.maxLength} onChange={(e) => updatePersonalizationText(index, { maxLength: Number(e.target.value) })} className={cn(input, "mt-1 w-36")} />
+                      </label>
+                      <label className="mt-4 flex items-center gap-2 text-sm">
+                        <input type="checkbox" checked={Boolean(field.ai)} onChange={(e) => updatePersonalizationText(index, { ai: e.target.checked })} />
+                        Permitir sugestões por IA
+                      </label>
+                    </div>
+                  ) : null}
+                  {field.type === "choice" ? (
+                    <label className="mt-3 block text-xs text-muted-foreground">Opções (uma por linha)
+                      <textarea rows={3} value={field.options.join("\n")} onChange={(e) => updatePersonalizationChoices(index, e.target.value)} className={cn(input, "mt-1")} placeholder={"Rosa\nAzul\nBege"} />
+                    </label>
+                  ) : null}
+                  <button type="button" onClick={() => removePersonalizationField(index)} className="mt-3 inline-flex items-center gap-1.5 text-xs text-destructive hover:underline">
+                    <Trash2 className="size-3.5" /> Remover campo
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
         <div className="flex flex-wrap gap-5 sm:col-span-2">
           {([["published", "Publicado"], ["bestSeller", "Mais vendido"], ["personalizable", "Personalizável"]] as const).map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editing[k]} onChange={(e) => setEditing({ ...editing, [k]: e.target.checked })} /> {label}</label>
@@ -959,7 +1131,7 @@ type AdminCategory = Awaited<ReturnType<typeof listAdminCategories>>[number];
 
 function CategoriesTab() {
   const [cats, setCats] = useState<AdminCategory[] | null>(null);
-  const [editing, setEditing] = useState<{ slug: string; name: string; description: string; image: string; sort: string } | null>(null);
+  const [editing, setEditing] = useState<{ originalSlug?: string; slug: string; name: string; description: string; image: string; sort: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const load = useCallback(() => { listAdminCategories().then(setCats).catch((e) => toast.error(e.message)); }, []);
   useEffect(load, [load]);
@@ -968,7 +1140,7 @@ function CategoriesTab() {
     if (!editing || busy) return;
     setBusy(true);
     try {
-      await saveCategory({ data: { slug: editing.slug, name: editing.name, description: editing.description, image: editing.image, sort: Number(editing.sort) || 0 } });
+      await saveCategory({ data: { originalSlug: editing.originalSlug, slug: editing.slug, name: editing.name, description: editing.description, image: editing.image, sort: Number(editing.sort) || 0 } });
       toast.success("Categoria salva"); setEditing(null); load();
     } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao salvar"); }
     finally { setBusy(false); }
@@ -978,7 +1150,7 @@ function CategoriesTab() {
 
   if (editing) return (
     <div className="rounded-2xl border border-border bg-card p-6">
-      <h2 className="text-2xl">{cats.some((c) => c.slug === editing.slug) ? "Editar categoria" : "Nova categoria"}</h2>
+      <h2 className="text-2xl">{editing.originalSlug ? "Editar categoria" : "Nova categoria"}</h2>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <label className="text-xs text-muted-foreground">Identificador (slug)<input value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} className={cn(input, "mt-1")} /></label>
         <label className="text-xs text-muted-foreground">Nome<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className={cn(input, "mt-1")} /></label>
@@ -1003,7 +1175,7 @@ function CategoriesTab() {
               <p className="font-medium">{c.name}</p>
               <p className="truncate text-xs text-muted-foreground">{c.slug} · ordem {c.sort}</p>
             </div>
-            <button onClick={() => setEditing({ slug: c.slug, name: c.name, description: c.description, image: c.image, sort: String(c.sort) })} aria-label={`Editar ${c.name}`} className="rounded-full p-2 hover:bg-secondary"><Pencil className="size-4" /></button>
+            <button onClick={() => setEditing({ originalSlug: c.slug, slug: c.slug, name: c.name, description: c.description, image: c.image, sort: String(c.sort) })} aria-label={`Editar ${c.name}`} className="rounded-full p-2 hover:bg-secondary"><Pencil className="size-4" /></button>
             <button onClick={async () => { if (!confirm(`Excluir a categoria ${c.name}? Produtos dela precisam ser movidos antes.`)) return; try { await deleteCategory({ data: { slug: c.slug } }); toast.success("Categoria excluída"); load(); } catch (e) { toast.error(e instanceof Error ? e.message : "Erro"); } }} aria-label={`Excluir ${c.name}`} className="rounded-full p-2 text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
           </li>
         ))}

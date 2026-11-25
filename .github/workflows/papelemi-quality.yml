@@ -41,11 +41,13 @@ jobs:
           src/lib/customer-summary.ts
           src/lib/cart.tsx
           src/lib/catalog.repository.server.ts
+          src/lib/catalog-validation.ts
           src/lib/shop.functions.ts
           src/lib/mp.ts
           src/routes/admin.tsx
           src/routes/checkout.tsx
           'src/routes/produto.$slug.tsx'
+          src/test/catalog-admin.test.ts src/test/catalog-repository.test.ts
           src/test/cart-storage.test.ts
           src/test/order-integrity.test.ts
           src/test/customer-summary.test.ts src/lib/shipping-quote.ts src/lib/shipping-quote.server.ts src/test/shipping-quote.test.ts

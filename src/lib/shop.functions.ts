@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
+import { categoryAdminSchema, productAdminSchema } from "@/lib/catalog-validation";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
@@ -584,24 +585,7 @@ export const setOrderStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const productInput = z.object({
-  slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/, "Use letras minúsculas, números e hífens"),
-  categorySlug: z.string().trim().min(1).max(80),
-  name: z.string().trim().min(2).max(120),
-  description: z.string().trim().max(600).default(""),
-  images: z.array(z.string().url().max(400)).max(6).default([]),
-  price: z.number().min(0.5).max(99999),
-  promoPrice: z.number().min(0.5).max(99999).nullable().default(null),
-  colors: z.array(z.string().trim().max(40)).max(12).default([]),
-  sizes: z.array(z.string().trim().max(40)).max(12).default([]),
-  finishes: z.array(z.string().trim().max(60)).max(12).default([]),
-  productionDays: z.string().trim().max(60).default(""),
-  stock: z.number().int().min(0).max(99999).default(0),
-  published: z.boolean().default(true),
-  bestSeller: z.boolean().default(false),
-  personalizable: z.boolean().default(false),
-  minQty: z.number().int().min(1).max(999).nullable().default(null),
-});
+const productInput = productAdminSchema;
 
 export const listAdminProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -618,8 +602,7 @@ export const saveProduct = createServerFn({ method: "POST" })
   .validator(productInput)
   .handler(async ({ context, data: p }) => {
     await requireAdmin(context);
-    const { data: existing } = await context.supabase.from("products").select("personalization").eq("store_key", "papelemi").eq("slug", p.slug).maybeSingle();
-    const { error } = await context.supabase.from("products").upsert({
+    const values = {
       store_key: "papelemi",
       slug: p.slug,
       category_slug: p.categorySlug,
@@ -637,9 +620,23 @@ export const saveProduct = createServerFn({ method: "POST" })
       best_seller: p.bestSeller,
       personalizable: p.personalizable,
       min_qty: p.minQty,
-      personalization: existing?.personalization ?? [],
-    }, { onConflict: "store_key,slug" });
-    if (error) throw new Error(error.message);
+      personalization: p.personalization as Json,
+      weight_kg: p.weightKg,
+      length_cm: p.lengthCm,
+      width_cm: p.widthCm,
+      height_cm: p.heightCm,
+      requires_shipping: p.requiresShipping,
+    };
+
+    if (p.originalSlug && p.originalSlug !== p.slug) {
+      const { data, error } = await context.supabase.from("products").update(values)
+        .eq("store_key", "papelemi").eq("slug", p.originalSlug).select("slug").maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("O produto original não foi encontrado para renomeação.");
+    } else {
+      const { error } = await context.supabase.from("products").upsert(values, { onConflict: "store_key,slug" });
+      if (error) throw new Error(error.message);
+    }
     return { ok: true };
   });
 
@@ -653,13 +650,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const categoryInput = z.object({
-  slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/, "Use letras minúsculas, números e hífens"),
-  name: z.string().trim().min(2).max(80),
-  description: z.string().trim().max(300).default(""),
-  image: z.string().trim().url().max(400).or(z.literal("")).default(""),
-  sort: z.number().int().min(0).max(999).default(0),
-});
+const categoryInput = categoryAdminSchema;
 
 export const listAdminCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -675,8 +666,16 @@ export const saveCategory = createServerFn({ method: "POST" })
   .validator(categoryInput)
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("categories").upsert({ store_key: "papelemi", slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort }, { onConflict: "store_key,slug" });
-    if (error) throw new Error(error.message);
+    const values = { store_key: "papelemi", slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort };
+    if (c.originalSlug && c.originalSlug !== c.slug) {
+      const { data, error } = await context.supabase.from("categories").update(values)
+        .eq("store_key", "papelemi").eq("slug", c.originalSlug).select("slug").maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("A categoria original não foi encontrada para renomeação.");
+    } else {
+      const { error } = await context.supabase.from("categories").upsert(values, { onConflict: "store_key,slug" });
+      if (error) throw new Error(error.message);
+    }
     return { ok: true };
   });
 

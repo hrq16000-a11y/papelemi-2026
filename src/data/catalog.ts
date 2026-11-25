@@ -39,6 +39,11 @@ export type Product = {
   personalizable: boolean;
   personalization: PersonalizationOption[];
   minQty?: number;
+  weightKg?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  requiresShipping?: boolean;
 };
 
 export const categories: Category[] = [

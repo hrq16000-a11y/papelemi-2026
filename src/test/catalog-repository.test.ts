@@ -6,6 +6,12 @@ type ProductRow = Database["public"]["Tables"]["products"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 
 const productRow: ProductRow = {
+  store_key: "papelemi",
+  weight_kg: 0.25,
+  length_cm: 20,
+  width_cm: 15,
+  height_cm: 5,
+  requires_shipping: true,
   slug: "caderneta-teste",
   category_slug: "cadernetas",
   name: "Caderneta de teste",
@@ -30,6 +36,7 @@ const productRow: ProductRow = {
 };
 
 const categoryRow: CategoryRow = {
+  store_key: "papelemi",
   slug: "cadernetas",
   name: "Cadernetas",
   description: "Para guardar cada fase.",
@@ -52,6 +59,11 @@ describe("Supabase catalog mapping", () => {
         { type: "text", key: "frase", maxLength: 140, ai: true },
         { type: "notes", key: "observacoes" },
       ],
+      weightKg: 0.25,
+      lengthCm: 20,
+      widthCm: 15,
+      heightCm: 5,
+      requiresShipping: true,
     });
     expect(product.promoPrice).toBeUndefined();
     expect(product.minQty).toBeUndefined();

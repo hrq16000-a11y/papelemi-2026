@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { z } from "zod";
+import { personalizationSchema } from "@/lib/catalog-validation";
 import {
   getCategory as getFallbackCategory,
   getProduct as getFallbackProduct,
@@ -11,28 +11,7 @@ import type { Database } from "@/integrations/supabase/types";
 type ProductRow = Database["public"]["Tables"]["products"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 
-const personalizationOptionSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("text"),
-    key: z.string().trim().min(1).max(40),
-    label: z.string().trim().min(1).max(120),
-    maxLength: z.number().int().min(1).max(400),
-    ai: z.boolean().optional(),
-  }),
-  z.object({
-    type: z.literal("choice"),
-    key: z.string().trim().min(1).max(40),
-    label: z.string().trim().min(1).max(120),
-    options: z.array(z.string().trim().min(1).max(60)).min(1).max(50),
-  }),
-  z.object({
-    type: z.literal("notes"),
-    key: z.string().trim().min(1).max(40),
-    label: z.string().trim().min(1).max(120),
-  }),
-]);
 
-const personalizationSchema = z.array(personalizationOptionSchema).max(20);
 
 export function publicClient() {
   const url = process.env["SUPABASE_URL"];
@@ -77,6 +56,11 @@ export const productFromRow = (row: ProductRow): Product => ({
   personalizable: row.personalizable,
   personalization: personalizationSchema.parse(row.personalization ?? []) as Product["personalization"],
   ...(row.min_qty == null ? {} : { minQty: row.min_qty }),
+  ...(row.weight_kg == null ? {} : { weightKg: Number(row.weight_kg) }),
+  ...(row.length_cm == null ? {} : { lengthCm: Number(row.length_cm) }),
+  ...(row.width_cm == null ? {} : { widthCm: Number(row.width_cm) }),
+  ...(row.height_cm == null ? {} : { heightCm: Number(row.height_cm) }),
+  requiresShipping: row.requires_shipping,
 });
 
 export async function getCatalogFromDatabase() {
