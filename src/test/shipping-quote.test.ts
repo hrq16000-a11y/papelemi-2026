@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyShippingRules, manualShippingOption, packShippingCart, quoteCorreiosEstimate } from "@/lib/shipping-quote";
+import { applyShippingRules, isAllowedShippingProviderEndpoint, manualShippingOption, packShippingCart, quoteCorreiosEstimate } from "@/lib/shipping-quote";
 
 describe("shipping quote helpers", () => {
   it("soma peso e subtotal apenas dos itens que exigem envio", () => {
@@ -47,6 +47,25 @@ describe("shipping quote helpers", () => {
       { condition_type: "min_cart_value", condition_value: { value: 50 }, discount_type: "percentage_discount", discount_value: 50 },
     ]);
     expect(result[0].price).toBe(6);
+  });
+
+  it("aceita apenas endpoints HTTPS oficiais do Melhor Envio", () => {
+    expect(isAllowedShippingProviderEndpoint("https://melhorenvio.com.br/api/v2/me/shipment/calculate")).toBe(true);
+    expect(isAllowedShippingProviderEndpoint("https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate")).toBe(true);
+    expect(isAllowedShippingProviderEndpoint("http://melhorenvio.com.br/api/v2/me/shipment/calculate")).toBe(false);
+    expect(isAllowedShippingProviderEndpoint("https://melhorenvio.com.br.attacker.example/quote")).toBe(false);
+  });
+
+  it("aplica regras condicionais por UF e faixa de CEP", () => {
+    const options = [{ provider: "Correios", service_name: "PAC", price: 25, estimated_delivery_days: "5–9", estimated: true, requiresConfirmation: true }];
+    const stateResult = applyShippingRules(options, { subtotal: 80, state: "PR", destinationZip: "80000000" }, [
+      { condition_type: "specific_state", condition_value: { states: ["PR", "SC"] }, discount_type: "fixed_discount", discount_value: 5 },
+    ]);
+    const zipResult = applyShippingRules(options, { subtotal: 80, state: "PR", destinationZip: "80000000" }, [
+      { condition_type: "zip_code_range", condition_value: { from: "79000000", to: "89999999" }, discount_type: "percentage_discount", discount_value: 20 },
+    ]);
+    expect(stateResult[0].price).toBe(20);
+    expect(zipResult[0].price).toBe(20);
   });
 
   it("fornece opção segura de frete a combinar quando a loja ainda não configurou o serviço", () => {
