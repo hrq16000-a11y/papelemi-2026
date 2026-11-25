@@ -461,6 +461,9 @@ function OrdersTab() {
             const address = detail.order.address && typeof detail.order.address === "object" && !Array.isArray(detail.order.address)
               ? detail.order.address as Record<string, unknown>
               : {};
+            const shippingSelection = address["shipping"] && typeof address["shipping"] === "object" && !Array.isArray(address["shipping"])
+              ? address["shipping"] as Record<string, unknown>
+              : {};
             return (
               <div className="mt-5 grid gap-5 lg:grid-cols-2">
                 <div className="space-y-4">
@@ -476,7 +479,11 @@ function OrdersTab() {
                     <p className="mt-2 text-sm">{[address["street"], address["number"], address["complement"]].filter(Boolean).map(displayOrderValue).join(", ") || "Endereço não informado"}</p>
                     <p className="text-sm text-muted-foreground">{[address["district"], address["city"], address["state"]].filter(Boolean).map(displayOrderValue).join(" · ")}</p>
                     <p className="text-sm text-muted-foreground">CEP: {displayOrderValue(address["cep"]) || "—"}</p>
-                    <p className="mt-2 text-sm">Frete: {Number(detail.order.shipping) === 0 ? "A confirmar" : brl(Number(detail.order.shipping))}</p>
+                    <p className="mt-2 text-sm">Frete: {shippingSelection["requires_confirmation"] ? "A confirmar" : Number(detail.order.shipping) === 0 ? "Grátis" : brl(Number(detail.order.shipping))}</p>
+                    <p className="text-sm text-muted-foreground">Modalidade: {displayOrderValue(shippingSelection["provider"]) || "Não registrada"} · {displayOrderValue(shippingSelection["service_name"]) || "Frete a combinar"}</p>
+                    <p className="text-sm text-muted-foreground">Prazo: {displayOrderValue(shippingSelection["estimated_delivery_days"]) || "A confirmar"}{shippingSelection["estimated"] ? " · estimativa" : ""}</p>
+                    {shippingSelection["pickup_address"] ? <p className="text-xs text-muted-foreground">Retirada: {displayOrderValue(shippingSelection["pickup_address"])}</p> : null}
+                    {shippingSelection["pickup_instructions"] ? <p className="text-xs text-muted-foreground">{displayOrderValue(shippingSelection["pickup_instructions"])}</p> : null}
                   </section>
                   <section className="border-t border-border pt-4">
                     <h4 className="text-sm font-semibold">Observações da encomenda</h4>
