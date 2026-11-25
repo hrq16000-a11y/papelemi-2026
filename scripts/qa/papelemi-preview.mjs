@@ -57,9 +57,13 @@ try {
     await page.setViewportSize({ width, height: 900 });
 
     const productResponse = await openRoute("/produto/caderneta-saude-ursinho-clean");
+    const productHtml = await productResponse.text();
     const product = await inspectLayout(width);
 
     if (!productResponse.ok()) throw new Error(`Produto retornou HTTP ${productResponse.status()}`);
+    if (!productHtml.includes("application/ld+json") || !productHtml.includes("Caderneta de Saúde")) {
+      throw new Error(`HTML inicial não contém SSR e Product JSON-LD em ${width}px`);
+    }
     if (!product.h1.includes("Caderneta de Saúde")) throw new Error(`H1 de produto inesperado em ${width}px: ${product.h1}`);
     if (!product.title.includes("PapeLemi")) throw new Error(`Title SSR ausente em ${width}px`);
     if (!product.description) throw new Error(`Meta description ausente em ${width}px`);
@@ -78,8 +82,12 @@ try {
     }
 
     const categoryResponse = await openRoute("/categoria/cadernetas");
+    const categoryHtml = await categoryResponse.text();
     const category = await inspectLayout(width);
     if (!categoryResponse.ok()) throw new Error(`Categoria retornou HTTP ${categoryResponse.status()}`);
+    if (!categoryHtml.includes("name=\\"description\\"")) {
+      throw new Error(`HTML inicial não contém meta description da categoria em ${width}px`);
+    }
     if (!category.h1.includes("Cadernetas")) throw new Error(`H1 de categoria inesperado em ${width}px: ${category.h1}`);
     if (!category.description) throw new Error(`Meta description de categoria ausente em ${width}px`);
     if (category.documentWidth > width + 1 || category.bodyWidth > width + 1) {
