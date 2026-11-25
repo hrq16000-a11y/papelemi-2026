@@ -1,0 +1,59 @@
+BEGIN;
+SELECT plan(9);
+
+SELECT has_column('public', 'products', 'archived_at', 'products support reversible archiving');
+SELECT has_column('public', 'categories', 'active', 'categories support activation and deactivation');
+SELECT has_column('public', 'categories', 'archived_at', 'categories support reversible archiving');
+
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'categories'
+      AND policyname = 'Categorias públicas anon'
+      AND coalesce(qual, '') ILIKE '%active%'
+      AND coalesce(qual, '') ILIKE '%archived_at%'
+  ),
+  'anonymous category reads exclude inactive and archived categories'
+);
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'categories'
+      AND policyname = 'Categorias públicas autenticadas'
+      AND coalesce(qual, '') ILIKE '%active%'
+      AND coalesce(qual, '') ILIKE '%archived_at%'
+  ),
+  'authenticated public category reads exclude inactive and archived categories'
+);
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'products'
+      AND policyname = 'Produtos publicados anon'
+      AND coalesce(qual, '') ILIKE '%published%'
+      AND coalesce(qual, '') ILIKE '%archived_at%'
+      AND coalesce(qual, '') ILIKE '%categories%'
+  ),
+  'anonymous product reads exclude unpublished, archived and inactive-category products'
+);
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'products'
+      AND policyname = 'Produtos publicados ou admin autenticado'
+      AND coalesce(qual, '') ILIKE '%archived_at%'
+      AND coalesce(qual, '') ILIKE '%has_store_role%'
+  ),
+  'administrators retain access to all products within the PapeLemi tenant'
+);
+SELECT ok(
+  EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'products_store_lifecycle_idx'),
+  'product lifecycle index exists'
+);
+SELECT ok(
+  EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'categories_store_lifecycle_idx'),
+  'category lifecycle index exists'
+);
+
+SELECT * FROM finish();
+ROLLBACK;

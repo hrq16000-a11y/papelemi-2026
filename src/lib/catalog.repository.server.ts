@@ -6,10 +6,10 @@ import {
   type Category,
   type Product,
 } from "@/data/catalog";
-import type { Database } from "@/integrations/supabase/types";
+import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 
-type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type ProductRow = CatalogLifecycleDatabase["public"]["Tables"]["products"]["Row"];
+type CategoryRow = CatalogLifecycleDatabase["public"]["Tables"]["categories"]["Row"];
 
 const personalizationOptionSchema = z.discriminatedUnion("type", [
   z.object({
@@ -39,7 +39,7 @@ export function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) throw new Error("Banco de dados não configurado");
 
-  return createClient<Database>(url, key, {
+  return createClient<CatalogLifecycleDatabase>(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
@@ -77,13 +77,18 @@ export const productFromRow = (row: ProductRow): Product => ({
   personalizable: row.personalizable,
   personalization: personalizationSchema.parse(row.personalization ?? []) as Product["personalization"],
   ...(row.min_qty == null ? {} : { minQty: row.min_qty }),
+  ...(row.weight_kg == null ? {} : { weightKg: Number(row.weight_kg) }),
+  ...(row.length_cm == null ? {} : { lengthCm: Number(row.length_cm) }),
+  ...(row.width_cm == null ? {} : { widthCm: Number(row.width_cm) }),
+  ...(row.height_cm == null ? {} : { heightCm: Number(row.height_cm) }),
+  requiresShipping: row.requires_shipping,
 });
 
 export async function getCatalogFromDatabase() {
   const sb = publicClient();
   const [{ data: categoryRows, error: categoryError }, { data: productRows, error: productError }] = await Promise.all([
-    sb.from("categories").select("*").eq("store_key", "papelemi").order("sort"),
-    sb.from("products").select("*").eq("store_key", "papelemi").order("name"),
+    sb.from("categories").select("*").eq("store_key", "papelemi").eq("active", true).is("archived_at", null).order("sort"),
+    sb.from("products").select("*").eq("store_key", "papelemi").is("archived_at", null).order("name"),
   ]);
 
   if (categoryError || productError) {
@@ -104,6 +109,7 @@ export async function getPublishedProductFromDatabase(slug: string): Promise<Pro
     .eq("store_key", "papelemi")
     .eq("slug", slug)
     .eq("published", true)
+    .is("archived_at", null)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -117,6 +123,8 @@ export async function getPublishedCategoryFromDatabase(slug: string): Promise<Ca
     .select("*")
     .eq("store_key", "papelemi")
     .eq("slug", slug)
+    .eq("active", true)
+    .is("archived_at", null)
     .maybeSingle();
 
   if (error) throw new Error(error.message);

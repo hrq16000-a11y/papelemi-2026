@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
+import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
@@ -110,17 +111,29 @@ type QuoteInput = z.infer<typeof quoteInput>;
 async function buildOrderQuote(input: QuoteInput) {
   const { productFromRow } = await import("@/lib/catalog.repository.server");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+  const admin = supabaseAdmin as unknown as SupabaseClient<CatalogLifecycleDatabase>;
   const slugs = [...new Set(input.items.map((item) => item.slug))];
   const { data: rows, error } = await admin
     .from("products")
     .select("*")
     .in("slug", slugs)
     .eq("store_key", "papelemi")
-    .eq("published", true);
+    .eq("published", true)
+    .is("archived_at", null);
 
   if (error) throw new Error("Não foi possível consultar os produtos. Tente novamente.");
-  const products = (rows ?? []).map((row) => productFromRow(row));
+  const availableRows = rows ?? [];
+  const categorySlugs = [...new Set(availableRows.map((row) => row.category_slug))];
+  const { data: activeCategories, error: categoryError } = categorySlugs.length
+    ? await admin.from("categories").select("slug").eq("store_key", "papelemi").in("slug", categorySlugs).eq("active", true).is("archived_at", null)
+    : { data: [], error: null };
+  if (categoryError) throw new Error("Não foi possível validar as categorias dos produtos.");
+  const activeCategorySlugs = new Set((activeCategories ?? []).map((category) => category.slug));
+  const eligibleRows = availableRows.filter((row) => activeCategorySlugs.has(row.category_slug));
+  if (eligibleRows.length !== slugs.length) {
+    throw new Error("Um ou mais produtos não estão mais disponíveis para encomenda.");
+  }
+  const products = eligibleRows.map((row) => productFromRow(row));
   const items = prepareOrderItems(products, input.items as OrderLineInput[]);
 
   let couponCode: string | null = null;
@@ -584,88 +597,212 @@ export const setOrderStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const catalogImageInput = z.string().trim().min(1).max(400).refine((value) => {
+  if (value.startsWith("/") && !value.startsWith("//")) return true;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" && !parsed.username && !parsed.password;
+  } catch {
+    return false;
+  }
+}, "Use um caminho local ou uma URL HTTPS válida.");
+
+const personalizationOptionInput = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("text"),
+    key: z.string().trim().min(1).max(40),
+    label: z.string().trim().min(1).max(120),
+    maxLength: z.number().int().min(1).max(400),
+    ai: z.boolean().optional(),
+  }),
+  z.object({
+    type: z.literal("choice"),
+    key: z.string().trim().min(1).max(40),
+    label: z.string().trim().min(1).max(120),
+    options: z.array(z.string().trim().min(1).max(60)).min(1).max(50),
+  }),
+  z.object({
+    type: z.literal("notes"),
+    key: z.string().trim().min(1).max(40),
+    label: z.string().trim().min(1).max(120),
+  }),
+]);
+
 const productInput = z.object({
+  originalSlug: z.string().trim().min(2).max(80).optional(),
   slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/, "Use letras minúsculas, números e hífens"),
   categorySlug: z.string().trim().min(1).max(80),
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().max(600).default(""),
-  images: z.array(z.string().url().max(400)).max(6).default([]),
+  images: z.array(catalogImageInput).max(6).default([]),
   price: z.number().min(0.5).max(99999),
   promoPrice: z.number().min(0.5).max(99999).nullable().default(null),
-  colors: z.array(z.string().trim().max(40)).max(12).default([]),
-  sizes: z.array(z.string().trim().max(40)).max(12).default([]),
-  finishes: z.array(z.string().trim().max(60)).max(12).default([]),
+  colors: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  sizes: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  finishes: z.array(z.string().trim().min(1).max(60)).max(12).default([]),
   productionDays: z.string().trim().max(60).default(""),
   stock: z.number().int().min(0).max(99999).default(0),
   published: z.boolean().default(true),
   bestSeller: z.boolean().default(false),
   personalizable: z.boolean().default(false),
   minQty: z.number().int().min(1).max(999).nullable().default(null),
+  weightKg: z.number().min(0).max(30).nullable().default(null),
+  lengthCm: z.number().positive().max(200).nullable().default(null),
+  widthCm: z.number().positive().max(200).nullable().default(null),
+  heightCm: z.number().positive().max(200).nullable().default(null),
+  requiresShipping: z.boolean().default(true),
+  personalization: z.array(personalizationOptionInput).max(20).optional(),
+}).refine((product) => product.promoPrice == null || product.promoPrice < product.price, {
+  path: ["promoPrice"],
+  message: "O preço promocional precisa ser menor que o preço normal.",
 });
 
 export const listAdminProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
     const { productFromRow } = await import("@/lib/catalog.repository.server");
-    const { data, error } = await context.supabase.from("products").select("*").eq("store_key", "papelemi").order("name");
+    const { data, error } = await client.from("products").select("*").eq("store_key", "papelemi").order("name");
     if (error) throw new Error(error.message);
-    return (data ?? []).map((r) => ({ ...productFromRow(r), minQty: r.min_qty ?? null }));
+    return (data ?? []).map((row) => ({
+      ...productFromRow(row),
+      minQty: row.min_qty ?? null,
+      archivedAt: row.archived_at,
+    }));
   });
 
 export const saveProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(productInput)
-  .handler(async ({ context, data: p }) => {
+  .handler(async ({ context, data: product }) => {
     await requireAdmin(context);
-    const { data: existing } = await context.supabase.from("products").select("personalization").eq("store_key", "papelemi").eq("slug", p.slug).maybeSingle();
-    const { error } = await context.supabase.from("products").upsert({
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { data: category, error: categoryError } = await client.from("categories")
+      .select("slug,active,archived_at")
+      .eq("store_key", "papelemi")
+      .eq("slug", product.categorySlug)
+      .maybeSingle();
+    if (categoryError) throw new Error(categoryError.message);
+    if (!category || category.archived_at) throw new Error("Escolha uma categoria existente e não arquivada.");
+
+    const { data: existing } = await client.from("products").select("personalization")
+      .eq("store_key", "papelemi")
+      .eq("slug", product.originalSlug ?? product.slug)
+      .maybeSingle();
+    const values = {
       store_key: "papelemi",
-      slug: p.slug,
-      category_slug: p.categorySlug,
-      name: p.name,
-      description: p.description,
-      images: p.images,
-      price: p.price,
-      promo_price: p.promoPrice,
-      colors: p.colors,
-      sizes: p.sizes,
-      finishes: p.finishes,
-      production_days: p.productionDays,
-      stock: p.stock,
-      published: p.published,
-      best_seller: p.bestSeller,
-      personalizable: p.personalizable,
-      min_qty: p.minQty,
-      personalization: existing?.personalization ?? [],
-    }, { onConflict: "store_key,slug" });
+      slug: product.slug,
+      category_slug: product.categorySlug,
+      name: product.name,
+      description: product.description,
+      images: product.images,
+      price: product.price,
+      promo_price: product.promoPrice,
+      colors: product.colors,
+      sizes: product.sizes,
+      finishes: product.finishes,
+      production_days: product.productionDays,
+      stock: product.stock,
+      published: product.published,
+      best_seller: product.bestSeller,
+      personalizable: product.personalizable,
+      min_qty: product.minQty,
+      weight_kg: product.weightKg,
+      length_cm: product.lengthCm,
+      width_cm: product.widthCm,
+      height_cm: product.heightCm,
+      requires_shipping: product.requiresShipping,
+      personalization: product.personalization ?? existing?.personalization ?? [],
+    };
+
+    if (product.originalSlug) {
+      const { data, error } = await client.from("products").update(values)
+        .eq("store_key", "papelemi")
+        .eq("slug", product.originalSlug)
+        .select("slug")
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("Produto não encontrado nesta loja.");
+    } else {
+      const { error } = await client.from("products").insert(values);
+      if (error?.code === "23505") throw new Error("Já existe um produto com este identificador.");
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
+
+export const setProductPublished = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({ slug: z.string().min(2).max(80), published: z.boolean() }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { data: updated, error } = await client.from("products").update({ published: data.published })
+      .eq("store_key", "papelemi").eq("slug", data.slug).is("archived_at", null).select("slug").maybeSingle();
     if (error) throw new Error(error.message);
+    if (!updated) throw new Error("Produto não encontrado ou arquivado.");
+    return { ok: true };
+  });
+
+export const archiveProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({ slug: z.string().min(2).max(80) }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { data: updated, error } = await client.from("products").update({ archived_at: new Date().toISOString() })
+      .eq("store_key", "papelemi").eq("slug", data.slug).is("archived_at", null).select("slug").maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("Produto não encontrado ou já arquivado.");
+    return { ok: true };
+  });
+
+export const restoreProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({ slug: z.string().min(2).max(80) }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { data: updated, error } = await client.from("products").update({ archived_at: null })
+      .eq("store_key", "papelemi").eq("slug", data.slug).not("archived_at", "is", null).select("slug").maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("Produto não encontrado ou já restaurado.");
     return { ok: true };
   });
 
 export const deleteProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(z.object({ slug: z.string().min(1).max(80) }))
+  .validator(z.object({ slug: z.string().min(2).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("products").delete().eq("store_key", "papelemi").eq("slug", data.slug);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const { data: references, error: referenceError } = await admin.from("order_items")
+      .select("id").eq("store_key", "papelemi").eq("product_slug", data.slug).limit(1);
+    if (referenceError) throw new Error(referenceError.message);
+    if (references?.length) throw new Error("Este produto aparece em pedidos históricos e não pode ser excluído. Mantenha-o arquivado.");
+    const { error } = await admin.from("products").delete().eq("store_key", "papelemi").eq("slug", data.slug).is("archived_at", "not.is", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 const categoryInput = z.object({
+  originalSlug: z.string().trim().min(2).max(80).optional(),
   slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/, "Use letras minúsculas, números e hífens"),
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(300).default(""),
-  image: z.string().trim().url().max(400).or(z.literal("")).default(""),
+  image: catalogImageInput.or(z.literal("")).default(""),
   sort: z.number().int().min(0).max(999).default(0),
+  active: z.boolean().default(true),
 });
 
 export const listAdminCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("categories").select("*").eq("store_key", "papelemi").order("sort");
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { data, error } = await client.from("categories").select("*").eq("store_key", "papelemi").order("sort").order("name");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -673,19 +810,82 @@ export const listAdminCategories = createServerFn({ method: "GET" })
 export const saveCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(categoryInput)
-  .handler(async ({ context, data: c }) => {
+  .handler(async ({ context, data: category }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("categories").upsert({ store_key: "papelemi", slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort }, { onConflict: "store_key,slug" });
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const values = {
+      store_key: "papelemi",
+      slug: category.slug,
+      name: category.name,
+      description: category.description,
+      image: category.image,
+      sort: category.sort,
+      active: category.active,
+    };
+    if (category.originalSlug) {
+      const { data, error } = await client.from("categories").update(values)
+        .eq("store_key", "papelemi").eq("slug", category.originalSlug).select("slug").maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("Categoria não encontrada nesta loja.");
+    } else {
+      const { error } = await client.from("categories").insert(values);
+      if (error?.code === "23505") throw new Error("Já existe uma categoria com este identificador.");
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
+
+export const setCategoryActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({ slug: z.string().min(2).max(80), active: z.boolean() }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { data: updated, error } = await client.from("categories").update({ active: data.active })
+      .eq("store_key", "papelemi").eq("slug", data.slug).is("archived_at", null).select("slug").maybeSingle();
     if (error) throw new Error(error.message);
+    if (!updated) throw new Error("Categoria não encontrada ou arquivada.");
+    return { ok: true };
+  });
+
+export const archiveCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({ slug: z.string().min(2).max(80) }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { data: updated, error } = await client.from("categories").update({ archived_at: new Date().toISOString() })
+      .eq("store_key", "papelemi").eq("slug", data.slug).is("archived_at", null).select("slug").maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("Categoria não encontrada ou já arquivada.");
+    return { ok: true };
+  });
+
+export const restoreCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(z.object({ slug: z.string().min(2).max(80) }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { data: updated, error } = await client.from("categories").update({ archived_at: null })
+      .eq("store_key", "papelemi").eq("slug", data.slug).not("archived_at", "is", null).select("slug").maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("Categoria não encontrada ou já restaurada.");
     return { ok: true };
   });
 
 export const deleteCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(z.object({ slug: z.string().min(1).max(80) }))
+  .validator(z.object({ slug: z.string().min(2).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("categories").delete().eq("store_key", "papelemi").eq("slug", data.slug);
+    const client = context.supabase as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+    const { count, error: productsError } = await client.from("products")
+      .select("slug", { count: "exact", head: true })
+      .eq("store_key", "papelemi").eq("category_slug", data.slug);
+    if (productsError) throw new Error(productsError.message);
+    if ((count ?? 0) > 0) throw new Error("Esta categoria possui produtos vinculados. Mova ou exclua os produtos antes de removê-la.");
+    const { error } = await client.from("categories").delete().eq("store_key", "papelemi").eq("slug", data.slug);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

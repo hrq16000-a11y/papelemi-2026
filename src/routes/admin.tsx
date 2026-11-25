@@ -2,15 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Loader2, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { brl, type Product } from "@/data/catalog";
+import { brl } from "@/data/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  deleteCategory, deleteCoupon, deletePhrase, deleteProduct,
+  deleteCoupon, deletePhrase,
   getMyRole, getOrderDetails, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders,
-  saveCategory, saveCoupon, saveCustomer, savePhrase, saveProduct, setOrderStatus,
+  saveCoupon, saveCustomer, savePhrase, setOrderStatus,
 } from "@/lib/shop.functions";
 import { cn } from "@/lib/utils";
 import ShippingAdminPanel from "@/components/admin/ShippingAdminPanel";
+import { CategoriesTab as CatalogCategoriesTab, ProductsTab as CatalogProductsTab } from "@/components/admin/CatalogAdminPanel";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [
@@ -88,8 +89,8 @@ function Admin() {
         {tab === "dashboard" && <DashboardTab onNavigate={setTab} />}
         {tab === "pedidos" && <OrdersTab />}
         {tab === "clientes" && <CustomersTab />}
-        {tab === "produtos" && <ProductsTab />}
-        {tab === "categorias" && <CategoriesTab />}
+        {tab === "produtos" && <CatalogProductsTab />}
+        {tab === "categorias" && <CatalogCategoriesTab />}
         {tab === "frases" && <PhrasesTab />}
         {tab === "cupons" && <CouponsTab />}
         {tab === "fretes" && <ShippingAdminPanel />}
@@ -840,175 +841,6 @@ function CustomersTab() {
         </>
       )}
     </section>
-  );
-}
-
-// ===== Produtos =====
-
-type AdminProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
-type ProductForm = {
-  slug: string; categorySlug: string; name: string; description: string; images: string;
-  price: string; promoPrice: string; colors: string; sizes: string; finishes: string;
-  productionDays: string; stock: string; published: boolean; bestSeller: boolean; personalizable: boolean; minQty: string;
-};
-
-const emptyProduct: ProductForm = { slug: "", categorySlug: "", name: "", description: "", images: "", price: "", promoPrice: "", colors: "", sizes: "", finishes: "", productionDays: "", stock: "0", published: true, bestSeller: false, personalizable: false, minQty: "" };
-
-const toForm = (p: AdminProduct): ProductForm => ({
-  slug: p.slug, categorySlug: p.category, name: p.name, description: p.description,
-  images: p.images.join("\n"), price: String(p.price), promoPrice: p.promoPrice == null ? "" : String(p.promoPrice),
-  colors: p.colors.join(", "), sizes: p.sizes.join(", "), finishes: p.finishes.join(", "),
-  productionDays: p.productionDays, stock: String(p.stock), published: p.published,
-  bestSeller: p.bestSeller ?? false, personalizable: p.personalizable, minQty: p.minQty == null ? "" : String(p.minQty),
-});
-
-const split = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
-
-function ProductsTab() {
-  const [products, setProducts] = useState<AdminProduct[] | null>(null);
-  const [cats, setCats] = useState<{ slug: string; name: string }[]>([]);
-  const [editing, setEditing] = useState<ProductForm | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const load = useCallback(() => {
-    listAdminProducts().then(setProducts).catch((e) => toast.error(e.message));
-    listAdminCategories().then((c) => setCats(c.map((x) => ({ slug: x.slug, name: x.name })))).catch(() => {});
-  }, []);
-  useEffect(load, [load]);
-
-  const save = async () => {
-    if (!editing || busy) return;
-    setBusy(true);
-    try {
-      await saveProduct({ data: {
-        slug: editing.slug, categorySlug: editing.categorySlug, name: editing.name, description: editing.description,
-        images: editing.images.split("\n").map((x) => x.trim()).filter(Boolean),
-        price: Number(editing.price), promoPrice: editing.promoPrice ? Number(editing.promoPrice) : null,
-        colors: split(editing.colors), sizes: split(editing.sizes), finishes: split(editing.finishes),
-        productionDays: editing.productionDays, stock: Number(editing.stock) || 0,
-        published: editing.published, bestSeller: editing.bestSeller, personalizable: editing.personalizable,
-        minQty: editing.minQty ? Number(editing.minQty) : null,
-      } });
-      toast.success("Produto salvo");
-      setEditing(null);
-      load();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao salvar"); }
-    finally { setBusy(false); }
-  };
-
-  if (!products) return <Loader2 className="size-6 animate-spin text-primary" />;
-
-  if (editing) return (
-    <div className="rounded-2xl border border-border bg-card p-6">
-      <h2 className="text-2xl">{products.some((p) => p.slug === editing.slug) ? "Editar produto" : "Novo produto"}</h2>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs text-muted-foreground">Identificador (slug)<input value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} className={cn(input, "mt-1")} placeholder="ex.: caderno-afeto" /></label>
-        <label className="text-xs text-muted-foreground">Categoria
-          <select value={editing.categorySlug} onChange={(e) => setEditing({ ...editing, categorySlug: e.target.value })} className={cn(input, "mt-1")}>
-            <option value="">Escolha…</option>
-            {cats.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-          </select>
-        </label>
-        <label className="text-xs text-muted-foreground sm:col-span-2">Nome<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground sm:col-span-2">Descrição<textarea value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} rows={3} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground sm:col-span-2">Fotos (uma URL por linha)<textarea value={editing.images} onChange={(e) => setEditing({ ...editing, images: e.target.value })} rows={2} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Preço (R$)<input type="number" step="0.01" min="0" value={editing.price} onChange={(e) => setEditing({ ...editing, price: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Preço promocional (opcional)<input type="number" step="0.01" min="0" value={editing.promoPrice} onChange={(e) => setEditing({ ...editing, promoPrice: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Cores (vírgula)<input value={editing.colors} onChange={(e) => setEditing({ ...editing, colors: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Tamanhos (vírgula)<input value={editing.sizes} onChange={(e) => setEditing({ ...editing, sizes: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Acabamentos (vírgula)<input value={editing.finishes} onChange={(e) => setEditing({ ...editing, finishes: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Prazo de produção<input value={editing.productionDays} onChange={(e) => setEditing({ ...editing, productionDays: e.target.value })} className={cn(input, "mt-1")} placeholder="ex.: 5 a 7 dias úteis" /></label>
-        <label className="text-xs text-muted-foreground">Estoque<input type="number" min="0" value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Quantidade mínima (opcional)<input type="number" min="1" value={editing.minQty} onChange={(e) => setEditing({ ...editing, minQty: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <div className="flex flex-wrap gap-5 sm:col-span-2">
-          {([["published", "Publicado"], ["bestSeller", "Mais vendido"], ["personalizable", "Personalizável"]] as const).map(([k, label]) => (
-            <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editing[k]} onChange={(e) => setEditing({ ...editing, [k]: e.target.checked })} /> {label}</label>
-          ))}
-        </div>
-      </div>
-      <div className="mt-6 flex gap-3">
-        <button onClick={save} disabled={busy} className={btn}>{busy ? <Loader2 className="size-3.5 animate-spin" /> : null} Salvar</button>
-        <button onClick={() => setEditing(null)} className={btnGhost}>Cancelar</button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div>
-      <button onClick={() => setEditing({ ...emptyProduct, categorySlug: cats[0]?.slug ?? "" })} className={btn}><Plus className="size-3.5" /> Novo produto</button>
-      <ul className="mt-5 divide-y divide-border rounded-2xl border border-border bg-card">
-        {products.map((p) => (
-          <li key={p.slug} className="flex items-center gap-4 p-4">
-            <img src={p.images[0]} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{p.name} {!p.published && <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase">Oculto</span>}</p>
-              <p className="text-xs text-muted-foreground">{brl(p.promoPrice ?? p.price)} · estoque {p.stock}</p>
-            </div>
-            <button onClick={() => setEditing(toForm(p))} aria-label={`Editar ${p.name}`} className="rounded-full p-2 hover:bg-secondary"><Pencil className="size-4" /></button>
-            <button onClick={async () => { if (!confirm(`Excluir ${p.name}?`)) return; try { await deleteProduct({ data: { slug: p.slug } }); toast.success("Produto excluído"); load(); } catch (e) { toast.error(e instanceof Error ? e.message : "Erro"); } }} aria-label={`Excluir ${p.name}`} className="rounded-full p-2 text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-// ===== Categorias =====
-
-type AdminCategory = Awaited<ReturnType<typeof listAdminCategories>>[number];
-
-function CategoriesTab() {
-  const [cats, setCats] = useState<AdminCategory[] | null>(null);
-  const [editing, setEditing] = useState<{ slug: string; name: string; description: string; image: string; sort: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-  const load = useCallback(() => { listAdminCategories().then(setCats).catch((e) => toast.error(e.message)); }, []);
-  useEffect(load, [load]);
-
-  const save = async () => {
-    if (!editing || busy) return;
-    setBusy(true);
-    try {
-      await saveCategory({ data: { slug: editing.slug, name: editing.name, description: editing.description, image: editing.image, sort: Number(editing.sort) || 0 } });
-      toast.success("Categoria salva"); setEditing(null); load();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao salvar"); }
-    finally { setBusy(false); }
-  };
-
-  if (!cats) return <Loader2 className="size-6 animate-spin text-primary" />;
-
-  if (editing) return (
-    <div className="rounded-2xl border border-border bg-card p-6">
-      <h2 className="text-2xl">{cats.some((c) => c.slug === editing.slug) ? "Editar categoria" : "Nova categoria"}</h2>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs text-muted-foreground">Identificador (slug)<input value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Nome<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground sm:col-span-2">Descrição<input value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">URL da imagem<input value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} className={cn(input, "mt-1")} /></label>
-        <label className="text-xs text-muted-foreground">Ordem<input type="number" min="0" value={editing.sort} onChange={(e) => setEditing({ ...editing, sort: e.target.value })} className={cn(input, "mt-1")} /></label>
-      </div>
-      <div className="mt-6 flex gap-3">
-        <button onClick={save} disabled={busy} className={btn}>{busy ? <Loader2 className="size-3.5 animate-spin" /> : null} Salvar</button>
-        <button onClick={() => setEditing(null)} className={btnGhost}>Cancelar</button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div>
-      <button onClick={() => setEditing({ slug: "", name: "", description: "", image: "", sort: String(cats.length + 1) })} className={btn}><Plus className="size-3.5" /> Nova categoria</button>
-      <ul className="mt-5 divide-y divide-border rounded-2xl border border-border bg-card">
-        {cats.map((c) => (
-          <li key={c.slug} className="flex items-center gap-4 p-4">
-            <div className="min-w-0 flex-1">
-              <p className="font-medium">{c.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{c.slug} · ordem {c.sort}</p>
-            </div>
-            <button onClick={() => setEditing({ slug: c.slug, name: c.name, description: c.description, image: c.image, sort: String(c.sort) })} aria-label={`Editar ${c.name}`} className="rounded-full p-2 hover:bg-secondary"><Pencil className="size-4" /></button>
-            <button onClick={async () => { if (!confirm(`Excluir a categoria ${c.name}? Produtos dela precisam ser movidos antes.`)) return; try { await deleteCategory({ data: { slug: c.slug } }); toast.success("Categoria excluída"); load(); } catch (e) { toast.error(e instanceof Error ? e.message : "Erro"); } }} aria-label={`Excluir ${c.name}`} className="rounded-full p-2 text-muted-foreground hover:text-destructive"><Trash2 className="size-4" /></button>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 

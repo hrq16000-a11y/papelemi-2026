@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { Database } from "@/integrations/supabase/types";
+import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 import { categoryFromRow, productFromRow } from "@/lib/catalog.repository.server";
 
-type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type ProductRow = CatalogLifecycleDatabase["public"]["Tables"]["products"]["Row"];
+type CategoryRow = CatalogLifecycleDatabase["public"]["Tables"]["categories"]["Row"];
 
 const productRow: ProductRow = {
   slug: "caderneta-teste",
@@ -27,6 +27,12 @@ const productRow: ProductRow = {
     { type: "notes", key: "observacoes", label: "Observações" },
   ],
   min_qty: null,
+  weight_kg: 0.25,
+  length_cm: 20,
+  width_cm: 15,
+  height_cm: 2,
+  requires_shipping: true,
+  archived_at: null,
 };
 
 const categoryRow: CategoryRow = {
@@ -35,6 +41,8 @@ const categoryRow: CategoryRow = {
   description: "Para guardar cada fase.",
   image: "/images/papelemi/caderneta-ursinho-clean.jpg",
   sort: 1,
+  active: true,
+  archived_at: null,
 };
 
 describe("Supabase catalog mapping", () => {
