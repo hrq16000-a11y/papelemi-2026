@@ -17,7 +17,7 @@ const personalizationOptionSchema = z.discriminatedUnion("type", [
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
     maxLength: z.number().int().min(1).max(400),
-    ai: z.boolean().optional(),
+    ai: z.boolean().optional().default(false),
   }),
   z.object({
     type: z.literal("choice"),
@@ -81,18 +81,15 @@ export const productFromRow = (row: ProductRow): Product => ({
 
 export async function getCatalogFromDatabase() {
   const sb = publicClient();
-  const [
-    { data: categoryRows, error: categoryError },
-    { data: productRows, error: productError },
-  ] = await Promise.all([
+  const [categoryResult, productResult] = await Promise.all([
     sb.from("categories").select("*").order("sort"),
     sb.from("products").select("*").order("name"),
   ]);
+  const { data: categoryRows, error: categoryError } = categoryResult;
+  const { data: productRows, error: productError } = productResult;
 
   if (categoryError || productError) {
-    throw new Error(
-      categoryError?.message ?? productError?.message ?? "Falha ao carregar catálogo",
-    );
+    throw new Error(categoryError?.message ?? productError?.message ?? "Falha ao carregar catálogo");
   }
 
   return {
