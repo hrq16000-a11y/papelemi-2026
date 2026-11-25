@@ -6,7 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Category, Product } from "@/data/catalog";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 
-const PUBLISHED_ORIGIN = "https://papelemi.com.br";
+const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
 // Cliente público (somente leitura) para dados abertos da loja.
 function publicClient() {
@@ -209,7 +209,15 @@ export const listOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(200);
+    // A tabela orders aceita acesso somente pelo servidor (service_role).
+    // A autorização do usuário é validada antes de usar o cliente privilegiado.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("store_key", "papelemi")
+      .order("created_at", { ascending: false })
+      .limit(200);
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -219,7 +227,13 @@ export const setOrderStatus = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.string().uuid(), status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("orders").update({ status: data.status }).eq("id", data.id);
+    // Atualizações usam service_role somente após validar o papel do usuário.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .update({ status: data.status })
+      .eq("id", data.id)
+      .eq("store_key", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });

@@ -177,7 +177,7 @@ function OrdersTab() {
             ))}
           </ul>
           <p className="mt-2 text-xs text-muted-foreground">
-            Subtotal {brl(Number(o.subtotal))} · Frete {Number(o.shipping) === 0 ? "grátis" : brl(Number(o.shipping))}
+            Subtotal {brl(Number(o.subtotal))} · Frete {Number(o.shipping) === 0 ? "A confirmar" : brl(Number(o.shipping))}
             {Number(o.discount) > 0 && <> · Cupom {o.coupon_code} (−{brl(Number(o.discount))})</>}
           </p>
         </li>

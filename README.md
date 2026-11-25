@@ -4,7 +4,7 @@ Loja de papelaria personalizada com afeto. Aplicação construída com TanStack 
 
 ## Produção
 
-- Domínio oficial: https://papelemi.com.br
+- Domínio oficial: https://www.papelemi.com.br (o domínio sem www redireciona para www)
 - Repositório: https://github.com/hrq16000-a11y/papelemi-2026
 - Projeto Vercel: `papelemi` (equipe `msolus`)
 - Banco dedicado Supabase: projeto `gpdpfoxpbferjwbppcmb`
