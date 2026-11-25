@@ -144,12 +144,12 @@ async function buildOrderQuote(input: QuoteInput) {
   const { buildShippingQuote } = await import("@/lib/shipping-quote.server");
   const shippingQuote = await buildShippingQuote({
     admin,
-    destinationZip: input.destinationZip,
-    destinationState: input.destinationState,
+    ...(input.destinationZip ? { destinationZip: input.destinationZip } : {}),
+    ...(input.destinationState ? { destinationState: input.destinationState } : {}),
     items: input.items,
     products: rows ?? [],
     subtotal: totals.subtotal,
-    selectedOptionId: input.shippingOptionId,
+    ...(input.shippingOptionId ? { selectedOptionId: input.shippingOptionId } : {}),
   });
   return {
     items,
