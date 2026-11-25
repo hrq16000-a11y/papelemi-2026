@@ -94,6 +94,13 @@ export function applyShippingRules(
   return result;
 }
 
+export function isAllowedShippingProviderEndpoint(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && (url.hostname === "melhorenvio.com.br" || url.hostname.endsWith(".melhorenvio.com.br"));
+  } catch { return false; }
+}
+
 export function manualShippingOption(): ShippingOptionDraft {
   return {
     provider: "PapeLemi",
