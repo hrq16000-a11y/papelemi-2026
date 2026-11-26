@@ -322,28 +322,6 @@ function PasswordTab() {
 
 // ===== Pedidos =====
 
-type Order = Awaited<ReturnType<typeof listOrders>>[number];
-type OrderDetail = Awaited<ReturnType<typeof getOrderDetails>>;
-type OrderStatus = "pending" | "paid" | "shipped" | "delivered" | "cancelled";
-const ORDER_STATUS: Record<OrderStatus, string> = {
-  pending: "Recebido / aguardando confirmação",
-  paid: "Pago",
-  shipped: "Enviado",
-  delivered: "Entregue",
-  cancelled: "Cancelado",
-};
-
-function formatOrderDate(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Data não informada" : date.toLocaleString("pt-BR");
-}
-
-function displayOrderValue(value: unknown): string {
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
-  if (value == null) return "";
-  return JSON.stringify(value);
-}
-
 function OrdersTab() {
   return <EmporioOrdersPanel />;
 }

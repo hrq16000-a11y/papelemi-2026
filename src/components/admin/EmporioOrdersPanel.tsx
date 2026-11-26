@@ -61,9 +61,8 @@ const statusOptions = [
   { value: 'cancelled', label: 'Cancelado', color: 'bg-red-500', icon: XCircle },
 ];
 
-const getStatusInfo = (status: string) => {
-  return statusOptions.find(s => s.value === status) || statusOptions[0];
-};
+const fallbackStatus = { value: "pending", label: "Pendente", color: "bg-yellow-500", icon: Clock };
+const getStatusInfo = (status: string) => statusOptions.find((item) => item.value === status) ?? fallbackStatus;
 
 export default function EmporioOrdersPanel() {
   type OrderStatus = "pending" | "paid" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
@@ -84,7 +83,7 @@ export default function EmporioOrdersPanel() {
     setRefreshing(true);
     try {
       const rows = await listOrders();
-      setOrders(rows as Order[]);
+      setOrders(rows as unknown as Order[]);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível carregar os pedidos.");
       setOrders([]);
@@ -618,8 +617,8 @@ export default function EmporioOrdersPanel() {
                     newStatus: "shipped",
                     tracking: {
                       code: trackingDialog.code,
-                      carrier: trackingDialog.carrier || undefined,
-                      url: trackingDialog.url || undefined,
+                      ...(trackingDialog.carrier ? { carrier: trackingDialog.carrier } : {}),
+                      ...(trackingDialog.url ? { url: trackingDialog.url } : {}),
                     },
                   })}
                 >
