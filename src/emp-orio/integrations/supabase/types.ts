@@ -1447,7 +1447,7 @@ export type Database = {
       }
       kits: {
         Row: {
-          bundle_type: Database["public"]["Enums"]["kit_bundle_type"]
+          bundle_type: Database["papelemi_engine"]["Enums"]["kit_bundle_type"]
           created_at: string
           description: string | null
           estimated_savings: number | null
@@ -1466,7 +1466,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          bundle_type?: Database["public"]["Enums"]["kit_bundle_type"]
+          bundle_type?: Database["papelemi_engine"]["Enums"]["kit_bundle_type"]
           created_at?: string
           description?: string | null
           estimated_savings?: number | null
@@ -1485,7 +1485,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          bundle_type?: Database["public"]["Enums"]["kit_bundle_type"]
+          bundle_type?: Database["papelemi_engine"]["Enums"]["kit_bundle_type"]
           created_at?: string
           description?: string | null
           estimated_savings?: number | null
@@ -2059,7 +2059,7 @@ export type Database = {
           paid_at: string | null
           payment_id: string | null
           payment_method: string | null
-          payment_status: Database["public"]["Enums"]["payment_status"]
+          payment_status: Database["papelemi_engine"]["Enums"]["payment_status"]
           shipped_at: string | null
           shipping_company: string | null
           shipping_days: string | null
@@ -2093,7 +2093,7 @@ export type Database = {
           paid_at?: string | null
           payment_id?: string | null
           payment_method?: string | null
-          payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_status?: Database["papelemi_engine"]["Enums"]["payment_status"]
           shipped_at?: string | null
           shipping_company?: string | null
           shipping_days?: string | null
@@ -2127,7 +2127,7 @@ export type Database = {
           paid_at?: string | null
           payment_id?: string | null
           payment_method?: string | null
-          payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_status?: Database["papelemi_engine"]["Enums"]["payment_status"]
           shipped_at?: string | null
           shipping_company?: string | null
           shipping_days?: string | null
@@ -6941,10 +6941,10 @@ export type Database = {
       }
       shipping_rules: {
         Row: {
-          condition_type: Database["public"]["Enums"]["shipping_condition_type"]
+          condition_type: Database["papelemi_engine"]["Enums"]["shipping_condition_type"]
           condition_value: Json
           created_at: string
-          discount_type: Database["public"]["Enums"]["shipping_discount_type"]
+          discount_type: Database["papelemi_engine"]["Enums"]["shipping_discount_type"]
           discount_value: number
           id: string
           is_active: boolean
@@ -6953,10 +6953,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          condition_type: Database["public"]["Enums"]["shipping_condition_type"]
+          condition_type: Database["papelemi_engine"]["Enums"]["shipping_condition_type"]
           condition_value?: Json
           created_at?: string
-          discount_type: Database["public"]["Enums"]["shipping_discount_type"]
+          discount_type: Database["papelemi_engine"]["Enums"]["shipping_discount_type"]
           discount_value?: number
           id?: string
           is_active?: boolean
@@ -6965,10 +6965,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          condition_type?: Database["public"]["Enums"]["shipping_condition_type"]
+          condition_type?: Database["papelemi_engine"]["Enums"]["shipping_condition_type"]
           condition_value?: Json
           created_at?: string
-          discount_type?: Database["public"]["Enums"]["shipping_discount_type"]
+          discount_type?: Database["papelemi_engine"]["Enums"]["shipping_discount_type"]
           discount_value?: number
           id?: string
           is_active?: boolean
@@ -7496,19 +7496,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["papelemi_engine"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["papelemi_engine"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["papelemi_engine"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -8094,7 +8094,7 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
+          _role: Database["papelemi_engine"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
