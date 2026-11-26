@@ -123,3 +123,30 @@ jobs:
           triggers="$(grep -Eic '^CREATE TRIGGER' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
           echo "Emporio isolated replay PASS — migrations applied: $applied; tables: $tables; functions: $functions; views: $views; indexes: $indexes; policies: $policies; triggers: $triggers."
           supabase stop --no-backup > /dev/null 2>&1 || true
+
+      - name: Prepare combined PapeLemi and Emporio schema workspace
+        run: node scripts/emp-orio/prepare-combined-schema.mjs
+
+      - name: Replay original Emporio schema after preserving PapeLemi data
+        shell: bash
+        working-directory: tools/papelemi-combined-supabase
+        run: |
+          if ! supabase start --debug > "$RUNNER_TEMP/papelemi-combined-start.log" 2>&1; then
+            echo "Combined local Supabase stack failed to start:"
+            tail -n 160 "$RUNNER_TEMP/papelemi-combined-start.log"
+            exit 1
+          fi
+          if ! supabase db reset > "$RUNNER_TEMP/papelemi-combined-reset.log" 2>&1; then
+            echo "Combined PapeLemi + Emporio migration replay failed:"
+            tail -n 180 "$RUNNER_TEMP/papelemi-combined-reset.log"
+            supabase stop --no-backup > /dev/null 2>&1 || true
+            exit 1
+          fi
+          DB_URL="$(supabase status --output env | sed -n 's/^DB_URL=//p' | tr -d '"')"
+          public_tables="$(psql "$DB_URL" -Atc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE'")"
+          legacy_tables="$(psql "$DB_URL" -Atc "select count(*) from information_schema.tables where table_schema='papelemi_legacy' and table_type='BASE TABLE'")"
+          legacy_products="$(psql "$DB_URL" -Atc "select count(*) from papelemi_legacy.products")"
+          legacy_categories="$(psql "$DB_URL" -Atc "select count(*) from papelemi_legacy.categories")"
+          echo "Combined schema replay PASS — public tables: $public_tables; preserved legacy tables: $legacy_tables; preserved PapeLemi products: $legacy_products; preserved PapeLemi categories: $legacy_categories."
+          supabase stop --no-backup > /dev/null 2>&1 || true
+
