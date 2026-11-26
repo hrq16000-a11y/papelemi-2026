@@ -31,7 +31,6 @@ const mappings = [
   "src/ai-gateway.types.ts",
   "supabase/migrations",
   "supabase/functions",
-  "supabase/tests",
   "drizzle/migrations",
   "drizzle/schema.ts",
   "drizzle.config.ts",
