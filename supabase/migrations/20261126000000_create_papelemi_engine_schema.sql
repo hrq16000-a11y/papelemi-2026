@@ -12156,7 +12156,7 @@ WHERE ur.store_key = 'papelemi'
 ON CONFLICT (user_id, role) DO NOTHING;
 
 -- Empty PapeLemi product-image bucket; no source media is copied.
-DO $
+DO $papelemi_bucket_guard$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM storage.buckets
@@ -12172,7 +12172,7 @@ BEGIN
     RAISE EXCEPTION 'Existing product-images bucket configuration differs; refusing to overwrite it.';
   END IF;
 END
-$;
+$papelemi_bucket_guard$;
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
