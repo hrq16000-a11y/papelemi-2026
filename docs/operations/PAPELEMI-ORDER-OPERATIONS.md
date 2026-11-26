@@ -31,10 +31,10 @@
 
 ## Operação 360° e auditoria do ciclo do pedido
 
-A migration \`20261125220000_add_order_360_operations.sql\` acrescenta código legível do pedido, endereço normalizado, status de pagamento separado do status operacional, dados de frete/rastreamento, histórico de status, eventos de pagamento, logs de e-mail e notificações.
+A migration `20261125220000_add_order_360_operations.sql` acrescenta código legível do pedido, endereço normalizado, status de pagamento separado do status operacional, dados de frete/rastreamento, histórico de status, eventos de pagamento, logs de e-mail e notificações.
 
-A PR #15 conecta esses dados ao painel: consulta do histórico e dos eventos, edição de status/frete/rastreamento e atualização pela RPC \`admin_update_order\`, após validação administrativa no servidor e com escopo da PapeLemi.
+A PR #15 conecta esses dados ao painel: consulta do histórico e dos eventos, edição de status/frete/rastreamento e atualização pela RPC `admin_update_order`, após validação administrativa no servidor e com escopo da PapeLemi.
 
 **Implantação:** a migration e o código estão em branches de homologação e são reproduzidos no Supabase local do GitHub Actions. Não aplicar em Production antes da homologação autenticada e da autorização de implantação.
 
-**Limite:** a visualização de \`payment_events\` está preparada; a gravação idempotente desses eventos no webhook do provedor fica para uma etapa separada. Nenhuma cobrança, estorno ou mensagem real é executada nesta rodada.
+**Limite:** a visualização de `payment_events` está preparada; a gravação idempotente desses eventos no webhook do provedor fica para uma etapa separada. Nenhuma cobrança, estorno ou mensagem real é executada nesta rodada.

@@ -395,13 +395,13 @@ type AdminCtx = { supabase: ReturnType<typeof publicClient>; userId: string };
 
 type AdminOrderRow = Database["public"]["Tables"]["orders"]["Row"] & {
   order_code: string;
-  address_cep: string;
+  address_cep: string | null;
   address_street: string | null;
   address_number: string | null;
   address_complement: string | null;
   address_neighborhood: string | null;
-  address_city: string;
-  address_state: string;
+  address_city: string | null;
+  address_state: string | null;
   shipping_method: string;
   shipping_company: string | null;
   shipping_days: string | null;
@@ -419,19 +419,30 @@ type AdminOrderRow = Database["public"]["Tables"]["orders"]["Row"] & {
   delivered_at: string | null;
   updated_at: string;
 };
+type AdminOrderItemRow = Pick<Database["public"]["Tables"]["order_items"]["Row"], "id" | "line_number" | "product_name" | "product_slug" | "product_image" | "quantity" | "unit_price" | "line_total" | "personalization">;
 type OrderStatusHistoryRow = { id: string; from_status: string | null; to_status: string; note: string | null; changed_by: string | null; created_at: string };
 type PaymentEventRow = { id: string; provider: string; payment_id: string; event_id: string; provider_status: string | null; applied_status: string | null; result: string; error_message: string | null; created_at: string };
 type TrackingEmailRow = { id: string; email_type: string; recipient_email: string; status: string; tracking_carrier: string | null; tracking_code: string | null; tracking_url: string | null; error_message: string | null; created_at: string };
 type OrderNotificationRow = { id: string; status: string; channel: string; success: boolean; error: string | null; created_at: string };
 async function requireAdmin(context: AdminCtx) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (!data) throw new Error("Acesso restrito ao administrador da loja");
+  const { data, error } = await context.supabase.rpc("has_store_role", {
+    _user_id: context.userId,
+    _role: "admin",
+    _store_key: "papelemi",
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Acesso restrito ao administrador desta loja");
 }
 
 export const getMyRole = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    const { data, error } = await context.supabase.rpc("has_store_role", {
+      _user_id: context.userId,
+      _role: "admin",
+      _store_key: "papelemi",
+    });
+    if (error) throw new Error(error.message);
     return { isAdmin: Boolean(data) };
   });
 
@@ -617,7 +628,7 @@ export const getOrderDetails = createServerFn({ method: "GET" })
     }
     return {
       order: order as AdminOrderRow,
-      items: (itemsResult.data ?? []) as Database["public"]["Tables"]["order_items"]["Row"][],
+      items: (itemsResult.data ?? []) as AdminOrderItemRow[],
       history: (historyResult.data ?? []) as OrderStatusHistoryRow[],
       paymentEvents: (paymentResult.data ?? []) as PaymentEventRow[],
       trackingEmails: (trackingResult.data ?? []) as TrackingEmailRow[],
