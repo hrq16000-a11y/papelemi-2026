@@ -9,6 +9,7 @@ import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 import { categoryAdminSchema, productAdminSchema } from "@/lib/catalog-validation";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
 import { engineAdmin } from "@/lib/engine.server";
+import type { PapeLemiEngineProductRow } from "@/lib/catalog.repository.server";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -144,14 +145,14 @@ async function buildOrderQuote(input: QuoteInput) {
   const eligibleRows = availableRows.filter((row) => row.category_id && categorySlugById.has(row.category_id));
   if (eligibleRows.length !== slugs.length) throw new Error("Um ou mais produtos não estão mais disponíveis para encomenda.");
 
-  const products = eligibleRows.map((row) => productFromEngineRow(row as any, categorySlugById.get(row.category_id!)!));
+  const products = eligibleRows.map((row) => productFromEngineRow(row as unknown as PapeLemiEngineProductRow, categorySlugById.get(row.category_id!)!));
   const items = prepareOrderItems(products, input.items as OrderLineInput[]);
   const baseTotals = calculateOrderTotals(items, null);
 
   let couponCode: string | null = null;
   let discount = 0;
   if (input.couponCode) {
-    const { data: validation, error: couponError } = await (engine as any).rpc("validate_coupon", {
+    const { data: validation, error: couponError } = await engine.rpc("validate_coupon", {
       _code: input.couponCode,
       _subtotal: baseTotals.subtotal,
     });
@@ -167,7 +168,7 @@ async function buildOrderQuote(input: QuoteInput) {
     ...(input.destinationZip ? { destinationZip: input.destinationZip } : {}),
     ...(input.destinationState ? { destinationState: input.destinationState } : {}),
     items: input.items,
-    products: eligibleRows as any,
+    products: eligibleRows,
     subtotal: baseTotals.subtotal,
     ...(input.shippingOptionId ? { selectedOptionId: input.shippingOptionId } : {}),
   });
