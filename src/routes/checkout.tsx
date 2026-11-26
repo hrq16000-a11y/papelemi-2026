@@ -96,7 +96,7 @@ function Checkout() {
   const [customerNotes, setCustomerNotes] = useState("");
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [couponInput, setCouponInput] = useState("");
-  const [coupon, setCoupon] = useState<{ code: string; percent: number } | null>(null);
+  const [coupon, setCoupon] = useState<{ code: string; discountType: "percent" | "fixed"; discountValue: number } | null>(null);
   const [checkingCoupon, setCheckingCoupon] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState<{ orderId: string; paymentReady: boolean; total: number } | null>(null);
@@ -149,7 +149,7 @@ function Checkout() {
     setCheckingCoupon(true);
     try {
       const c = await validateCoupon({ data: { code: couponInput.trim() } });
-      if (c) { setCoupon(c); toast.success("Cupom aplicado: " + c.percent + "% de desconto"); }
+      if (c) { setCoupon(c); toast.success(c.discountType === "percent" ? `Cupom aplicado: ${c.discountValue}% de desconto` : `Cupom aplicado: ${brl(c.discountValue)} de desconto`); }
       else { setCoupon(null); toast.error("Cupom não encontrado ou inativo"); }
     } catch { toast.error("Não foi possível validar o cupom"); }
     finally { setCheckingCoupon(false); }

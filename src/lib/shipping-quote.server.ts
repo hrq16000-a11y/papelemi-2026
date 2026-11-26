@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
 import { getRequest } from "@tanstack/react-start/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, Json } from "@/integrations/supabase/types";
+import type { Json, Database as EngineDatabase } from "@/emp-orio/integrations/supabase/types";
+import { engineAdmin } from "@/lib/engine.server";
 import { applyShippingRules, isAllowedShippingProviderEndpoint, manualShippingOption, packShippingCart, quoteCorreiosEstimate, roundShippingMoney, type ShippingOptionDraft } from "@/lib/shipping-quote";
 
-type AdminClient = SupabaseClient<Database>;
-type ProductShippingRow = Pick<Database["public"]["Tables"]["products"]["Row"], "slug" | "name" | "price" | "promo_price" | "weight_kg" | "requires_shipping">;
+type AdminClient = ReturnType<typeof engineAdmin>;
+type ProductShippingRow = Pick<EngineDatabase["papelemi_engine"]["Tables"]["products"]["Row"], "slug" | "name" | "price" | "weight_kg" | "requires_shipping">;
 type ShippingOption = ShippingOptionDraft & { id: string };
 
 export type ShippingQuoteResult = {
@@ -56,7 +56,7 @@ async function auditShippingEvent(
     estimated?: boolean | null;
   },
 ) {
-  try { await admin.from("shipping_audit_logs").insert({ store_key: "papelemi", ...event }); }
+  try { await admin.from("shipping_audit_logs").insert(event); }
   catch { /* audit is best-effort and must not block checkout */ }
 }
 
@@ -64,7 +64,6 @@ async function readProviderCache(admin: AdminClient, cacheKey: string): Promise<
   try {
     const { data, error } = await admin.from("shipping_quote_cache")
       .select("options,created_at")
-      .eq("store_key", "papelemi")
       .eq("cache_key", cacheKey)
       .maybeSingle();
     if (error || !data || Date.now() - new Date(data.created_at).getTime() > CACHE_TTL_MS) return null;
@@ -75,17 +74,16 @@ async function readProviderCache(admin: AdminClient, cacheKey: string): Promise<
 async function writeProviderCache(admin: AdminClient, cacheKey: string, options: ShippingOptionDraft[]) {
   try {
     await admin.from("shipping_quote_cache").upsert({
-      store_key: "papelemi",
       cache_key: cacheKey,
       options: options as unknown as Json,
       created_at: new Date().toISOString(),
-    }, { onConflict: "store_key,cache_key" });
+    }, { onConflict: "cache_key" });
   } catch { /* cache is best-effort */ }
 }
 
 async function quoteMelhorEnvio(
-  provider: Database["public"]["Tables"]["shipping_providers"]["Row"],
-  settings: Database["public"]["Tables"]["shipping_settings"]["Row"],
+  provider: EngineDatabase["papelemi_engine"]["Tables"]["shipping_providers"]["Row"],
+  settings: EngineDatabase["papelemi_engine"]["Tables"]["shipping_settings"]["Row"],
   context: { originZip: string; destinationZip: string; totalWeight: number; subtotal: number },
 ): Promise<ShippingOptionDraft[]> {
   if (!provider.api_key || !provider.endpoint_url || !isAllowedShippingProviderEndpoint(provider.endpoint_url)) return [];
@@ -159,7 +157,7 @@ export async function buildShippingQuote(input: {
     return { options: [], selectedOption: null, selectedOptionId: null, selectionChanged: Boolean(input.selectedOptionId), shipping: 0, destinationZip: null, destinationState: input.destinationState?.toUpperCase() ?? null };
   }
 
-  const { data: attempts, error: limitError } = await input.admin.rpc("consume_shipping_quote_rate_limit", {
+  const { data: attempts, error: limitError } = await (input.admin as any).rpc("consume_shipping_quote_rate_limit", {
     _ip_hash: getClientIpHash(),
     _window_start: new Date(Math.floor(Date.now() / 60_000) * 60_000).toISOString(),
     _limit: RATE_LIMIT_PER_MINUTE,
@@ -168,9 +166,9 @@ export async function buildShippingQuote(input: {
   if ((attempts ?? 0) > RATE_LIMIT_PER_MINUTE) throw new Error("Muitas cotações em sequência. Aguarde um minuto e tente novamente.");
 
   const [settingsResult, providersResult, rulesResult] = await Promise.all([
-    input.admin.from("shipping_settings").select("*").eq("store_key", "papelemi").eq("singleton", true).maybeSingle(),
-    input.admin.from("shipping_providers").select("*").eq("store_key", "papelemi").eq("is_active", true),
-    input.admin.from("shipping_rules").select("*").eq("store_key", "papelemi").eq("is_active", true).order("priority", { ascending: false }),
+    input.admin.from("shipping_settings").select("*").eq("singleton", true).maybeSingle(),
+    input.admin.from("shipping_providers").select("*").eq("is_active", true),
+    input.admin.from("shipping_rules").select("*").eq("is_active", true).order("priority", { ascending: false }),
   ]);
   if (settingsResult.error) throw new Error("Não foi possível consultar as configurações de frete.");
   if (providersResult.error || rulesResult.error) throw new Error("Não foi possível consultar as regras de frete.");
@@ -185,7 +183,7 @@ export async function buildShippingQuote(input: {
     return [{
       quantity: item.qty,
       weight_kg: product.weight_kg == null ? null : Number(product.weight_kg),
-      unit_price: product.promo_price != null && Number(product.promo_price) > 0 ? Number(product.promo_price) : Number(product.price),
+      unit_price: Number(product.price),
       requires_shipping: product.requires_shipping !== false,
     }];
   });

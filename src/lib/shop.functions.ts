@@ -8,6 +8,7 @@ import type { OrderLifecycleDatabase } from "@/lib/order-lifecycle.types";
 import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 import { categoryAdminSchema, productAdminSchema } from "@/lib/catalog-validation";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
+import { engineAdmin } from "@/lib/engine.server";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -58,10 +59,22 @@ export const getCuratedPhrases = createServerFn({ method: "GET" }).handler(async
 export const validateCoupon = createServerFn({ method: "GET" })
   .validator(z.object({ code: z.string().trim().min(2).max(40) }))
   .handler(async ({ data }) => {
-    const sb = publicClient();
-    const { data: row, error } = await sb.from("coupons").select("code,percent").eq("store_key", "papelemi").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
+    const engine = engineAdmin();
+    const { data: row, error } = await engine
+      .from("coupons")
+      .select("code,discount_type,discount_value,is_active,valid_from,valid_until,max_uses,used_count")
+      .eq("code", data.code.toUpperCase())
+      .maybeSingle();
     if (error) throw new Error("Não foi possível consultar o cupom.");
-    return row ? { code: row.code, percent: row.percent } : null;
+    if (!row?.is_active) return null;
+    if (row.valid_from && new Date(row.valid_from).getTime() > Date.now()) return null;
+    if (row.valid_until && new Date(row.valid_until).getTime() < Date.now()) return null;
+    if (row.max_uses != null && row.used_count >= row.max_uses) return null;
+    return {
+      code: row.code,
+      discountType: row.discount_type === "fixed" ? "fixed" as const : "percent" as const,
+      discountValue: Number(row.discount_value),
+    };
   });
 
 const orderLineInput = z.object({
@@ -111,66 +124,60 @@ const orderInput = quoteInput.extend({
 type QuoteInput = z.infer<typeof quoteInput>;
 
 async function buildOrderQuote(input: QuoteInput) {
-  const { productFromRow } = await import("@/lib/catalog.repository.server");
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const admin = supabaseAdmin as unknown as SupabaseClient<CatalogLifecycleDatabase>;
+  const { productFromEngineRow } = await import("@/lib/catalog.repository.server");
+  const engine = engineAdmin();
   const slugs = [...new Set(input.items.map((item) => item.slug))];
-  const { data: rows, error } = await admin
+  const { data: rows, error } = await engine
     .from("products")
     .select("*")
     .in("slug", slugs)
-    .eq("store_key", "papelemi")
-    .eq("published", true)
-    .is("archived_at", null);
+    .eq("is_active", true);
 
   if (error) throw new Error("Não foi possível consultar os produtos. Tente novamente.");
   const availableRows = rows ?? [];
-  const categorySlugs = [...new Set(availableRows.map((row) => row.category_slug))];
-  const { data: activeCategories, error: categoryError } = categorySlugs.length
-    ? await admin.from("categories").select("slug").eq("store_key", "papelemi").in("slug", categorySlugs).eq("active", true).is("archived_at", null)
+  const categoryIds = [...new Set(availableRows.flatMap((row) => row.category_id ? [row.category_id] : []))];
+  const { data: activeCategories, error: categoryError } = categoryIds.length
+    ? await engine.from("categories").select("id,slug").in("id", categoryIds).eq("is_draft", false).eq("is_indexed", true)
     : { data: [], error: null };
   if (categoryError) throw new Error("Não foi possível validar as categorias dos produtos.");
-  const activeCategorySlugs = new Set((activeCategories ?? []).map((category) => category.slug));
-  const eligibleRows = availableRows.filter((row) => activeCategorySlugs.has(row.category_slug));
+  const categorySlugById = new Map((activeCategories ?? []).map((category) => [category.id, category.slug]));
+  const eligibleRows = availableRows.filter((row) => row.category_id && categorySlugById.has(row.category_id));
   if (eligibleRows.length !== slugs.length) throw new Error("Um ou mais produtos não estão mais disponíveis para encomenda.");
-  const products = eligibleRows.map((row) => productFromRow(row));
+
+  const products = eligibleRows.map((row) => productFromEngineRow(row as any, categorySlugById.get(row.category_id!)!));
   const items = prepareOrderItems(products, input.items as OrderLineInput[]);
+  const baseTotals = calculateOrderTotals(items, null);
 
   let couponCode: string | null = null;
-  let couponPercent: number | null = null;
+  let discount = 0;
   if (input.couponCode) {
-    const { data: coupon, error: couponError } = await admin
-      .from("coupons")
-      .select("code,percent")
-      .eq("store_key", "papelemi")
-      .eq("code", input.couponCode)
-      .eq("active", true)
-      .maybeSingle();
-
+    const { data: validation, error: couponError } = await (engine as any).rpc("validate_coupon", {
+      _code: input.couponCode,
+      _subtotal: baseTotals.subtotal,
+    });
     if (couponError) throw new Error("Não foi possível revalidar o cupom. Tente novamente.");
-    if (!coupon) throw new Error("Cupom inválido ou inativo. Remova o cupom e tente novamente.");
-    couponCode = coupon.code;
-    couponPercent = Number(coupon.percent);
+    if (!validation?.valid) throw new Error(String(validation?.error ?? "Cupom inválido ou inativo."));
+    couponCode = String(validation.code ?? input.couponCode);
+    discount = Math.min(baseTotals.subtotal, Math.max(0, roundMoney(Number(validation.discount_applied ?? 0))));
   }
 
-  const totals = calculateOrderTotals(items, couponPercent);
   const { buildShippingQuote } = await import("@/lib/shipping-quote.server");
   const shippingQuote = await buildShippingQuote({
-    admin,
+    admin: engine,
     ...(input.destinationZip ? { destinationZip: input.destinationZip } : {}),
     ...(input.destinationState ? { destinationState: input.destinationState } : {}),
     items: input.items,
-    products: rows ?? [],
-    subtotal: totals.subtotal,
+    products: eligibleRows as any,
+    subtotal: baseTotals.subtotal,
     ...(input.shippingOptionId ? { selectedOptionId: input.shippingOptionId } : {}),
   });
   return {
     items,
     couponCode,
-    subtotal: totals.subtotal,
-    discount: totals.discount,
+    subtotal: baseTotals.subtotal,
+    discount,
     shipping: shippingQuote.shipping,
-    total: roundMoney(totals.subtotal - totals.discount + shippingQuote.shipping),
+    total: roundMoney(baseTotals.subtotal - discount + shippingQuote.shipping),
     shippingOptions: shippingQuote.options,
     selectedShippingOption: shippingQuote.selectedOption,
     selectedShippingOptionId: shippingQuote.selectedOptionId,
