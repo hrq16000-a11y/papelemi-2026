@@ -49,6 +49,22 @@ jobs:
       - name: Build PapeLemi with original admin runtime mounted
         run: bun run build
 
+      - name: SSR smoke test for original admin entry route
+        shell: bash
+        run: |
+          bun run preview --host 127.0.0.1 > "$RUNNER_TEMP/papelemi-preview.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/admin/login -o "$RUNNER_TEMP/admin-login.html"; then
+              break
+            fi
+            sleep 1
+          done
+          test -s "$RUNNER_TEMP/admin-login.html"
+          grep -q "Painel administrativo" "$RUNNER_TEMP/admin-login.html"
+          echo "SSR /admin/login PASS — PapeLemi shell responds without loading Emporio runtime on the server."
+
       - name: Commit verified structural transfer
         shell: bash
         run: |
