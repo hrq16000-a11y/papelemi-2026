@@ -7,8 +7,48 @@ import {
 } from "@/data/catalog";
 import { engineAdmin } from "@/lib/engine.server";
 import type { Database as EngineDatabase } from "@/emp-orio/integrations/supabase/types";
+import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 
 type EngineProductBase = EngineDatabase["papelemi_engine"]["Tables"]["products"]["Row"];
+type LegacyProductRow = CatalogLifecycleDatabase["public"]["Tables"]["products"]["Row"];
+
+// Compatibility mapper for the existing PapeLemi catalog-lifecycle endpoints.
+// New storefront and copied Emporio admin reads use productFromEngineRow.
+export const productFromRow = (row: LegacyProductRow): Product => {
+  const personalizationResult = personalizationSchema.safeParse(row.personalization ?? []);
+
+  if (!personalizationResult.success) {
+    console.error("PapeLemi legacy personalization needs adaptation:", row.slug, personalizationResult.error.issues);
+  }
+
+  const promoPrice = row.promo_price == null ? null : Number(row.promo_price);
+
+  return {
+    slug: row.slug,
+    name: row.name,
+    category: row.category_slug,
+    description: row.description ?? "",
+    images: row.images ?? [],
+    price: Number(row.price),
+    ...(promoPrice !== null && promoPrice < Number(row.price) ? { promoPrice } : {}),
+    colors: row.colors ?? [],
+    sizes: row.sizes ?? [],
+    finishes: row.finishes ?? [],
+    productionDays: row.production_days ?? "",
+    stock: Number(row.stock ?? 0),
+    published: Boolean(row.published),
+    bestSeller: Boolean(row.best_seller),
+    personalizable: Boolean(row.personalizable),
+    personalization: personalizationResult.success ? personalizationResult.data : [],
+    ...(row.min_qty != null && row.min_qty > 1 ? { minQty: row.min_qty } : {}),
+    ...(row.weight_kg == null ? {} : { weightKg: Number(row.weight_kg) }),
+    ...(row.length_cm == null ? {} : { lengthCm: Number(row.length_cm) }),
+    ...(row.width_cm == null ? {} : { widthCm: Number(row.width_cm) }),
+    ...(row.height_cm == null ? {} : { heightCm: Number(row.height_cm) }),
+    requiresShipping: row.requires_shipping,
+  };
+};
+
 type EngineCategoryRow = EngineDatabase["papelemi_engine"]["Tables"]["categories"]["Row"];
 
 export type PapeLemiEngineProductRow = EngineProductBase & {
