@@ -1,0 +1,41 @@
+name: PapeLemi — build completo sem deploy
+
+on:
+  push:
+    branches:
+      - feat/payment-events-01-20261125
+    paths:
+      - package.json
+      - bun.lock
+      - src/**
+      - apps/emporio-admin/adapter/**
+      - apps/emporio-admin/source/src/pages/admin/**
+      - apps/emporio-admin/source/src/components/**
+      - apps/emporio-admin/source/src/hooks/**
+      - apps/emporio-admin/source/src/lib/**
+      - apps/emporio-admin/source/src/integrations/**
+      - src/routes/admin-original.tsx
+
+permissions:
+  contents: read
+
+jobs:
+  full-build:
+    name: Build storefront SSR + original admin bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VITE_SUPABASE_URL: https://gpdpfoxpbferjwbppcmb.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: build-only-placeholder-not-a-secret
+      SUPABASE_URL: https://gpdpfoxpbferjwbppcmb.supabase.co
+      SUPABASE_ANON_KEY: build-only-placeholder-not-a-secret
+      SUPABASE_SERVICE_ROLE_KEY: build-only-placeholder-not-a-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install PapeLemi root dependencies
+        run: bun install --frozen-lockfile
+      - name: Build storefront and vendored admin
+        run: bun run build

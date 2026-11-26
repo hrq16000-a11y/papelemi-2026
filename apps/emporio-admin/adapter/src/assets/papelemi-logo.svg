@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 100" role="img" aria-labelledby="title">
+  <title id="title">PapeLemi</title>
+  <rect width="360" height="100" rx="18" fill="#fbf7f3"/>
+  <path d="M28 52c0-13 10-23 23-23 9 0 16 5 20 12 4-7 11-12 20-12 13 0 23 10 23 23 0 17-20 29-43 43C48 81 28 69 28 52Z" fill="#cf8f9c"/>
+  <text x="126" y="65" font-family="Georgia,serif" font-size="47" font-weight="600" letter-spacing="-1.5" fill="#53484a">PapeLemi</text>
+</svg>

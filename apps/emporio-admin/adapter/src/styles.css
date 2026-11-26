@@ -1,0 +1,756 @@
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("/fonts/papelemi/dm-sans-latin-ext.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("/fonts/papelemi/dm-sans-latin.woff2") format("woff2");
+  unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "DM Serif Display";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/papelemi/dm-serif-display-italic-latin-ext.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "DM Serif Display";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/papelemi/dm-serif-display-italic-latin.woff2") format("woff2");
+  unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "DM Serif Display";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/papelemi/dm-serif-display-latin-ext.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "DM Serif Display";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/papelemi/dm-serif-display-latin.woff2") format("woff2");
+  unicode-range: U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Empório LeleCute Design System
+   Cores: Coral/Salmão (coração), Cinza (textos), Branco com pontos sutis
+   Tipografia: DM Serif Display (display), DM Sans (body)
+   Estilo: Clean, feminino, delicado, artesanal
+*/
+
+@layer base {
+  :root {
+  --background: 33 100% 99%;
+  --foreground: 203 18% 27%;
+  --card: 40 100% 99%;
+  --card-foreground: 203 18% 27%;
+  --popover: 40 100% 99%;
+  --popover-foreground: 203 18% 27%;
+  --primary: 337 37% 64%;
+  --primary-foreground: 31 61% 99%;
+  --primary-light: 338 100% 93%;
+  --primary-dark: 350 40% 52%;
+  --secondary: 6 100% 95%;
+  --secondary-foreground: 203 18% 27%;
+  --muted: 23 87% 96%;
+  --muted-foreground: 18 8% 45%;
+  --accent: 338 100% 93%;
+  --accent-foreground: 337 21% 39%;
+  --destructive: 357 100% 45%;
+  --destructive-foreground: 120 0% 99%;
+  --border: 18 24% 89%;
+  --input: 18 24% 89%;
+  --ring: 337 37% 64%;
+  --radius: 0.65rem;
+  --coral: 337 37% 64%;
+  --coral-light: 338 100% 93%;
+  --coral-dark: 350 40% 52%;
+  --warm-gray: 18 8% 45%;
+  --soft-gray: 18 24% 89%;
+  --cream: 33 100% 99%;
+  --success: 145 45% 42%;
+  --success-foreground: 0 0% 100%;
+  --success-light: 145 42% 92%;
+  --success-dark: 145 45% 32%;
+  --sidebar-background: 33 100% 99%;
+  --sidebar-foreground: 203 18% 27%;
+  --sidebar-primary: 337 37% 64%;
+  --sidebar-primary-foreground: 31 61% 99%;
+  --sidebar-accent: 6 100% 95%;
+  --sidebar-accent-foreground: 203 18% 27%;
+  --sidebar-border: 18 24% 89%;
+  --sidebar-ring: 337 37% 64%;
+  --gradient-hero: linear-gradient(135deg, hsl(var(--cream)) 0%, hsl(var(--background)) 100%);
+  --gradient-coral: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+  --shadow-soft: 0 4px 20px -4px hsl(var(--foreground) / 0.08);
+  --shadow-medium: 0 8px 30px -8px hsl(var(--foreground) / 0.12);
+  --shadow-card: 0 2px 10px -2px hsl(var(--foreground) / 0.06);
+}
+
+  .dark {
+  --background: 225 16% 11%; --foreground: 35 25% 94%;
+  --card: 225 15% 14%; --card-foreground: 35 25% 94%;
+  --popover: 225 15% 14%; --popover-foreground: 35 25% 94%;
+  --primary: 350 48% 72%; --primary-foreground: 225 16% 11%;
+  --primary-light: 350 30% 25%; --primary-dark: 350 45% 78%;
+  --secondary: 225 12% 19%; --secondary-foreground: 35 20% 88%;
+  --muted: 225 12% 19%; --muted-foreground: 35 12% 68%;
+  --accent: 350 25% 23%; --accent-foreground: 35 25% 94%;
+  --destructive: 0 62% 52%; --destructive-foreground: 0 0% 100%;
+  --border: 225 12% 24%; --input: 225 12% 24%; --ring: 350 48% 72%;
+  --coral: 350 48% 72%; --coral-light: 350 30% 25%; --coral-dark: 350 45% 78%;
+  --warm-gray: 35 12% 68%; --soft-gray: 225 12% 24%; --cream: 225 16% 11%;
+  --success: 145 42% 50%; --success-foreground: 225 16% 11%;
+  --success-light: 145 30% 22%; --success-dark: 145 42% 58%;
+  --sidebar-background: 225 18% 9%; --sidebar-foreground: 35 20% 90%;
+  --sidebar-primary: 350 48% 72%; --sidebar-primary-foreground: 225 16% 11%;
+  --sidebar-accent: 225 12% 19%; --sidebar-accent-foreground: 35 20% 90%;
+  --sidebar-border: 225 12% 24%; --sidebar-ring: 350 48% 72%;
+}
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', 'Roboto', sans-serif;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Heart pop animation for favorite toggle */
+  @keyframes heartPop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.35); }
+    70% { transform: scale(0.92); }
+    100% { transform: scale(1); }
+  }
+  .animate-heart-pop { animation: heartPop 0.45s ease-out; }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'DM Serif Display', sans-serif;
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Dotted pattern background like the brand */
+  .bg-dotted-pattern {
+    background-image: radial-gradient(circle, hsl(var(--coral) / 0.15) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  
+  /* Subtle heart pattern */
+  .bg-hearts-pattern {
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 35l-1.4-1.3C11.2 27 6 22.3 6 16.5 6 11.8 9.8 8 14.5 8c2.6 0 5.2 1.2 6.9 3.2C23.1 9.2 25.7 8 28.3 8 33 8 36.8 11.8 36.8 16.5c0 5.8-5.2 10.5-12.6 17.2L20 35z' fill='%23f8877030' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-size: 80px 80px;
+  }
+  
+  /* WhatsApp floating button — respeita safe-area do iPhone (home indicator)
+     e evita sobreposição com sticky CTA / footer no mobile */
+  .whatsapp-float {
+    @apply fixed right-4 sm:right-6 z-50;
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  
+  /* Fade in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Scale in animation */
+  .animate-scale-in {
+    animation: scaleIn 0.5s ease-out forwards;
+  }
+  
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  /* Fade in up animation */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+    opacity: 0;
+  }
+  
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Pulse slow animation */
+  .animate-pulse-slow {
+    animation: pulseSlow 3s ease-in-out infinite;
+  }
+  
+  @keyframes pulseSlow {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.05); }
+  }
+
+  @keyframes fade-opacity {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes fade-opacity-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  .hero-fade-in {
+    animation: fade-opacity 720ms ease-in-out forwards;
+  }
+
+  .hero-fade-out {
+    animation: fade-opacity-out 720ms ease-in-out forwards;
+  }
+  
+  /* Stagger animations */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+  
+  /* Product card hover effect */
+  .product-card {
+    @apply transition-all duration-300 ease-out;
+  }
+  
+  .product-card:hover {
+    @apply -translate-y-2;
+    box-shadow: var(--shadow-medium);
+  }
+  
+  /* Dashed border like logo decoration */
+  .border-dashed-coral {
+    border: 2px dashed hsl(var(--coral) / 0.4);
+    border-radius: 50%;
+  }
+  
+  /* Script font for decorative text */
+  .font-script {
+    font-family: 'DM Serif Display', sans-serif;
+    font-style: italic;
+    @apply font-medium;
+  }
+  
+  /* Smooth scroll reveal */
+  .scroll-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .scroll-reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  /* Parallax container */
+  .parallax-container {
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .parallax-bg {
+    position: absolute;
+    inset: -20%;
+    will-change: transform;
+  }
+}
+
+/* ---------------------------------------------------------------
+   Reduced-motion opt-out — applies when <html class="motion-reduced">
+   is set by useReducedMotion() OR system prefers-reduced-motion.
+   Kills continuous animations site-wide while keeping discrete
+   transitions (hover, focus) intact for affordance.
+--------------------------------------------------------------- */
+.motion-reduced *,
+.motion-reduced *::before,
+.motion-reduced *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.001ms !important;
+}
+.motion-reduced .scroll-3d,
+.motion-reduced .product-card,
+.motion-reduced .hero-kenburns {
+  animation: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+.motion-reduced .animate-pingpong,
+.motion-reduced .animate-float,
+.motion-reduced .animate-pulse-slow,
+.motion-reduced .animate-spin-slow,
+.motion-reduced .animate-bounce-soft,
+.motion-reduced [class*="animate-"] {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .scroll-3d, .product-card, .hero-kenburns {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  html:not(.motion-reduced) [class*="animate-"] {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Mobile skeleton: drop shimmer animation under 640px to save GPU. */
+@media (max-width: 640px) {
+  .skeleton-light [style*="shimmer"],
+  .skeleton-light [class*="shimmer"] {
+    animation: none !important;
+    background: hsl(var(--muted) / 0.7) !important;
+  }
+}
+
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ============================================================
+   EXPERIMENTO REVERSÍVEL — width boutique (Fase 2 auditoria)
+   Off por padrão. Ativar adicionando uma das classes em <html>:
+     <html class="exp-w-1160">  → commerce 1160
+     <html class="exp-w-1120">  → commerce 1120 (recomendado)
+     <html class="exp-w-1080">  → commerce 1080 (radical)
+   Mobile/tablet (<1280px) NÃO são afetados: o Tailwind container
+   só aplica max-width a partir de 2xl (1280px), então abaixo
+   disso o layout continua idêntico.
+   Para descartar: remover este bloco. Para desativar: remover
+   a classe do <html>.
+   ============================================================ */
+@media (min-width: 1280px) {
+  html.exp-w-1160 .container { max-width: 1160px; }
+  html.exp-w-1120 .container { max-width: 1120px; }
+  html.exp-w-1080 .container { max-width: 1080px; }
+}
+
+/* ============================================================
+   Layout semântico (Fase 3) — tokens de largura editoriais.
+   - layout-commerce: PDP, grids de produto, footer (1120px)
+   - layout-conversational: FAQ, depoimentos (max-w-4xl)
+   - layout-reading: descrição editorial longa (max-w-3xl, ~72ch)
+   Todos centralizados, com padding lateral padrão e fluidos
+   abaixo do breakpoint (mobile/tablet inalterados).
+   ============================================================ */
+@layer components {
+  .layout-commerce {
+    @apply w-full mx-auto px-4;
+    max-width: 1120px;
+  }
+  .layout-conversational {
+    @apply w-full mx-auto px-4 max-w-4xl;
+  }
+  .layout-reading {
+    @apply w-full mx-auto px-4 max-w-3xl;
+  }
+}
+
+/* ============================================================
+   Compactação global sutil de ritmo vertical (Fase UX).
+   Reduz paddings/margens/gaps verticais em ~25-30%,
+   com ênfase no mobile. Sem afetar layouts horizontais.
+   Aplica somente a utilitários "soltos" do Tailwind; tokens
+   semânticos (section-spacing-*, layout-*) seguem inalterados.
+   ============================================================ */
+@layer utilities {
+  /* Mobile-first: encolher paddings verticais grandes */
+  .py-8  { padding-top: 1.5rem;  padding-bottom: 1.5rem;  }
+  .py-10 { padding-top: 1.75rem; padding-bottom: 1.75rem; }
+  .py-12 { padding-top: 2rem;    padding-bottom: 2rem;    }
+  .py-14 { padding-top: 2.25rem; padding-bottom: 2.25rem; }
+  .py-16 { padding-top: 2.5rem;  padding-bottom: 2.5rem;  }
+  .py-20 { padding-top: 3rem;    padding-bottom: 3rem;    }
+  .py-24 { padding-top: 3.5rem;  padding-bottom: 3.5rem;  }
+  .py-28 { padding-top: 4rem;    padding-bottom: 4rem;    }
+  .py-32 { padding-top: 4.5rem;  padding-bottom: 4.5rem;  }
+
+  .pt-12 { padding-top: 2rem; } .pb-12 { padding-bottom: 2rem; }
+  .pt-16 { padding-top: 2.5rem; } .pb-16 { padding-bottom: 2.5rem; }
+  .pt-20 { padding-top: 3rem; } .pb-20 { padding-bottom: 3rem; }
+  .pt-24 { padding-top: 3.5rem; } .pb-24 { padding-bottom: 3.5rem; }
+
+  .mb-8  { margin-bottom: 1.5rem;  }
+  .mb-10 { margin-bottom: 1.75rem; }
+  .mb-12 { margin-bottom: 2rem;    }
+  .mb-16 { margin-bottom: 2.5rem;  }
+  .mt-8  { margin-top: 1.5rem;  }
+  .mt-10 { margin-top: 1.75rem; }
+  .mt-12 { margin-top: 2rem;    }
+  .mt-16 { margin-top: 2.5rem;  }
+
+  .space-y-8  > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem;  }
+  .space-y-10 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.75rem; }
+  .space-y-12 > :not([hidden]) ~ :not([hidden]) { margin-top: 2rem;    }
+  .space-y-16 > :not([hidden]) ~ :not([hidden]) { margin-top: 2.5rem;  }
+
+  .gap-y-8  { row-gap: 1.5rem;  }
+  .gap-y-10 { row-gap: 1.75rem; }
+  .gap-y-12 { row-gap: 2rem;    }
+  .gap-y-16 { row-gap: 2.5rem;  }
+}
+
+/* Desktop: restaurar parcialmente para não ficar denso demais */
+@media (min-width: 768px) {
+  .md\:py-12 { padding-top: 2.25rem; padding-bottom: 2.25rem; }
+  .md\:py-16 { padding-top: 3rem;    padding-bottom: 3rem;    }
+  .md\:py-20 { padding-top: 3.75rem; padding-bottom: 3.75rem; }
+  .md\:py-24 { padding-top: 4.5rem;  padding-bottom: 4.5rem;  }
+  .md\:py-28 { padding-top: 5rem;    padding-bottom: 5rem;    }
+  .md\:py-32 { padding-top: 5.5rem;  padding-bottom: 5.5rem;  }
+}
+
+/* ============================================================
+   Compactação extra mobile (Fase 2): reduz ritmo vertical
+   também em utilitários pequenos/médios, apenas em < 768px.
+   Mantém densidade tátil sem afetar desktop.
+   ============================================================ */
+@media (max-width: 767px) {
+  /* Paddings verticais */
+  .py-3  { padding-top: 0.5rem;   padding-bottom: 0.5rem;   }
+  .py-4  { padding-top: 0.75rem;  padding-bottom: 0.75rem;  }
+  .py-5  { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+  .py-6  { padding-top: 1rem;     padding-bottom: 1rem;     }
+  .py-8  { padding-top: 1.25rem;  padding-bottom: 1.25rem;  }
+  .py-10 { padding-top: 1.5rem;   padding-bottom: 1.5rem;   }
+  .py-12 { padding-top: 1.75rem;  padding-bottom: 1.75rem;  }
+  .py-16 { padding-top: 2rem;     padding-bottom: 2rem;     }
+
+  .pt-6  { padding-top: 1rem; }    .pb-6  { padding-bottom: 1rem; }
+  .pt-8  { padding-top: 1.25rem; } .pb-8  { padding-bottom: 1.25rem; }
+  .pt-10 { padding-top: 1.5rem; }  .pb-10 { padding-bottom: 1.5rem; }
+  .pt-12 { padding-top: 1.75rem; } .pb-12 { padding-bottom: 1.75rem; }
+  .pt-16 { padding-top: 2rem; }    .pb-16 { padding-bottom: 2rem; }
+
+  /* Margens verticais */
+  .mb-4  { margin-bottom: 0.75rem; }
+  .mb-6  { margin-bottom: 1rem;    }
+  .mb-8  { margin-bottom: 1.25rem; }
+  .mb-10 { margin-bottom: 1.5rem;  }
+  .mb-12 { margin-bottom: 1.75rem; }
+  .mt-4  { margin-top: 0.75rem; }
+  .mt-6  { margin-top: 1rem;    }
+  .mt-8  { margin-top: 1.25rem; }
+  .mt-10 { margin-top: 1.5rem;  }
+  .mt-12 { margin-top: 1.75rem; }
+
+  /* space-y mais compacto */
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem;  }
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+  .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem;    }
+  .space-y-8 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.25rem; }
+
+  /* gaps em grids/flex */
+  .gap-4 { gap: 0.75rem; }
+  .gap-6 { gap: 1rem;    }
+  .gap-8 { gap: 1.25rem; }
+
+  /* (4) Tipografia: títulos internos um pouco menores no mobile */
+  .text-2xl { font-size: 1.35rem; line-height: 1.75rem; }
+  .text-3xl { font-size: 1.6rem;  line-height: 1.95rem; }
+  .text-4xl { font-size: 1.9rem;  line-height: 2.15rem; }
+
+  /* (5) Inputs e botões um pouco mais baixos (mantendo área de toque ≥ 36px) */
+  input.flex.h-10,
+  textarea.flex.min-h-\[80px\] { /* shadcn Input/Textarea defaults */ }
+  .h-10 { height: 2.25rem; }   /* 40 → 36 */
+  .h-11 { height: 2.5rem;  }   /* 44 → 40 */
+  .h-12 { height: 2.75rem; }   /* 48 → 44 */
+}
+
+
+
+
+/* =========================================================
+   Motion — transições de rota e progresso global
+   Princípios: curto (<300ms), ease-out, sem layout shift.
+   Respeita `.motion-reduced` (opt-out global já existente).
+   ========================================================= */
+.route-transition {
+  animation: routeEnter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes routeEnter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.route-progress-bar {
+  animation: routeProgress 1.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes routeProgress {
+  0%   { transform: scaleX(0); opacity: 1; }
+  60%  { transform: scaleX(0.85); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0.2; }
+}
+
+.motion-reduced .route-transition,
+.motion-reduced .route-progress-bar {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* =========================================================
+   Motion principles — entrada/saída, stagger e feedback
+   Curto (<320ms), ease-out, transform+opacity apenas
+   (nada que dispare layout/reflow). Opt-out em `.motion-reduced`.
+   ========================================================= */
+
+/* Entrada em lista/grid: aplique `.stagger` no container e
+   `.stagger-item` nos filhos para um encadeamento sutil. */
+.stagger-item {
+  animation: staggerIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(6) { animation-delay: 200ms; }
+.stagger > *:nth-child(n + 7) { animation-delay: 240ms; }
+
+@keyframes staggerIn {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.99); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* Saída (unmount controlado) */
+.animate-fade-out {
+  animation: fadeOutSoft 180ms ease-in both;
+}
+@keyframes fadeOutSoft {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to   { opacity: 0; transform: translate3d(0, 4px, 0); }
+}
+
+/* Feedback tátil em botões e cards interativos */
+.press-feedback {
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms ease-out;
+}
+.press-feedback:active { transform: scale(0.985); }
+
+/* Barra de progresso indeterminada dentro de botões */
+.btn-progress {
+  position: relative;
+  overflow: hidden;
+}
+.btn-progress::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.6;
+  transform-origin: left;
+  animation: btnProgress 1.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes btnProgress {
+  0%   { transform: scaleX(0); }
+  60%  { transform: scaleX(0.9); }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+.motion-reduced .stagger-item,
+.motion-reduced .animate-fade-out,
+.motion-reduced .btn-progress::after,
+.motion-reduced .press-feedback {
+  animation: none !important;
+  transition: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* ---------------------------------------------------------------
+   3D scroll motion — seções entram com leve rotação em perspectiva,
+   guiada pela rolagem (CSS scroll-driven, zero JS, roda na GPU).
+   Navegadores sem suporte ou com movimento reduzido: sem efeito.
+--------------------------------------------------------------- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    html:not(.motion-reduced) .scroll-3d {
+      transform-origin: 50% 100%;
+      animation: scroll-3d-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+  }
+}
+@keyframes scroll-3d-in {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) rotateX(14deg) translateY(80px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1400px) rotateX(0) translateY(0) scale(1);
+  }
+}
+
+/* Cartões de produto: elevação 3D suave no hover (só ponteiro fino) */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html:not(.motion-reduced) .product-card {
+    transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 500ms cubic-bezier(0.22, 1, 0.36, 1), border-color 300ms ease;
+  }
+  html:not(.motion-reduced) .product-card:hover {
+    transform: perspective(900px) rotateX(var(--tilt-x, 3deg)) rotateY(var(--tilt-y, 0deg)) translateY(-8px);
+    box-shadow: 0 22px 40px -24px hsl(var(--foreground) / 0.28);
+  }
+  html:not(.motion-reduced) .product-card img {
+    transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease;
+  }
+  html:not(.motion-reduced) .product-card:hover img {
+    transform: scale(1.04);
+  }
+}
+
+/* ---------------------------------------------------------------
+   Hero premium — zoom lento (Ken Burns), camadas flutuantes e véu
+   de transição para a próxima seção. Só transform/opacity (GPU).
+--------------------------------------------------------------- */
+.hero-frame { overflow: hidden; }
+.hero-shell { padding-top: 81px; }
+.hero-banner-mobile { aspect-ratio: 963 / 565; }
+.hero-banner-desktop { aspect-ratio: 1900 / 565; }
+.hero-preview-stage { height: 360px; width: 100%; }
+.hero-preview-frame { max-width: 100%; max-height: 100%; }
+.hero-preview-mobile { width: 360px; }
+.hero-preview-desktop { width: 100%; }
+.hero-preview-text { height: 100%; }
+@media (min-width: 640px) {
+  .hero-preview-stage { height: 380px; }
+}
+.hero-slide { transition: opacity 720ms ease; }
+.hero-slide-active { opacity: 1; visibility: visible; z-index: 1; }
+.hero-slide-inactive { opacity: 0; visibility: hidden; pointer-events: none; }
+.hero-slide-inactive .hero-kenburns { animation: none !important; }
+@media (min-width: 640px) and (max-width: 767px) {
+  .hero-shell { padding-top: 97px; }
+}
+@media (min-width: 768px) {
+  .hero-shell { padding-top: 137px; }
+}
+.hero-orb {
+  position: absolute; border-radius: 9999px; filter: blur(48px);
+  background: hsl(var(--primary) / 0.16); will-change: transform;
+}
+.hero-orb-a { width: 22rem; height: 22rem; left: -6rem; bottom: 4rem; }
+.hero-orb-b { width: 16rem; height: 16rem; right: -4rem; top: 20%; background: hsl(var(--accent) / 0.22); }
+.hero-veil {
+  position: absolute; inset: auto 0 0 0; height: 4.5rem;
+  background: linear-gradient(to bottom, transparent, hsl(var(--background)));
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.motion-reduced) .hero-kenburns {
+    animation: hero-kenburns 7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: 40% 50%;
+  }
+  html:not(.motion-reduced) .hero-orb-a { animation: hero-drift 18s ease-in-out infinite alternate; }
+  html:not(.motion-reduced) .hero-orb-b { animation: hero-drift 22s ease-in-out -6s infinite alternate-reverse; }
+}
+@keyframes hero-kenburns {
+  from { transform: scale(1.14) translate3d(0, 1.5%, 0); }
+  to { transform: scale(1); }
+}
+@keyframes hero-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(2.5rem, -1.5rem, 0); }
+}
+
+/* Microinterações: botões primários respondem ao toque com leveza */
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.motion-reduced) button:active:not(:disabled),
+  html:not(.motion-reduced) a[role="button"]:active { transform: scale(0.98); }
+}
+@media (max-width: 767px) {
+  .hero-orb { opacity: 0.45; }
+  .hero-orb-a { width: 14rem; height: 14rem; left: -7rem; }
+}
+
+/* Fallback (Safari/Firefox): revela seções via IntersectionObserver */
+@supports not (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    html:not(.motion-reduced) .scroll-3d {
+      opacity: 0; transform-origin: 50% 100%;
+      transform: perspective(1200px) rotateX(14deg) translateY(80px) scale(0.94);
+      transition: opacity 900ms cubic-bezier(0.22,1,0.36,1), transform 1100ms cubic-bezier(0.22,1,0.36,1);
+    }
+    html:not(.motion-reduced) .scroll-3d.is-in { opacity: 1; transform: none; }
+  }
+}
+.product-card:hover { transition-duration: 180ms, 500ms, 300ms; }

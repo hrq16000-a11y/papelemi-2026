@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" role="img" aria-labelledby="title">
+  <title id="title">Imagem ilustrativa PapeLemi</title>
+  <rect width="800" height="520" rx="32" fill="#f8f1ed"/>
+  <circle cx="400" cy="235" r="126" fill="#eed8dd"/>
+  <path d="M292 166h216v154H292z" fill="#fffaf7" stroke="#c98c9a" stroke-width="8"/>
+  <path d="M330 205h140M330 242h112M330 279h80" stroke="#c98c9a" stroke-width="10" stroke-linecap="round"/>
+  <path d="M385 122c0-17 13-30 30-30 12 0 21 7 27 17 6-10 15-17 27-17 17 0 30 13 30 30 0 23-27 39-57 58-30-19-57-35-57-58Z" fill="#cf8f9c"/>
+  <text x="400" y="415" text-anchor="middle" font-family="Georgia,serif" font-size="44" fill="#53484a">PapeLemi</text>
+  <text x="400" y="456" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" fill="#8c777b">imagem ilustrativa</text>
+</svg>

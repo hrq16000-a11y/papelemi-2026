@@ -479,3 +479,36 @@ A migration `20261125220000_add_order_360_operations.sql` continua fora da lista
 ### Próxima etapa
 
 Configurar, mediante autorização, as variáveis Supabase do ambiente Preview para permitir homologação autenticada e do catálogo. Em seguida, avançar para estoque transacional e integração completa de pedidos/pagamentos/fretes, sem assumir que o campo de estoque atual representa reserva automática.
+
+
+## 2026-11-25 — Integração de eventos de pagamento
+
+A etapa de pagamentos conecta o retorno e o webhook do Mercado Pago ao estado normalizado dos pedidos:
+
+- Mapeamento dos estados do provedor para pending, approved, refunded e cancelled.
+- Validação obrigatória de valor e moeda BRL antes de aprovar.
+- Atualização de payment_status, payment_id, payment_method e paid_at; compatibilidade com mp_payment_id e status legado.
+- Proteção contra regressão de status por notificações antigas.
+- Registro idempotente em payment_events, com event_id por pagamento/estado.
+- Payload de auditoria minimizado, sem dados de cartão ou pagador.
+- Testes unitários de normalização, valor, moeda e minimização de dados.
+
+A homologação não chama o gateway, não gera cobranças e não altera credenciais. A integração depende da migration de Order 360, que permanece pendente em Production.
+
+
+## 2026-11-26 — Mudança estratégica: réplica do sistema original Empório
+
+A estratégia passa de reconstrução funcional pontual para transferência em lote do sistema original Empório Lele Cute. A auditoria de paridade, o estado das PRs e os limites de banco estão registrados em docs/operations/PAPELEMI_EMPÓRIO_REPLICATION_AUDIT_2026-11-26.md.
+
+A fonte de código está fixada no repositório hrq16000-a11y/emporiolelecute-2026, branch main, commit d01d843c266b5a32d03af22eeaac6eda4a7fcf0f. A primeira transferência vendorizada inclui páginas administrativas, componentes, hooks, bibliotecas, migrations Supabase/Drizzle e Edge Functions, sem dados, mídia, seeds, configurações de projeto ou segredos da Empório. O manifesto registra SHA-256 por arquivo.
+
+A integração será feita em aplicação administrativa isolada, preservando o storefront SSR da PapeLemi. A base Supabase PapeLemi continua como destino exclusivo; as 199 migrations históricas não serão reproduzidas cegamente. Toda mudança de schema será aditiva, reconciliada e homologada antes de aplicação hospedada.
+
+
+## 2026-11-26 — Snapshot e adaptador do painel original
+
+A transferência em lote foi concluída na branch feat/emporio-admin-replica-01-20261126. O manifesto em apps/emporio-admin/source/source-manifest.json registra os arquivos e seus SHA-256, com origem fixada no commit d01d843c266b5a32d03af22eeaac6eda4a7fcf0f. Foram excluídos segredos, configurações de projeto, seeds, dados comerciais e mídia da Empório.
+
+O adaptador de painel original foi criado em apps/emporio-admin/adapter. Ele mantém o storefront SSR TanStack Start independente e prepara a aplicação administrativa original para ser servida sob o mesmo domínio. A prévia está isolada em /admin-original; a rota /admin atual não foi substituída nesta etapa.
+
+A comparação dos tipos gerados encontrou 150 tabelas públicas no snapshot Empório e 15 no PapeLemi, com 12 nomes coincidentes e diferenças importantes de colunas. A documentação anterior informa 155 tabelas na Empório; a diferença de cinco precisa ser reconciliada com o banco de origem. Nenhuma migration foi aplicada ao Supabase Production.

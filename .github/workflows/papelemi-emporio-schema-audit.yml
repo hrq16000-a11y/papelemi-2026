@@ -1,0 +1,49 @@
+name: PapeLemi — auditoria do schema original Empório
+
+on:
+  push:
+    branches:
+      - feat/payment-events-01-20261125
+    paths:
+      - apps/emporio-admin/source/supabase/migrations/**
+      - apps/emporio-admin/source/supabase/config.toml
+      - scripts/audit-emporio-schema.mjs
+      - apps/emporio-admin/source/src/integrations/supabase/types.ts
+      - src/integrations/supabase/types.ts
+
+permissions:
+  contents: write
+
+jobs:
+  schema-audit:
+    name: Inventory and replay Empório schema locally
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate source/destination schema manifest
+        run: node scripts/audit-emporio-schema.mjs
+      - name: Persist generated schema inventory
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/emporio-admin/source/schema-manifest.json docs/operations/PAPELEMI_EMPÓRIO_SCHEMA_MANIFEST_2026-11-26.md
+          if git diff --cached --quiet; then
+            echo "Schema inventory is already current."
+          else
+            git commit -m "docs(schema): inventory Empório database structure"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start isolated Empório local Supabase
+        run: supabase start --workdir apps/emporio-admin/source
+      - name: Replay all original migrations without seed data
+        run: supabase db reset --workdir apps/emporio-admin/source --local --no-seed
+      - name: Stop isolated Supabase
+        if: always()
+        run: supabase stop --workdir apps/emporio-admin/source --no-backup

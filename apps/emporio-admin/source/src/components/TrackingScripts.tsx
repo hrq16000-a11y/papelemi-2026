@@ -1,0 +1,111 @@
+import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
+import { useTrackingConfig, pathMatches } from "@/hooks/useTrackingConfig";
+import { isTrackingPath, redactTrackingText } from '@/lib/tracking-privacy';
+import { hasOptionalConsent, useCookieConsent } from '@/lib/cookie-consent';
+
+/**
+ * Strict format validators for admin-managed tracking IDs. These prevent a
+ * compromised admin account from injecting arbitrary JavaScript into the
+ * inline script `innerHTML` (stored XSS). Only well-formed real-world IDs pass.
+ */
+const GA4_RE = /^G-[A-Z0-9]{4,12}$/;
+const GTM_RE = /^GTM-[A-Z0-9]{4,10}$/;
+const PIXEL_RE = /^[0-9]{10,20}$/;
+const ADS_RE = /^AW-[0-9]{6,15}$/;
+
+const isValid = (re: RegExp, v?: string | null): v is string =>
+  typeof v === "string" && re.test(v);
+
+/**
+ * Conditionally injects GA4, GTM, Meta Pixel and Google Ads scripts based on
+ * admin-managed tracking_config. Skips on disabled paths (e.g. /admin).
+ */
+export const TrackingScripts = () => {
+  const { data: cfg } = useTrackingConfig();
+  const location = useLocation();
+  const consent = useCookieConsent();
+  const hadConsent = useRef(false);
+
+  useEffect(() => {
+    if (consent === 'accepted') { hadConsent.current = true; return; }
+    if (!hadConsent.current) return;
+    hadConsent.current = false;
+    // Reload discards already-executed third-party timers and event listeners.
+    window.gtag?.('consent', 'update', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+    window.fbq?.('consent', 'revoke');
+    for (const part of document.cookie.split(';')) {
+      const name = part.split('=')[0].trim();
+      if (!/^(_ga($|_)|_gid$|_gat($|_)|_gcl_|_fbp$|_fbc$)/.test(name)) continue;
+      const domains = window.location.hostname.split('.');
+      document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
+      for (let index = 0; index < domains.length - 1; index++) {
+        document.cookie = `${name}=; Max-Age=0; path=/; domain=.${domains.slice(index).join('.')}; SameSite=Lax`;
+      }
+    }
+    window.location.reload();
+  }, [consent]);
+
+  useEffect(() => {
+    if (!hasOptionalConsent()) return;
+    if (!cfg || !cfg.enabled) return;
+    const path = location.pathname;
+    if (isTrackingPath(path)) return;
+    if (pathMatches(path, cfg.disabled_paths)) return;
+    if (cfg.enabled_paths.length && !pathMatches(path, cfg.enabled_paths)) return;
+
+    // GA4 — only inject when the ID matches the strict GA4 format.
+    if (isValid(GA4_RE, cfg.ga4_id) && !document.getElementById("ga4-script")) {
+      const adsId = isValid(ADS_RE, cfg.google_ads_id) ? cfg.google_ads_id : null;
+      const s = document.createElement("script");
+      s.id = "ga4-script";
+      s.async = true;
+      s.src = `https://www.googletagmanager.com/gtag/js?id=${cfg.ga4_id}`;
+      document.head.appendChild(s);
+      const inline = document.createElement("script");
+      inline.id = "ga4-init";
+      inline.innerHTML = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${cfg.ga4_id}');${adsId ? `gtag('config','${adsId}');` : ""}`;
+      document.head.appendChild(inline);
+    }
+
+    // GTM — only inject when the ID matches the strict GTM format.
+    if (isValid(GTM_RE, cfg.gtm_id) && !document.getElementById("gtm-script")) {
+      const s = document.createElement("script");
+      s.id = "gtm-script";
+      s.innerHTML = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${cfg.gtm_id}');`;
+      document.head.appendChild(s);
+      // Add noscript fallback
+      const noscript = document.createElement("div");
+      noscript.id = "gtm-noscript";
+      noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${cfg.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
+      const container = document.getElementById("gtm-noscript-container");
+      if (container) container.appendChild(noscript);
+    }
+
+    // Meta Pixel — only inject when the ID matches the strict numeric format.
+    if (isValid(PIXEL_RE, cfg.meta_pixel_id) && !document.getElementById("meta-pixel-script")) {
+      const s = document.createElement("script");
+      s.id = "meta-pixel-script";
+      s.innerHTML = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${cfg.meta_pixel_id}');fbq('track','PageView');`;
+      document.head.appendChild(s);
+    }
+  }, [cfg, consent, location.pathname]);
+
+  // Track page changes for SPA
+  useEffect(() => {
+    if (!hasOptionalConsent()) return;
+    if (!cfg?.enabled) return;
+    const path = redactTrackingText(location.pathname + location.search);
+    if (isTrackingPath(location.pathname)) return;
+    if (pathMatches(location.pathname, cfg.disabled_paths)) return;
+    if (cfg.enabled_paths.length && !pathMatches(location.pathname, cfg.enabled_paths)) return;
+    // @ts-ignore
+    if (cfg.ga4_id && window.gtag) window.gtag("event", "page_view", { page_path: path, page_location: redactTrackingText(window.location.href), page_referrer: redactTrackingText(document.referrer) });
+    // @ts-ignore
+    if (cfg.meta_pixel_id && window.fbq) window.fbq("track", "PageView");
+  }, [location, cfg, consent]);
+
+  return null;
+};
+
+export default TrackingScripts;
