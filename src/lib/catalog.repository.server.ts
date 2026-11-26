@@ -82,8 +82,8 @@ export const productFromRow = (row: ProductRow): Product => ({
 export async function getCatalogFromDatabase() {
   const sb = publicClient();
   const [categoryResult, productResult] = await Promise.all([
-    sb.from("categories").select("*").order("sort"),
-    sb.from("products").select("*").order("name"),
+    sb.from("categories").select("*").filter("store_key", "eq", "papelemi").order("sort"),
+    sb.from("products").select("*").filter("store_key", "eq", "papelemi").order("name"),
   ]);
   const { data: categoryRows, error: categoryError } = categoryResult;
   const { data: productRows, error: productError } = productResult;
@@ -104,6 +104,7 @@ export async function getPublishedProductFromDatabase(slug: string): Promise<Pro
     .select("*")
     .eq("slug", slug)
     .eq("published", true)
+    .filter("store_key", "eq", "papelemi")
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -115,6 +116,7 @@ export async function getPublishedCategoryFromDatabase(slug: string): Promise<Ca
     .from("categories")
     .select("*")
     .eq("slug", slug)
+    .filter("store_key", "eq", "papelemi")
     .maybeSingle();
 
   if (error) throw new Error(error.message);
