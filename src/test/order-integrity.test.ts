@@ -3,8 +3,11 @@ import type { Product } from "@/data/catalog";
 import {
   calculateOrderTotals,
   isSameOrderRequest,
+  isSameOrderSubmission,
   normalizeProductOptions,
+  persistOrderIdempotently,
   prepareOrderItems,
+  validateCouponRecord,
   type OrderRequestSnapshot,
 } from "@/lib/order-integrity";
 
@@ -110,4 +113,107 @@ describe("order integrity", () => {
     expect(isSameOrderRequest({ ...existing, customer_phone: "(41) 98888-8888" }, expected)).toBe(false);
     expect(isSameOrderRequest({ ...existing, total: "59.00" }, expected)).toBe(false);
   });
+  it("accepts products without personalization and made-to-order stock at zero", () => {
+    const plain = { ...product, personalizable: false, personalization: [], stock: 0 };
+    expect(prepareOrderItems([plain], [{ slug: plain.slug, qty: 2, options: { Cor: "Rosa" } }])[0]?.qty).toBe(2);
+  });
+
+  it("rejects missing required personalization fields on the server", () => {
+    const requiredProduct = {
+      ...product,
+      personalization: product.personalization.map((field) =>
+        field.key === "nome" ? { ...field, required: true } : field,
+      ),
+    };
+    expect(() => normalizeProductOptions(requiredProduct, { Cor: "Rosa" })).toThrow(/Nome é obrigatório/);
+  });
+
+  it("rejects quantities above the maximum and unpublished products", () => {
+    expect(() => prepareOrderItems([product], [{ slug: product.slug, qty: 1000, options: { Cor: "Rosa" } }])).toThrow(/quantidade inválida/);
+    expect(() => prepareOrderItems([{ ...product, published: false }], [{ slug: product.slug, qty: 2, options: { Cor: "Rosa" } }])).toThrow(/Produto indisponível/);
+  });
+
+  it("rejects invalid and inactive (expired) coupons", () => {
+    expect(() => validateCouponRecord("PAPELEMI10", null)).toThrow(/inválido/);
+    expect(() => validateCouponRecord("PAPELEMI10", { code: "PAPELEMI10", percent: 10, active: false })).toThrow(/inativo ou expirado/);
+    expect(validateCouponRecord("PAPELEMI10", { code: "PAPELEMI10", percent: 10, active: true })).toEqual({ code: "PAPELEMI10", percent: 10 });
+  });
+
+  const snapshot: OrderRequestSnapshot = {
+    store_key: "papelemi",
+    customer_name: "Ana",
+    customer_email: "ana@example.com",
+    customer_phone: "41999999999",
+    address: { cep: "80000000", street: "Rua A", number: "10", complement: "", district: "Centro", city: "Curitiba", state: "PR" },
+    items: [{ slug: "caderneta", qty: 2, unit_price: 54.9, options: { Nome: "Lia" } }],
+    subtotal: 109.8, shipping: 0, discount: 0, coupon_code: null, total: 109.8,
+    customer_notes: "", accepted_privacy: true, source: "storefront",
+  };
+  const persistedRecord = { id: "11111111-1111-4111-8111-111111111111", ...snapshot };
+
+  it("recovers the same persisted order after a connection timeout", async () => {
+    let stored: typeof persistedRecord | null = null;
+    await expect(persistOrderIdempotently({
+      findExisting: async () => stored,
+      insert: async () => {
+        stored = persistedRecord;
+        throw new Error("connection timeout after database commit");
+      },
+      matches: (existing) => isSameOrderRequest(existing, snapshot),
+    })).rejects.toThrow(/connection timeout/);
+    const recovered = await persistOrderIdempotently({
+      findExisting: async () => stored,
+      insert: async () => null,
+      matches: (existing) => isSameOrderRequest(existing, snapshot),
+    });
+    expect(recovered.record.id).toBe(persistedRecord.id);
+    expect(recovered.created).toBe(false);
+  });
+
+  it("returns one order for concurrent duplicate submissions", async () => {
+    let stored: typeof persistedRecord | null = null;
+    const submit = () => persistOrderIdempotently({
+      findExisting: async () => stored,
+      insert: async () => {
+        if (stored) return null;
+        stored = persistedRecord;
+        return persistedRecord;
+      },
+      matches: (existing) => isSameOrderRequest(existing, snapshot),
+    });
+    const results = await Promise.all([submit(), submit()]);
+    expect(results.map((result) => result.record.id)).toEqual([persistedRecord.id, persistedRecord.id]);
+    expect(results.filter((result) => result.created)).toHaveLength(1);
+  });
+
+  it("rejects reuse of an idempotency key with a different request snapshot", async () => {
+    const changed = { ...persistedRecord, customer_email: "outra@example.com" };
+    await expect(persistOrderIdempotently({
+      findExisting: async () => changed,
+      insert: async () => null,
+      matches: (existing) => isSameOrderRequest(existing, snapshot),
+    })).rejects.toThrow(/ORDER_REQUEST_CONFLICT/);
+  });
+
+  it("recovers an existing order when the live product price changes after timeout", () => {
+    const existing: OrderRequestSnapshot = {
+      ...snapshot,
+      coupon_code: "PAPELEMI10",
+      subtotal: 109.8,
+      discount: 10.98,
+      total: 98.82,
+      items: [{ slug: "caderneta-teste", name: "Caderneta", qty: 2, unit_price: 54.9, options: { Nome: "Lia" } }],
+    };
+    const submission = {
+      customer: { name: "Ana", email: "ana@example.com", phone: "41999999999" },
+      address: { cep: "80000-000", street: "Rua A", number: "10", complement: "", district: "Centro", city: "Curitiba", state: "PR" },
+      items: [{ slug: "caderneta-teste", qty: 2, options: { Cor: "", Nome: "Lia" } }],
+      couponCode: "PAPELEMI10",
+      customerNotes: "",
+      acceptedPrivacy: true as const,
+    };
+    expect(isSameOrderSubmission(existing, submission)).toBe(true);
+    expect(isSameOrderSubmission(existing, { ...submission, items: [{ ...submission.items[0]!, qty: 3 }] })).toBe(false);
+  });
+
 });

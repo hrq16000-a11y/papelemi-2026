@@ -17,12 +17,14 @@ const Input = z.object({
 export type SuggestInput = z.input<typeof Input>;
 type Result = { suggestions: string[]; error: string | null };
 
-function fit(text: string, limit: number) {
+export function fit(text: string, limit: number) {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= limit) return clean;
-  const cut = clean.slice(0, limit);
+  const room = Math.max(0, limit - 1);
+  if (room === 0) return "…";
+  const cut = clean.slice(0, room);
   const boundary = cut.lastIndexOf(" ");
-  return (boundary > Math.floor(limit * 0.6) ? cut.slice(0, boundary) : cut).replace(/[ ,;:.!?-]+$/g, "") + "…";
+  return (boundary > Math.floor(room * 0.6) ? cut.slice(0, boundary) : cut).replace(/[ ,;:.!?-]+$/g, "") + "…";
 }
 
 function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number) {

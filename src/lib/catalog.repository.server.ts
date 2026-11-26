@@ -17,18 +17,21 @@ const personalizationOptionSchema = z.discriminatedUnion("type", [
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
     maxLength: z.number().int().min(1).max(400),
-    ai: z.boolean().optional(),
+    ai: z.boolean().optional().default(false),
+    required: z.boolean().optional(),
   }),
   z.object({
     type: z.literal("choice"),
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
     options: z.array(z.string().trim().min(1).max(60)).min(1).max(50),
+    required: z.boolean().optional(),
   }),
   z.object({
     type: z.literal("notes"),
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
+    required: z.boolean().optional(),
   }),
 ]);
 
@@ -81,10 +84,12 @@ export const productFromRow = (row: ProductRow): Product => ({
 
 export async function getCatalogFromDatabase() {
   const sb = publicClient();
-  const [{ data: categoryRows, error: categoryError }, { data: productRows, error: productError }] = await Promise.all([
-    sb.from("categories").select("*").order("sort"),
-    sb.from("products").select("*").order("name"),
+  const [categoryResult, productResult] = await Promise.all([
+    sb.from("categories").select("*").filter("store_key", "eq", "papelemi").order("sort"),
+    sb.from("products").select("*").filter("store_key", "eq", "papelemi").order("name"),
   ]);
+  const { data: categoryRows, error: categoryError } = categoryResult;
+  const { data: productRows, error: productError } = productResult;
 
   if (categoryError || productError) {
     throw new Error(categoryError?.message ?? productError?.message ?? "Falha ao carregar catálogo");
@@ -102,6 +107,7 @@ export async function getPublishedProductFromDatabase(slug: string): Promise<Pro
     .select("*")
     .eq("slug", slug)
     .eq("published", true)
+    .filter("store_key", "eq", "papelemi")
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -113,6 +119,7 @@ export async function getPublishedCategoryFromDatabase(slug: string): Promise<Ca
     .from("categories")
     .select("*")
     .eq("slug", slug)
+    .filter("store_key", "eq", "papelemi")
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -144,4 +151,3 @@ export async function getPublishedCategoryWithFallback(slug: string): Promise<Ca
     return getFallbackCategory(slug) ?? null;
   }
 }
-

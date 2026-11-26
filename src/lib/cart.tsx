@@ -16,10 +16,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       items,
       count: items.reduce((s, i) => s + i.qty, 0),
       add: (i) => {
-        save([...items, { ...i, qty: Math.max(1, Math.min(999, i.qty)), id: crypto.randomUUID() }]);
+        if (items.length >= 50) return;
+        save([...items, { ...i, qty: Math.max(1, Math.min(999, Math.trunc(i.qty))), id: crypto.randomUUID() }]);
         window.__lovableEvents?.track?.("project.add_to_cart", { product_slug: i.slug, qty: i.qty, has_dedication: Object.keys(i.options).some((k) => /frase|dedicat|mensagem/i.test(k) && !!i.options[k]) });
       },
-      setQty: (id, q) => save(items.map((i) => (i.id === id ? { ...i, qty: Math.max(1, Math.min(999, q)) } : i))),
+      setQty: (id, q) => save(items.map((i) => (i.id === id ? { ...i, qty: Math.max(1, Math.min(999, Math.trunc(q))) } : i))),
       remove: (id) => save(items.filter((i) => i.id !== id)),
       clear: () => save([]),
     }}>{children}</CartCtx.Provider>

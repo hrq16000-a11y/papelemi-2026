@@ -17,9 +17,9 @@ export const img = (id: string, _width = 900) =>
 
 export type Category = { slug: string; name: string; description: string; image: string };
 export type PersonalizationOption =
-  | { type: "text"; key: string; label: string; maxLength: number; ai?: boolean }
-  | { type: "choice"; key: string; label: string; options: string[] }
-  | { type: "notes"; key: string; label: string };
+  | { type: "text"; key: string; label: string; maxLength: number; ai?: boolean; required?: boolean }
+  | { type: "choice"; key: string; label: string; options: string[]; required?: boolean }
+  | { type: "notes"; key: string; label: string; required?: boolean };
 
 export type Product = {
   slug: string;

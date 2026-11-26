@@ -30,35 +30,37 @@ type CheckoutQuote = {
 };
 
 const ORDER_REQUEST_KEY = "papelemi-order-request-v1";
-const ORDER_REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
+type SavedCoupon = { code: string; percent: number };
 
 function createOrderRequestId() {
   return crypto.randomUUID();
 }
 
-function saveOrderRequestId(id: string) {
+function saveOrderRequestId(id: string, coupon?: SavedCoupon | null) {
   try {
-    localStorage.setItem(ORDER_REQUEST_KEY, JSON.stringify({ id, createdAt: Date.now() }));
+    localStorage.setItem(ORDER_REQUEST_KEY, JSON.stringify({ id, ...(coupon ? { coupon } : {}) }));
   } catch { /* idempotency still protects repeated submits in this page session */ }
 }
 
-function loadOrderRequestId() {
+function loadOrderRequest() {
   try {
     const raw = localStorage.getItem(ORDER_REQUEST_KEY);
     if (raw) {
-      const saved = JSON.parse(raw) as { id?: unknown; createdAt?: unknown };
-      if (
-        typeof saved.id === "string"
-        && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved.id)
-        && typeof saved.createdAt === "number"
-        && Date.now() - saved.createdAt >= 0
-        && Date.now() - saved.createdAt < ORDER_REQUEST_TTL_MS
-      ) return saved.id;
+      const saved = JSON.parse(raw) as { id?: unknown; coupon?: unknown } | string;
+      const id = typeof saved === "string" ? saved : saved.id;
+      if (typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        const candidate = typeof saved === "string" ? null : saved.coupon as Partial<SavedCoupon> | undefined;
+        const coupon = candidate && typeof candidate.code === "string" && Number.isInteger(candidate.percent)
+          && (candidate.percent ?? 0) >= 1 && (candidate.percent ?? 0) <= 90
+          ? { code: candidate.code, percent: candidate.percent as number }
+          : null;
+        return { id, coupon };
+      }
     }
   } catch { /* creates a fresh request id below */ }
   const id = createOrderRequestId();
   saveOrderRequestId(id);
-  return id;
+  return { id, coupon: null };
 }
 
 function clearOrderRequestId() {
@@ -82,10 +84,15 @@ function Checkout() {
   const [coupon, setCoupon] = useState<{ code: string; percent: number } | null>(null);
   const [checkingCoupon, setCheckingCoupon] = useState(false);
   const [sending, setSending] = useState(false);
-  const [done, setDone] = useState<{ orderId: string; paymentReady: boolean; total: number } | null>(null);
+  const [done, setDone] = useState<{ orderId: string; paymentReady: boolean; total: number; recovered?: boolean } | null>(null);
 
   useEffect(() => {
-    setRequestId(loadOrderRequestId());
+    const saved = loadOrderRequest();
+    setRequestId(saved.id);
+    if (saved.coupon) {
+      setCoupon(saved.coupon);
+      setCouponInput(saved.coupon.code);
+    }
   }, []);
 
   useEffect(() => {
@@ -134,27 +141,37 @@ function Checkout() {
     setCheckingCoupon(true);
     try {
       const c = await validateCoupon({ data: { code: couponInput.trim() } });
-      if (c) { setCoupon(c); toast.success("Cupom aplicado: " + c.percent + "% de desconto"); }
-      else { setCoupon(null); toast.error("Cupom não encontrado ou inativo"); }
+      const currentRequestId = requestId ?? loadOrderRequest().id;
+      if (!requestId) setRequestId(currentRequestId);
+      if (c) {
+        setCoupon(c);
+        saveOrderRequestId(currentRequestId, c);
+        toast.success("Cupom aplicado: " + c.percent + "% de desconto");
+      } else {
+        setCoupon(null);
+        saveOrderRequestId(currentRequestId);
+        toast.error("Cupom não encontrado ou inativo");
+      }
     } catch { toast.error("Não foi possível validar o cupom"); }
     finally { setCheckingCoupon(false); }
   };
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (sending || !items.length || !quote || quoteLoading || quoteError) return;
+    if (sending || !items.length || quoteLoading || (!quote && !requestId)) return;
     if (!acceptedPrivacy) { toast.error("É necessário aceitar o uso dos dados para atendimento da encomenda."); return; }
     setSending(true);
     try {
-      const currentRequestId = requestId ?? loadOrderRequestId();
+      const currentRequestId = requestId ?? loadOrderRequest().id;
       if (!requestId) setRequestId(currentRequestId);
+      saveOrderRequestId(currentRequestId, coupon);
       const r = await createOrder({ data: {
         requestId: currentRequestId,
         customer: { name: form.name, email: form.email, phone: form.phone },
         address: { cep: form.cep, street: form.street, number: form.number, complement: form.complement, district: form.district, city: form.city, state: form.state.toUpperCase() },
         items: quoteItems,
         couponCode: coupon?.code,
-        quoteToken: quote.quoteToken,
+        quoteToken: quote?.quoteToken,
         origin: window.location.origin,
         customerNotes,
         acceptedPrivacy: true,
@@ -164,7 +181,7 @@ function Checkout() {
       setRequestId(null);
       clear();
       if (r.initPoint) { window.location.href = r.initPoint; return; }
-      setDone({ orderId: r.orderId, paymentReady: r.paymentReady, total: r.total });
+      setDone({ orderId: r.orderId, paymentReady: r.paymentReady, total: r.total, recovered: r.recovered });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível registrar sua encomenda. Confira os dados e tente novamente.";
       if (message.includes("PRICE_CHANGED")) {
@@ -180,7 +197,7 @@ function Checkout() {
         }
       } else if (message.includes("ORDER_REQUEST_CONFLICT")) {
         const nextId = createOrderRequestId();
-        saveOrderRequestId(nextId);
+        saveOrderRequestId(nextId, coupon);
         setRequestId(nextId);
         toast.error("Os dados mudaram após uma tentativa anterior. Confira o resumo e clique novamente para registrar uma nova solicitação.");
       } else {
@@ -195,6 +212,7 @@ function Checkout() {
       <h1 className="mt-3 font-display text-4xl md:text-5xl">Encomenda recebida com carinho</h1>
       <p className="mt-4 text-sm text-muted-foreground">Protocolo: <span className="font-medium text-foreground">{done.orderId.slice(0, 8).toUpperCase()}</span></p>
       <p className="mt-2 text-sm text-muted-foreground">Total de referência recalculado: <span className="font-medium text-foreground">{brl(done.total)}</span></p>
+      {done.recovered && <p className="mt-2 text-sm text-primary">Recuperamos a solicitação já registrada. Nenhuma encomenda duplicada foi criada.</p>}
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
         {done.paymentReady
           ? "Sua encomenda foi registrada. Acompanhe os próximos passos na página do pedido."
@@ -255,14 +273,30 @@ function Checkout() {
         {quoteLoading && <p className="mt-4 text-xs text-muted-foreground" role="status">Conferindo preços, opções e disponibilidade…</p>}
         {quoteError && <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive" role="alert">
           {quoteError}
-          {coupon && <button type="button" onClick={() => { setCoupon(null); setCouponInput(""); }} className="ml-2 underline">Remover cupom</button>}
+          {coupon && <button type="button" onClick={() => {
+            setCoupon(null);
+            setCouponInput("");
+            const currentRequestId = requestId ?? loadOrderRequest().id;
+            if (!requestId) setRequestId(currentRequestId);
+            saveOrderRequestId(currentRequestId);
+          }} className="ml-2 underline">Remover cupom</button>}
+          {requestId && <p className="mt-2 text-muted-foreground">Se você já enviou esta solicitação e houve uma falha de conexão, tente novamente para recuperar o mesmo protocolo.</p>}
         </div>}
         {quote && <ul className="mt-4 space-y-3 text-sm">{quote.items.map((item, index) => <li key={`${item.slug}-${index}`} className="border-b border-border/60 pb-3 last:border-0">
           <div className="flex justify-between gap-2"><span className="min-w-0">{item.qty}× {item.name}</span><span className="whitespace-nowrap">{brl(item.line_total)}</span></div>
           {Object.entries(item.options).map(([label, value]) => <p key={label} className="mt-1 break-words text-[11px] text-muted-foreground">{label}: {value}</p>)}
         </li>)}</ul>}
         <div className="mt-4 flex gap-2">
-          <input value={couponInput} onChange={(e) => { const value = e.target.value.toUpperCase(); setCouponInput(value); if (coupon && value.trim() !== coupon.code) setCoupon(null); }} maxLength={40} placeholder="Cupom" aria-label="Cupom" className={cn(input, "min-w-0 flex-1")} />
+          <input value={couponInput} onChange={(e) => {
+            const value = e.target.value.toUpperCase();
+            setCouponInput(value);
+            if (coupon && value.trim() !== coupon.code) {
+              setCoupon(null);
+              const currentRequestId = requestId ?? loadOrderRequest().id;
+              if (!requestId) setRequestId(currentRequestId);
+              saveOrderRequestId(currentRequestId);
+            }
+          }} maxLength={40} placeholder="Cupom" aria-label="Cupom" className={cn(input, "min-w-0 flex-1")} />
           <button type="button" onClick={applyCoupon} disabled={checkingCoupon} className="inline-flex shrink-0 items-center gap-1 border border-border px-3 text-xs hover:border-primary disabled:opacity-60">{checkingCoupon ? <Loader2 className="size-4 animate-spin" /> : <Tag className="size-4" />} Aplicar</button>
         </div>
         <div className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
@@ -272,7 +306,7 @@ function Checkout() {
           <div className="flex justify-between pt-2 text-lg font-medium"><span>Total de referência</span><span>{brl(total)}</span></div>
         </div>
         <p className="mt-4 text-[10px] leading-5 text-muted-foreground">Os valores são referências. Frete, disponibilidade, personalização e condições finais serão confirmados pela PapeLemi. Nenhuma cobrança é feita agora.</p>
-        <button type="submit" disabled={sending || !acceptedPrivacy || quoteLoading || !quote || Boolean(quoteError)} className="mt-5 inline-flex w-full items-center justify-center gap-2 bg-primary py-3.5 text-xs font-medium text-primary-foreground disabled:opacity-60">
+        <button type="submit" disabled={sending || !acceptedPrivacy || quoteLoading || (!quote && !requestId)} className="mt-5 inline-flex w-full items-center justify-center gap-2 bg-primary py-3.5 text-xs font-medium text-primary-foreground disabled:opacity-60">
           {sending ? <><Loader2 className="size-4 animate-spin" /> Registrando encomenda…</> : quoteLoading ? "Conferindo valores…" : "Registrar solicitação"}
         </button>
         <button type="button" onClick={() => navigate({ to: "/carrinho" })} className="mt-3 w-full text-center text-xs text-muted-foreground underline">Voltar ao carrinho</button>

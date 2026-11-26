@@ -20,6 +20,21 @@ const VARIATIONS = [
   { label: "Acabamento", field: "finishes" },
 ] as const;
 
+export const MAX_ORDER_QUANTITY = 999;
+export type CouponRecord = { code: string; percent: number; active: boolean };
+
+// O schema atual não possui expires_at: cupons expirados devem ser desativados (active=false).
+export function validateCouponRecord(requestedCode: string, coupon: CouponRecord | null) {
+  const normalizedCode = requestedCode.trim().toUpperCase();
+  if (!coupon || !coupon.active || coupon.code.toUpperCase() !== normalizedCode) {
+    throw new Error("Cupom inválido, inativo ou expirado.");
+  }
+  if (!Number.isInteger(coupon.percent) || coupon.percent < 1 || coupon.percent > 90) {
+    throw new Error("Percentual de cupom inválido.");
+  }
+  return { code: coupon.code, percent: coupon.percent };
+}
+
 export function roundMoney(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
@@ -60,7 +75,10 @@ export function normalizeProductOptions(product: Product, submitted: Record<stri
       const byLabel = (submitted[field.label] ?? "").trim();
       if (byKey && byLabel && byKey !== byLabel) throw new Error(`Há valores conflitantes no campo ${field.label}.`);
       const value = byKey || byLabel;
-      if (!value) continue;
+      if (!value) {
+        if (field.required) throw new Error(`${field.label} é obrigatório.`);
+        continue;
+      }
       if (field.type === "text" && value.length > field.maxLength) throw new Error(`${field.label} aceita até ${field.maxLength} caracteres.`);
       if (field.type === "choice" && !field.options.includes(value)) throw new Error(`Escolha uma opção válida para ${field.label}.`);
       if (field.type === "notes" && value.length > 400) throw new Error(`${field.label} aceita até 400 caracteres.`);
@@ -80,6 +98,9 @@ export function prepareOrderItems(products: Product[], submitted: OrderLineInput
     const product = bySlug.get(item.slug);
     if (!product || !product.published) throw new Error(`Produto indisponível: ${item.slug}`);
     const minimum = product.minQty ?? 1;
+    if (!Number.isInteger(item.qty) || item.qty < 1 || item.qty > MAX_ORDER_QUANTITY) {
+      throw new Error(`${product.name}: quantidade inválida. Use de 1 a ${MAX_ORDER_QUANTITY} unidades.`);
+    }
     if (item.qty < minimum) throw new Error(`${product.name}: a quantidade mínima é de ${minimum} unidade(s). Ajuste o carrinho.`);
     if (!Number.isFinite(product.price) || product.price <= 0) throw new Error(`Preço inválido cadastrado para ${product.name}. Fale com a PapeLemi.`);
     if (product.promoPrice !== undefined && (!Number.isFinite(product.promoPrice) || product.promoPrice <= 0 || product.promoPrice >= product.price)) {
@@ -153,4 +174,90 @@ export function isSameOrderRequest(existing: OrderRequestSnapshot, expected: Ord
     && existing.customer_notes === expected.customer_notes
     && existing.accepted_privacy === expected.accepted_privacy
     && existing.source === expected.source;
+}
+
+
+export type OrderSubmissionInput = {
+  customer: { name: string; email: string; phone: string };
+  address: { cep: string; street: string; number: string; complement: string; district: string; city: string; state: string };
+  items: OrderLineInput[];
+  couponCode?: string;
+  customerNotes: string;
+  acceptedPrivacy: true;
+};
+
+function nonEmptyOptions(options: Record<string, string> | null | undefined) {
+  return Object.fromEntries(
+    Object.entries(options ?? {})
+      .filter(([, value]) => typeof value === "string" && value.trim().length > 0)
+      .map(([key, value]) => [key, value.trim()]),
+  );
+}
+
+export function isSameOrderSubmission(existing: OrderRequestSnapshot, input: OrderSubmissionInput): boolean {
+  if (!Array.isArray(existing.items)) return false;
+  const storedItems = existing.items as Array<{ slug?: unknown; qty?: unknown; options?: Record<string, string> }>;
+  if (storedItems.some((item) => typeof item.slug !== "string" || typeof item.qty !== "number")) return false;
+  const storedCart = storedItems.map((item) => ({
+    slug: item.slug,
+    qty: item.qty,
+    options: nonEmptyOptions(item.options),
+  }));
+  const submittedCart = input.items.map((item) => ({
+    slug: item.slug,
+    qty: item.qty,
+    options: nonEmptyOptions(item.options),
+  }));
+  const existingAddress = existing.address as Record<string, unknown>;
+  const normalizedExistingAddress = {
+    cep: String(existingAddress.cep ?? "").replace(/\D/g, ""),
+    street: String(existingAddress.street ?? ""),
+    number: String(existingAddress.number ?? ""),
+    complement: String(existingAddress.complement ?? ""),
+    district: String(existingAddress.district ?? ""),
+    city: String(existingAddress.city ?? ""),
+    state: String(existingAddress.state ?? "").toUpperCase(),
+  };
+  const normalizedInputAddress = {
+    cep: input.address.cep.replace(/\D/g, ""),
+    street: input.address.street,
+    number: input.address.number,
+    complement: input.address.complement,
+    district: input.address.district,
+    city: input.address.city,
+    state: input.address.state.toUpperCase(),
+  };
+  return existing.store_key === "papelemi"
+    && existing.customer_name === input.customer.name
+    && existing.customer_email.toLowerCase() === input.customer.email.toLowerCase()
+    && existing.customer_phone === input.customer.phone
+    && stableJson(normalizedExistingAddress) === stableJson(normalizedInputAddress)
+    && stableJson(storedCart) === stableJson(submittedCart)
+    && existing.coupon_code === (input.couponCode ?? null)
+    && existing.customer_notes === input.customerNotes
+    && existing.accepted_privacy === input.acceptedPrivacy
+    && existing.source === "storefront";
+}
+
+export async function persistOrderIdempotently<T extends OrderRequestSnapshot & { id: string }>(options: {
+  findExisting: () => Promise<T | null>;
+  insert: () => Promise<T | null>;
+  matches: (record: T) => boolean;
+}): Promise<{ record: T; created: boolean }> {
+  const conflict = () => new Error(
+    "ORDER_REQUEST_CONFLICT: Esta tentativa já foi usada com outros dados. Gere uma nova tentativa e envie novamente.",
+  );
+  const existing = await options.findExisting();
+  if (existing) {
+    if (!options.matches(existing)) throw conflict();
+    return { record: existing, created: false };
+  }
+  const inserted = await options.insert();
+  if (inserted) {
+    if (!options.matches(inserted)) throw conflict();
+    return { record: inserted, created: true };
+  }
+  const raced = await options.findExisting();
+  if (!raced || !options.matches(raced)) throw conflict();
+  return { record: raced, created: false };
 }
