@@ -159,3 +159,76 @@ O primeiro disparo do workflow de schema-only falhou antes do replay porque a ve
 ## 11. Contrato de rota administrativa
 
 O teste de contrato confirma que `/admin` é resolvido pelo route tree, que o componente e a função de head existem, e que a rota entrega `robots: noindex, nofollow`. A expectativa do teste foi alinhada ao valor completo real. Isso protege o painel administrativo contra indexação pública.
+
+
+## 12. Rodada de replicação em lote — 2026-11-26 05:37 UTC
+
+### Estado Git e transferência
+
+- Empório `main` de origem: `d01d843c266b5a32d03af22eeaac6eda4a7fcf0f`.
+- PapeLemi `main` preservada: `f29417de4ead641d0b2b275535a963208b2360a3`.
+- PR #13: aberta, Draft, 1.429 arquivos alterados; checkpoint de código validado em `4013d259b5367d2aa2b1d955e078b5e838c404bd`.
+- Manifesto da transferência: 1.373 arquivos reutilizados.
+- Distribuição física da PR: 1.055 arquivos em `src/emp-orio/`, 201 em `tools/emp-orio-supabase/`, 76 em `supabase/functions/` e 97 arquivos de suporte, documentação, testes e configuração.
+- Runtime copiado: 563 componentes, 69 hooks, 284 módulos de bibliotecas/serviços, 120 páginas administrativas, 124 entradas de rota e 119 imports dinâmicos.
+- O route handler `/admin` monta o aplicativo administrativo original da Empório; não é apenas uma tela reconstruída.
+
+### Schema do motor e seed PapeLemi
+
+As migrations candidatas de integração são:
+
+1. `20261126000000_create_papelemi_engine_schema.sql`
+2. `20261126001000_replay_emporio_drizzle_operational_schema.sql`
+3. `20261126010000_bootstrap_papelemi_engine_admin.sql`
+4. `20261126015000_extend_papelemi_engine_storefront_contract.sql`
+5. `20261126020000_seed_papelemi_engine_with_store_data.sql`
+
+A migration `20261125223000_add_catalog_lifecycle_management.sql`, originada do trabalho útil da PR #14, também está preservada na linha de integração.
+
+O replay isolado e os contratos SQL passaram no CI. O schema local contém:
+
+- 150 tabelas de origem + 1 tabela auxiliar PapeLemi (`shipping_quote_rate_limits`);
+- 88 funções de origem + 2 helpers PapeLemi (`sync_papelemi_admin_roles` e `consume_shipping_quote_rate_limit`);
+- 95 triggers, 246 policies RLS, 4 views e 5 enums;
+- 309 índices de origem + 2 índices auxiliares PapeLemi;
+- RLS habilitado nas 151 tabelas do schema.
+
+O seed copia exclusivamente linhas com `store_key = 'papelemi'` do schema público para `papelemi_engine`. O schema público e seus registros permanecem intactos. O seed inclui catálogo, personalizações, clientes, cupons, configurações de frete, provedores, regras, auditoria, pedidos e itens quando existentes. Nenhum dado comercial do Empório é importado.
+
+Os oito produtos atuais não têm peso cadastrado. O seed usa 0,150 kg como padrão inicial, valor já definido no RPC original `apply_default_weight` e na configuração de frete PapeLemi. O peso permanece editável por produto.
+
+### CI e situação dos ambientes
+
+- GitHub Actions run `45762789548`: SUCCESS — testes, lint, TypeScript, replay das migrations e contratos SQL.
+- A reconstrução remota do Supabase original da Empório ficou SKIPPED por ausência de conexão ao projeto de origem.
+- Supabase hospedado PapeLemi: 15 tabelas públicas, 10 migrations, 4 funções, 40 índices, 30 policies, 3 enums, 0 views e 0 Edge Functions implantadas.
+- O schema hospedado `papelemi_engine` ainda não existe. Nenhuma migration desta integração foi aplicada ao Supabase hospedado.
+- Vercel Production permanece READY no SHA `f29417de`. O Preview READY mais recente identificado é do SHA antigo `a2482340`; não existe Preview confirmado para o HEAD `4013d259`.
+- `SUPABASE_URL` e chaves publicáveis estão configuradas para Preview; service role/secret permanecem somente em Production. Não copiar a chave de produção para Preview, pois isso daria a um deploy de revisão acesso privilegiado ao banco real.
+
+### Divergências e limites ainda abertos
+
+- O projeto Supabase remoto original da Empório não está conectado nesta sessão.
+- O backup ZIP está listado na Biblioteca, mas a materialização dos bytes falhou; não foi restaurado nem importado.
+- Os tipos versionados da origem declaram 150 tabelas e 63 funções; o replay SQL local valida 150 tabelas e 88 funções de origem.
+- O inventário remoto histórico registra 242 policies, enquanto o replay local atual valida 246. A diferença exige confirmação no banco original/backup; não deve ser resolvida por suposição.
+- As 75 Edge Function files foram copiadas, mas 0 funções estão implantadas. Segredos não foram lidos nem copiados.
+- A branch experimental `feat/emporio-admin-replica-01-20261126` permanece preservada e divergente; não foi mesclada na PR #13.
+
+### Cadeia de PRs preservada
+
+- #8 → #12 → #13 é a cadeia de fundação e transferência.
+- #14 foi fechada sem merge; o lifecycle útil foi portado seletivamente.
+- #15 continua Draft e precisa ser reconciliada após estabilização da #13.
+- #16 continua dependente da #15.
+- Nenhuma PR foi integrada à `main`.
+
+### Próxima execução segura
+
+1. Obter conexão read-only ao Supabase original da Empório ou reanexar o backup ZIP como arquivo de conversa legível para confirmar o drift.
+2. Obter um Preview do HEAD atual e homologar a interface; manter operações administrativas bloqueadas enquanto Preview não tiver banco isolado e credenciais próprias.
+3. Atualizar a base da PR #15 e preservar a contribuição da #16.
+4. Revisar a migration final e o rollback. Aplicação hospedada continua pendente de aprovação explícita e de confirmação da fonte.
+5. Somente após homologação autenticada e gates completos, integrar e publicar.
+
+**Limite desta rodada:** código e migrations passaram no ambiente local isolado. Não houve DDL hospedado, alteração no banco original, merge, deploy Production ou implantação de Edge Functions.

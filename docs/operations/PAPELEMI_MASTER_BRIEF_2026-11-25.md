@@ -519,3 +519,26 @@ O primeiro disparo do workflow de artefato schema-only identificou uma configura
 ## 2026-11-26 — Metadados privados da rota administrativa
 
 O smoke/contract da rota `/admin` confirma o componente original e o metadado `robots: noindex, nofollow`. A verificação automatizada foi ajustada para exigir o valor completo efetivamente retornado pelo TanStack Router. A falha anterior era somente uma expectativa de teste incompleta; a rota já entregava a proteção correta.
+
+
+---
+
+## 2026-11-26 — Rodada 4.3: replicação em lote e homologação local
+
+A PR #13 deixou de ser uma transferência pontual: o manifesto registra 1.373 arquivos reutilizados do Empório e 1.429 arquivos alterados no total. O runtime administrativo original está fisicamente em `src/emp-orio/` e é montado pela rota `/admin`. A transferência inclui 563 componentes, 69 hooks, 284 módulos de biblioteca/serviços, 120 páginas administrativas, 124 entradas de rota e 119 imports dinâmicos. Também foram copiados 201 arquivos de referência Supabase e 76 arquivos de Edge Functions em 54 diretórios.
+
+O motor está sendo preparado no schema isolado `papelemi_engine`, dentro do Supabase dedicado da PapeLemi. O replay local atual valida 150 tabelas de origem, 88 funções de origem, 95 triggers, 246 policies RLS, 309 índices de origem, 4 views e 5 enums, além de uma tabela, duas funções e dois índices auxiliares específicos da PapeLemi. RLS está habilitado nas 151 tabelas do schema.
+
+As migrations de integração preservam o schema público atual e copiam somente os dados com `store_key = 'papelemi'`. Os oito produtos atuais não possuem peso cadastrado; o seed usa o padrão inicial de 0,150 kg, consistente com o RPC original `apply_default_weight` e com a configuração de frete da PapeLemi. O valor poderá ser ajustado por produto.
+
+**Homologação local:** GitHub Actions run `45762789548` — SUCCESS em testes, lint, TypeScript, replay das migrations e contratos SQL. O job de reconstrução do Supabase remoto original da Empório foi SKIPPED por falta de conexão com a origem.
+
+**Supabase hospedado PapeLemi permanece intacto:** 15 tabelas públicas, 10 migrations, 4 funções, 40 índices, 30 policies, 3 enums, 0 views e 0 Edge Functions. O schema `papelemi_engine` ainda não foi aplicado no projeto hospedado. Nenhuma alteração no Supabase original, nenhum merge e nenhuma publicação Production foram executados.
+
+O Preview READY identificado pertence ao SHA antigo `a2482340`; não há Preview confirmado para o checkpoint de código `4013d259`. As chaves publicáveis do Supabase estão disponíveis em Preview, mas service role/secret permanecem restritos a Production. Não compartilhar a credencial de produção com Preview.
+
+Persistem dois pontos que impedem declarar paridade integral do banco: o Supabase remoto da Empório não está conectado e o backup ZIP listado na Biblioteca não pôde ser materializado. Os tipos versionados da origem declaram 63 funções, enquanto o replay local valida 88; o inventário remoto histórico registra 242 policies, enquanto o replay local valida 246. Essas diferenças precisam de confirmação na origem ou em backup legível.
+
+A cadeia #8 → #12 → #13 permanece aberta e em Draft. #15 e #16 foram preservadas para reconciliação após a estabilização da #13. A branch experimental divergente permanece sem merge.
+
+Referência operacional atualizada: [EMPORIO_REPLICATION_MATRIX_2026-11-26.md](./EMPORIO_REPLICATION_MATRIX_2026-11-26.md).
