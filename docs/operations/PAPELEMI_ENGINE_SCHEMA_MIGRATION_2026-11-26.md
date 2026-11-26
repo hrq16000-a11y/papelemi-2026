@@ -63,3 +63,7 @@ O gerador de transferência agora instala `supabase/functions/_shared/createEngi
 ## Precisão da contagem de índices
 
 O replay local confirmou 487 entradas em `pg_indexes` para `papelemi_engine`. As 306 declarações `CREATE INDEX` do snapshot são os índices explícitos; a contagem total do catálogo também inclui índices criados por constraints. O teste pgTAP compara agora os 306 índices explícitos, excluindo os índices vinculados a constraints.
+
+## Identidade administrativa PapeLemi
+
+A migration complementar `20261126010000_bootstrap_papelemi_engine_admin.sql` sincroniza somente os perfis e papéis `admin` já existentes em `public.user_roles` para a loja `papelemi`, usando as identidades já presentes em `auth.users`. Não copia credenciais, clientes, encomendas ou pagamentos. A função de sincronização é restrita a `service_role` e usa search_path fixado.

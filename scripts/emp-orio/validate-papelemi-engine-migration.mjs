@@ -6,6 +6,8 @@ const migrationPath = path.join(root, "supabase/migrations/20261126000000_create
 const clientPath = path.join(root, "src/emp-orio/integrations/supabase/client.ts");
 const typesPath = path.join(root, "src/emp-orio/integrations/supabase/types.ts");
 const testPath = path.join(root, "supabase/tests/papelemi_engine_schema.test.sql");
+const bootstrapMigrationPath = path.join(root, "supabase/migrations/20261126010000_bootstrap_papelemi_engine_admin.sql");
+const bootstrapTestPath = path.join(root, "supabase/tests/papelemi_engine_admin_bootstrap.test.sql");
 const sourceProjectRef = "xfqffqxqiuqauefrrcxn";
 const targetProjectRef = "gpdpfoxpbferjwbppcmb";
 const oldDomain = "emporiolelecute.com.br";
@@ -33,6 +35,8 @@ const migration = await fs.readFile(migrationPath, "utf8");
 const client = await fs.readFile(clientPath, "utf8");
 const types = await fs.readFile(typesPath, "utf8");
 const tests = await fs.readFile(testPath, "utf8");
+const bootstrapMigration = await fs.readFile(bootstrapMigrationPath, "utf8");
+const bootstrapTests = await fs.readFile(bootstrapTestPath, "utf8");
 const searchPaths = [...migration.matchAll(/SET "search_path" TO ((?:'[^']+'(?:,\s*)?)+)/g)].map(m => [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]));
 const safeSearchPaths = searchPaths.filter(parts => parts[0] === "papelemi_engine" && parts[1] === "pg_catalog" && parts[2] === "public" && parts.at(-1) === "pg_temp");
 const withoutDollarBodies = migration.replace(/\$([A-Za-z_][A-Za-z0-9_]*)?\$[\s\S]*?\$\1\$/g, " ");
