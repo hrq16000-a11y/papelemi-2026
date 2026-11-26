@@ -35,7 +35,7 @@ export default function AdminCollections() {
 
   const toggleField = useMutation({
     mutationFn: async ({ id, field, value }: { id: string; field: "is_active" | "show_on_home"; value: boolean }) => {
-      const { error } = await supabase.from("collections").update({ [field]: value }).eq("id", id);
+      const { error } = await supabase.from("collections").update({ [field]: value } as never).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-collections"] }),

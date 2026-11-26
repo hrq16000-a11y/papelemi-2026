@@ -338,10 +338,10 @@ export function useUpdateProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...product }: Partial<DbProduct> & { id: string }) => {
+    mutationFn: async ({ id, __slugMeta: _slugMeta, ...product }: Partial<DbProduct> & { id: string }) => {
       const { data, error } = await supabase
         .from('products')
-        .update(product)
+        .update(product as never)
         .eq('id', id)
         .select()
         .single();

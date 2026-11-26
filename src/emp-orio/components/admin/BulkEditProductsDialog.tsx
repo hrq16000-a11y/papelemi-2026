@@ -105,7 +105,7 @@ const BulkEditProductsDialog = ({ open, onOpenChange, selectedIds, onDone }: Pro
     try {
       // 1) Update em lote para campos uniformes
       if (Object.keys(patch).length > 0) {
-        const { error } = await supabase.from('products').update(patch).in('id', selectedIds);
+        const { error } = await supabase.from('products').update(patch as never).in('id', selectedIds);
         if (error) {
           fail = selectedIds.length;
           toast({ title: 'Erro ao aplicar', description: error.message, variant: 'destructive' });

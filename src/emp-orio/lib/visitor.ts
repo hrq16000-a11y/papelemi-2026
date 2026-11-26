@@ -1,6 +1,6 @@
 // Shared browser capability and optional lead tracking.
 import { hasOptionalConsent } from './cookie-consent';
-import { deriveVisitorId, isVisitorCredential, visitorCredentialKey } from '../../supabase/functions/_shared/visitor-capability';
+import { deriveVisitorId, isVisitorCredential, visitorCredentialKey } from '../../../supabase/functions/_shared/visitor-capability';
 
 const STORAGE_KEY = "elc_visitor_id";
 

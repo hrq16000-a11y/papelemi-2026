@@ -183,7 +183,7 @@ const AdminOrders = () => {
 
       const { error } = await supabase
         .from('orders')
-        .update(update)
+        .update(update as never)
         .eq('id', orderId);
 
       if (error) throw error;

@@ -405,7 +405,7 @@ const AdminCategories = () => {
     value: boolean,
   ) => {
     try {
-      const { error } = await supabase.from('categories').update({ [field]: value }).eq('id', id);
+      const { error } = await supabase.from('categories').update({ [field]: value } as never).eq('id', id);
       if (error) throw error;
       invalidatePublicTaxonomy(queryClient, 'categories');
       void markPublicTaxonomyDirty('categories');
