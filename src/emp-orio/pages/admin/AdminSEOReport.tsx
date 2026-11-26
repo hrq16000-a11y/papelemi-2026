@@ -92,7 +92,7 @@ const AdminSEOReport = () => {
         .eq('is_active', true)
         .limit(5);
 
-      const siteUrl = seoConfig?.canonical_url || 'https://emporioPapeLemi.com.br';
+      const siteUrl = seoConfig?.canonical_url || 'https://www.papelemi.com.br';
       
       // Create sample URLs for display
       const urls: IndexationCheck[] = [
@@ -350,7 +350,7 @@ const AdminSEOReport = () => {
 
             <div className="flex gap-2">
               <a 
-                href="https://xfqffqxqiuqauefrrcxn.supabase.co/functions/v1/generate-sitemap" 
+                href="https://gpdpfoxpbferjwbppcmb.supabase.co/functions/v1/generate-sitemap"
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex-1"

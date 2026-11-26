@@ -8,7 +8,7 @@
  *  - shouldThemeAppearInSitemap() retorna false nesta fase.
  */
 
-export const SITE_ORIGIN = "https://emporioPapeLemi.com.br";
+export const SITE_ORIGIN = "https://www.papelemi.com.br";
 
 export const MIN_PRODUCTS_THEME = 8;
 export const MIN_AUTHORITY_INDEX = 70;

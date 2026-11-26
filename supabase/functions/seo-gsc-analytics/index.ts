@@ -2,7 +2,7 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 
 const GATEWAY = 'https://connector-gateway.lovable.dev/google_search_console'
-const SITE_URL = 'sc-domain:emporioPapeLemi.com.br'
+const SITE_URL = 'sc-domain:www.papelemi.com.br'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })

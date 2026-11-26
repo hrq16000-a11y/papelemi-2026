@@ -23,7 +23,7 @@ const MIN_FILENAME_LEN = 8;
 
 function looksLikePoorFilename(url: string): boolean {
   try {
-    const u = new URL(url, "https://emporioPapeLemi.com.br");
+    const u = new URL(url, "https://www.papelemi.com.br");
     const last = (u.pathname.split("/").pop() || "").toLowerCase();
     const base = last.replace(/\.[a-z0-9]+$/i, "");
     if (base.length < MIN_FILENAME_LEN) return true;

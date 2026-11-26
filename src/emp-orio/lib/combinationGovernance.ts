@@ -8,7 +8,7 @@
  *  - shouldAppearInSitemap retorna false por padrão (nesta fase).
  */
 
-export const SITE_ORIGIN = "https://emporioPapeLemi.com.br";
+export const SITE_ORIGIN = "https://www.papelemi.com.br";
 
 export type CombinationKey = {
   primaryType: "segment" | "category" | "tag";

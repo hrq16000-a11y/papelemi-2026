@@ -20,7 +20,7 @@ export const useContactInfo = () => {
     phone: rawPhone,
     whatsappNumber,
     buildWhatsappUrl,
-    instagram: footer?.social_links?.instagram || 'https://www.instagram.com/emporioPapeLemi',
-    facebook: footer?.social_links?.facebook || 'https://www.facebook.com/emporioPapeLemi',
+    instagram: footer?.social_links?.instagram || 'https://www.instagram.com/PapeLemi',
+    facebook: footer?.social_links?.facebook || 'https://www.facebook.com/PapeLemi',
   };
 };

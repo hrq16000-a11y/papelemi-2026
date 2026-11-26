@@ -98,8 +98,8 @@ const Header = () => {
   }, [isMobileSearchOpen]);
 
   const socialLinks = [
-    { href: "https://www.instagram.com/emporioPapeLemi", icon: Instagram, label: "Instagram" },
-    { href: "https://www.facebook.com/emporioPapeLemi", icon: Facebook, label: "Facebook" },
+    { href: "https://www.instagram.com/PapeLemi", icon: Instagram, label: "Instagram" },
+    { href: "https://www.facebook.com/PapeLemi", icon: Facebook, label: "Facebook" },
   ];
 
   return (

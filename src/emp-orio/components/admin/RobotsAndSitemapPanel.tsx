@@ -6,7 +6,7 @@ import { RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, ListTree } from '
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const SITE = (import.meta.env.VITE_SITE_URL as string) || 'https://emporioPapeLemi.com.br';
+const SITE = (import.meta.env.VITE_SITE_URL as string) || 'https://www.papelemi.com.br';
 
 export default function RobotsAndSitemapPanel() {
   const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ export default function RobotsAndSitemapPanel() {
     try {
       const [pubRes, edgeRes] = await Promise.all([
         fetch(`${SITE}/robots.txt`, { cache: 'no-store' }),
-        fetch(`https://xfqffqxqiuqauefrrcxn.functions.supabase.co/robots-txt`, { cache: 'no-store' }),
+        fetch(`https://gpdpfoxpbferjwbppcmb.functions.supabase.co/robots-txt`, { cache: 'no-store' }),
       ]);
       const pub = await pubRes.text();
       const edge = await edgeRes.text();

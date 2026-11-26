@@ -43,7 +43,7 @@ const FALLBACK_VARS = {
   quantity: 30,
   personalization: "Nome: Maria · Cor da fita: rosa",
   price: "R$ 12,90",
-  imageUrl: "https://emporioPapeLemi.com.br/img/sabonete.jpg",
+  imageUrl: "https://www.papelemi.com.br/img/sabonete.jpg",
   category: "Sabonetes",
   occasion: "Casamento",
   segment: "Lembrancinhas",

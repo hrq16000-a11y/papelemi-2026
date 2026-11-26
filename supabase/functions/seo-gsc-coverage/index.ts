@@ -17,7 +17,7 @@ const corsHeaders = {
 };
 
 const GATEWAY = 'https://connector-gateway.lovable.dev/google_search_console';
-const ORIGIN = 'https://emporioPapeLemi.com.br';
+const ORIGIN = 'https://www.papelemi.com.br';
 
 interface SiteEntry { siteUrl: string; permissionLevel?: string }
 

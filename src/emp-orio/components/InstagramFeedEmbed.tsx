@@ -151,7 +151,7 @@ const InstagramFeedEmbed = () => {
         <div className="text-center mb-10">
           <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-light rounded-full text-primary text-sm font-medium mb-4">
             <Instagram className="h-4 w-4" />
-            {cfg?.subheading || "@emporioPapeLemi"}
+            {cfg?.subheading || "@PapeLemi"}
           </span>
           <h2 id="ig-feed-embed" className="font-display text-3xl md:text-4xl text-foreground">
             {cfg?.heading || "Últimas postagens do Instagram"}

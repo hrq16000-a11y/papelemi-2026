@@ -8,7 +8,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "https://xfqffqxqiuqauefrrcxn.supabase.co";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "https://gpdpfoxpbferjwbppcmb.supabase.co";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmcWZmcXhxaXVxYXVlZnJyY3huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MTQ3MjUsImV4cCI6MjA4MDM5MDcyNX0.9SA2YpnZQV7QtsrQlHR661f2ExmB8fl-u5Na7JXQqk0";
 

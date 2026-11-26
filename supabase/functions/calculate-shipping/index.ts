@@ -349,7 +349,7 @@ async function quoteMelhorEnvio(p: any, ctx: any): Promise<ShippingOption[]> {
       Accept: 'application/json',
       'Content-Type': 'application/json',
       Authorization: `Bearer ${p.api_key}`,
-      'User-Agent': 'EmporioPapeLemi (contato@emporioPapeLemi.com.br)',
+      'User-Agent': 'PapeLemi (contato@papelemi.com.br)',
     },
     body: JSON.stringify(payload),
   });

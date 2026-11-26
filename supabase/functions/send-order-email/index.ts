@@ -522,7 +522,7 @@ function generateStatusUpdateEmailHtml(data: StatusUpdateRequest): string {
           </div>
           ` : ''}
           
-          <a href="https://emporioPapeLemi.lovable.app/rastrear?code=${escapeHtml(data.orderCode)}" class="cta">📦 Acompanhar Pedido</a>
+          <a href="https://PapeLemi.lovable.app/rastrear?code=${escapeHtml(data.orderCode)}" class="cta">📦 Acompanhar Pedido</a>
           
           <p style="color: #999; font-size: 12px; margin-top: 30px;">
             Dúvidas? Entre em contato pelo WhatsApp (41) 99221-4299
@@ -538,7 +538,7 @@ function generateStatusUpdateEmailHtml(data: StatusUpdateRequest): string {
   `;
 }
 
-const STORE_INBOX = "emporioPapeLemi@gmail.com";
+const STORE_INBOX = "PapeLemi@gmail.com";
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {

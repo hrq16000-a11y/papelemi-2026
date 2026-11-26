@@ -34,7 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import InstagramSchedulePanel from "@/emp-orio/components/admin/InstagramSchedulePanel";
 
 const SHORTCODE_RE = /^https?:\/\/(www\.)?instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)\/?/i;
-const PROFILE_USERNAME = "emporioPapeLemi";
+const PROFILE_USERNAME = "PapeLemi";
 
 const blank: Partial<InstagramPost> = {
   image_url: "",

@@ -14,7 +14,7 @@ const corsHeaders = {
 
 const SHORTCODE_RE = /instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/i;
 const UA =
-  "Mozilla/5.0 (compatible; PapeLemiBot/1.0; +https://emporioPapeLemi.com.br)";
+  "Mozilla/5.0 (compatible; PapeLemiBot/1.0; +https://www.papelemi.com.br)";
 
 function extractMeta(html: string, prop: string): string | null {
   const re1 = new RegExp(
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
 
     if (action === "profile") {
       // Server-chosen profile only: the store's own Instagram account.
-      const r = await tryProfile("emporioPapeLemi");
+      const r = await tryProfile("PapeLemi");
       return Response.json(r, { headers: corsHeaders });
     }
 

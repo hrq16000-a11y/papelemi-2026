@@ -171,7 +171,7 @@ async function sendMissingAlert(
       <ul style="margin:12px 0 16px 16px;padding:0;font-size:13px">${rows}</ul>
       <p style="margin:0 0 20px 0">Revise e restaure no painel:</p>
       <p style="margin:0 0 24px 0">
-        <a href="https://emporioPapeLemi.com.br/admin/media-backup"
+        <a href="https://www.papelemi.com.br/admin/media-backup"
            style="background:#e85d3a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600">
           Abrir Backup de Mídia
         </a>

@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
   } catch (_) { /* fall through */ }
 
   if (recipients.length === 0) {
-    recipients = ["emporioPapeLemi@gmail.com"];
+    recipients = ["PapeLemi@gmail.com"];
   }
 
   // Build sample list (top distinct messages)
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     )
     .join("");
 
-  const reviewUrl = "https://emporioPapeLemi.com.br/admin/telemetria";
+  const reviewUrl = "https://www.papelemi.com.br/admin/telemetria";
   const subject = `[ALERTA] Pico de erros na loja: ${count} eventos em ${WINDOW_MINUTES} min`;
   const html = `
     <div style="font-family:system-ui,Arial,sans-serif;max-width:600px;margin:auto;padding:24px;color:#111">

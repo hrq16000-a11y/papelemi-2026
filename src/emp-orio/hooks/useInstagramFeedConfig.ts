@@ -13,7 +13,7 @@ export interface InstagramFeedConfig {
 const DEFAULTS: InstagramFeedConfig = {
   visible_count: 6,
   heading: "Últimas postagens do Instagram",
-  subheading: "@emporioPapeLemi",
+  subheading: "@PapeLemi",
   description: "",
 };
 

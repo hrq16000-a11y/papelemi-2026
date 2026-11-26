@@ -3,9 +3,9 @@ import { buildBusinessSchema } from './business-schema';
 
 describe('Verified business schema', () => {
   it('uses the official logo and configured public profiles, without fabricated business facts', () => {
-    const schema = buildBusinessSchema({ origin: 'https://emporioPapeLemi.com.br', logo: '/assets/logo.webp', socialUrls: ['https://instagram.com/emporioPapeLemi', 'javascript:alert(1)'] });
-    expect(schema.logo.url).toBe('https://emporioPapeLemi.com.br/assets/logo.webp');
-    expect(schema.sameAs).toEqual(['https://instagram.com/emporioPapeLemi']);
+    const schema = buildBusinessSchema({ origin: 'https://www.papelemi.com.br', logo: '/assets/logo.webp', socialUrls: ['https://instagram.com/PapeLemi', 'javascript:alert(1)'] });
+    expect(schema.logo.url).toBe('https://www.papelemi.com.br/assets/logo.webp');
+    expect(schema.sameAs).toEqual(['https://instagram.com/PapeLemi']);
     expect(schema.name).toBe('PapeLemi');
     expect(schema.areaServed.name).toBe('Brasil');
     expect(schema).not.toHaveProperty('openingHoursSpecification');

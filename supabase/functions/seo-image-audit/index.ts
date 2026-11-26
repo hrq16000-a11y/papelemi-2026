@@ -16,7 +16,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ORIGIN = 'https://emporioPapeLemi.com.br';
+const ORIGIN = 'https://www.papelemi.com.br';
 const BOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
 const PRERENDER = `${Deno.env.get('SUPABASE_URL')}/functions/v1/prerender`;
 const MAX_BYTES = 300 * 1024; // 300 KB por imagem servida

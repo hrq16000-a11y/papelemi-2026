@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
   const status = order.status as string;
   const label = STATUS_LABEL[status] || status;
   const message = STATUS_MESSAGE[status] || "O status do seu pedido foi atualizado.";
-  const trackUrl = `https://emporioPapeLemi.com.br/rastrear?code=${encodeURIComponent(order.order_code)}`;
+  const trackUrl = `https://www.papelemi.com.br/rastrear?code=${encodeURIComponent(order.order_code)}`;
 
   // Idempotência: não reenviar o mesmo status para o mesmo pedido.
   const { data: already } = await admin
@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
 
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") || "";
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") || "";
-  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:emporioPapeLemi@gmail.com";
+  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:PapeLemi@gmail.com";
 
   const { data: prefs } = customerEmail
     ? await admin

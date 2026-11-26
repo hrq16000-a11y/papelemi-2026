@@ -61,13 +61,13 @@ const AdminSettings = () => {
       show_occasions: true,
     },
     contact_info: {
-      whatsapp: '5541992214299',
-      email: 'contato@emporioPapeLemi.com.br',
-      address: 'São José dos Pinhais, PR',
+      whatsapp: '',
+      email: '',
+      address: '',
     },
     social_links: {
-      instagram: 'https://www.instagram.com/emporioPapeLemi',
-      facebook: 'https://www.facebook.com/emporioPapeLemi',
+      instagram: '',
+      facebook: '',
     },
     shipping_policy: {
       note: 'O frete será calculado após a confirmação do pedido via WhatsApp',

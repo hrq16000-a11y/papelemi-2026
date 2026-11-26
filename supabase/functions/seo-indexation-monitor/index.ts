@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     const { data: seoData } = await supabase
       .from('store_settings').select('value').eq('key', 'seo_config').maybeSingle()
     const seoConfig = (seoData?.value ?? {}) as { canonical_url?: string; gsc_property?: string; sitemap_notification_email?: string }
-    const configuredSite = safeIndexationUrl(seoConfig.canonical_url || 'https://emporioPapeLemi.com.br');
+    const configuredSite = safeIndexationUrl(seoConfig.canonical_url || 'https://www.papelemi.com.br');
     if (!configuredSite) throw new Error('Store URL is not allowed');
     const siteUrl = new URL(configuredSite).origin
     const property = seoConfig.gsc_property || `sc-domain:${siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     const limit = input.limit
 
     if (urls.length === 0) {
-      const sitemapRes = await fetch(`${siteUrl}/sitemap.xml`, { redirect: 'manual', signal: AbortSignal.timeout(15000), headers: { 'User-Agent': 'EmporioPapeLemi-IndexMonitor' } })
+      const sitemapRes = await fetch(`${siteUrl}/sitemap.xml`, { redirect: 'manual', signal: AbortSignal.timeout(15000), headers: { 'User-Agent': 'PapeLemi-IndexMonitor' } })
       if (!sitemapRes.ok) throw new Error('Could not load store sitemap');
       const xml = await sitemapRes.text()
       urls = Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g))
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
           method: 'GET',
           redirect: 'manual',
           signal: AbortSignal.timeout(15000),
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; EmporioPapeLemiSEO/1.0)' },
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PapeLemiSEO/1.0)' },
         })
         let html = ''
         if (r.status === 200) {
@@ -202,10 +202,11 @@ Deno.serve(async (req) => {
     }
 
     // 5) Email alerta
-    const notificationEmail = seoConfig.sitemap_notification_email || 'emporioPapeLemi@gmail.com'
-    if (newIssues.length > 0) {
+    const notificationEmail = seoConfig.sitemap_notification_email || Deno.env.get('STORE_NOTIFICATION_EMAIL') || ''
+    if (newIssues.length > 0 && notificationEmail) {
       const resendKey = Deno.env.get('RESEND_API_KEY')
-      if (resendKey) {
+      const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL')
+      if (resendKey && fromEmail) {
         try {
           const list = newIssues.slice(0, 25).map(r =>
             `<li><strong>${r.coverage}</strong> — <a href="${escapeHtml(r.url)}">${escapeHtml(r.url)}</a></li>`
@@ -214,7 +215,7 @@ Deno.serve(async (req) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
             body: JSON.stringify({
-              from: 'PapeLemi <noreply@emporioPapeLemi.com.br>',
+              from: fromEmail,
               to: [notificationEmail],
               subject: `[SEO] ${newIssues.length} URL(s) com problema de indexação`,
               html: `<div style="font-family:sans-serif;max-width:640px;margin:0 auto">

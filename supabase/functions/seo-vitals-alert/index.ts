@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
 
       alert = await sendSeoFailureAlert(supabase, {
         channel: 'vitals',
-        target: 'https://emporioPapeLemi.com.br',
+        target: 'https://www.papelemi.com.br',
         reason: `${breaches.length} rota(s) acima do limite de Core Web Vitals definido no /admin/seo-check`,
         urls: breaches.map(fmt),
         extra: { breaches },
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       status: breaches.length ? `breach (${breaches.length})` : 'ok',
       ok: breaches.length === 0,
       url_count: breaches.length,
-      target: 'https://emporioPapeLemi.com.br',
+      target: 'https://www.papelemi.com.br',
       detail: { breaches, thresholds, alert },
     });
 

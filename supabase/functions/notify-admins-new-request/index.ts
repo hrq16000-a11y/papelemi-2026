@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const reviewUrl = "https://emporioPapeLemi.com.br/admin/usuarios/solicitacoes";
+    const reviewUrl = "https://www.papelemi.com.br/admin/usuarios/solicitacoes";
     const subject = "[ALERTA] Nova solicitação de acesso administrativo";
     const html = `
       <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:auto;padding:24px;color:#111">

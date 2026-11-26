@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     // Envia para múltiplos endpoints: se um recusar (ex.: Bing exige
     // verificação própria), os demais ainda recebem as URLs.
     const INDEXNOW_KEY = '87296b506db34e8cb22cc31288f33f84'
-    const ORIGIN = 'https://emporioPapeLemi.com.br'
+    const ORIGIN = 'https://www.papelemi.com.br'
     const ENDPOINTS: { name: string; url: string }[] = [
       { name: 'indexnow.org', url: 'https://api.indexnow.org/IndexNow' },
       { name: 'yandex', url: 'https://yandex.com/indexnow' },
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
 
       if (urlList.length) {
         const payload = JSON.stringify({
-          host: 'emporioPapeLemi.com.br',
+          host: 'www.papelemi.com.br',
           key: INDEXNOW_KEY,
           keyLocation: `${ORIGIN}/${INDEXNOW_KEY}.txt`,
           urlList,
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
         : `failed (${indexnow.status || 0})`,
       ok: indexnow.sent,
       url_count: indexnow.urls,
-      target: 'emporioPapeLemi.com.br',
+      target: 'www.papelemi.com.br',
       detail: {
         key_location: `${ORIGIN}/${INDEXNOW_KEY}.txt`,
         endpoints: indexnow.endpoints,

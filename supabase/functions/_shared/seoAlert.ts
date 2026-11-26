@@ -84,7 +84,8 @@ export async function sendSeoFailureAlert(supabase: Client, failure: SeoFailure)
 
     const to = await alertEmail(supabase);
     const resendKey = Deno.env.get('RESEND_API_KEY');
-    if (!to || !resendKey) {
+    const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL');
+    if (!to || !resendKey || !fromEmail) {
       await logAttempt(supabase, failure, to, false, 'sem e-mail ou RESEND_API_KEY');
       return { sent: false, reason: 'sem e-mail ou RESEND_API_KEY' };
     }
@@ -94,7 +95,7 @@ export async function sendSeoFailureAlert(supabase: Client, failure: SeoFailure)
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
       body: JSON.stringify({
-        from: 'PapeLemi <noreply@emporioPapeLemi.com.br>',
+        from: fromEmail,
         to: [to],
         subject: `[SEO] Falha em ${LABEL[failure.channel]}`,
         html: `<div style="font-family:sans-serif;max-width:640px;margin:0 auto">

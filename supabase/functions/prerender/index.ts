@@ -13,7 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { productPath } from "../_shared/urls.ts";
 import { crawlerProductSchema } from '../_shared/crawler-product-schema.ts';
 
-const ORIGIN = "https://emporioPapeLemi.com.br";
+const ORIGIN = "https://www.papelemi.com.br";
 const SITE_NAME = "PapeLemi";
 const DEFAULT_DESC =
   "Lembrancinhas artesanais personalizadas para maternidade, chá de bebê, batizado, casamento e aniversário.";
@@ -126,7 +126,7 @@ const orgLd = {
   name: SITE_NAME,
   url: ORIGIN,
   logo: `${ORIGIN}/logo.webp`,
-  sameAs: ["https://instagram.com/emporioPapeLemi", "https://facebook.com/emporioPapeLemi"],
+  sameAs: ["https://instagram.com/PapeLemi", "https://facebook.com/PapeLemi"],
 };
 
 const breadcrumbLd = (items: { name: string; url: string }[]) => ({

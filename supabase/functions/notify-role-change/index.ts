@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
     }
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    const FROM = Deno.env.get('NOTIFY_FROM_EMAIL') ?? 'PapeLemi <noreply@emporioPapeLemi.com.br>';
+    const FROM = Deno.env.get('NOTIFY_FROM_EMAIL');
 
     const subject = role ? `Sua conta agora tem permissão: ${role}` : 'Atualização de acesso';
     const safeRole = (role ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
@@ -132,13 +132,13 @@ Deno.serve(async (req) => {
         <h2 style="color:#c2956b;">Acesso liberado</h2>
         <p>Olá,</p>
         <p>Sua conta <strong>${canonicalEmail}</strong> recebeu a permissão <strong>${safeRole}</strong> no painel administrativo do PapeLemi.</p>
-        <p><a href="https://emporioPapeLemi.com.br/admin" style="background:#c2956b;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Abrir painel</a></p>
+        <p><a href="https://www.papelemi.com.br/admin" style="background:#c2956b;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Abrir painel</a></p>
         <p style="font-size:12px;color:#888;">Evento: ${safeEvent} · ref: ${request_id.replace(/[^A-Za-z0-9-]/g, '')}</p>
       </div>
     `;
 
-    if (!RESEND_API_KEY) {
-      log('warn', request_id, 'resend_key_missing_skipping_send');
+    if (!RESEND_API_KEY || !FROM) {
+      log('warn', request_id, 'resend_key_or_from_missing_skipping_send');
       return new Response(JSON.stringify({ ok: true, skipped: true, request_id }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': request_id },
       });

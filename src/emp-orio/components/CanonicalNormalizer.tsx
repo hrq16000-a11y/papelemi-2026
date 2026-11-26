@@ -14,7 +14,7 @@ const TRACKING_PARAMS = [
   "fbclid", "gclid", "msclkid", "mc_cid", "mc_eid", "ref", "_ga", "yclid",
 ];
 
-const ORIGIN = "https://emporioPapeLemi.com.br";
+const ORIGIN = "https://www.papelemi.com.br";
 
 function cleanSearch(search: string): string {
   if (!search) return "";

@@ -19,7 +19,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ORIGIN = 'https://emporioPapeLemi.com.br';
+const ORIGIN = 'https://www.papelemi.com.br';
 const BRAND = 'PapeLemi';
 
 const clean = (v: unknown) => (typeof v === 'string' ? v.trim() : '');

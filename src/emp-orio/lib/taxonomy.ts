@@ -180,7 +180,7 @@ export function scoreSeo(e: TaxonomyEntity, opts?: { productCount?: number }): S
 
 export interface Crumb { name: string; url: string }
 
-const SITE_ORIGIN = 'https://emporioPapeLemi.com.br';
+const SITE_ORIGIN = 'https://www.papelemi.com.br';
 
 export interface BuildBreadcrumbsInput {
   kind: TaxonomyKind | 'produto' | 'produtos' | 'home';

@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const { data: seoData } = await supabase
       .from('store_settings').select('value').eq('key', 'seo_config').single()
     const seoConfig = seoData?.value as { canonical_url?: string; sitemap_notification_email?: string; gsc_property?: string } | null
-    const siteUrl = seoConfig?.canonical_url || 'https://emporioPapeLemi.com.br'
+    const siteUrl = seoConfig?.canonical_url || 'https://www.papelemi.com.br'
     const sitemapUrl = `${siteUrl}/sitemap.xml`
 
     // Domain property por padrão; se o usuário tiver URL-prefix configurado em seo_config.gsc_property, usa o configurado.
@@ -149,12 +149,13 @@ Deno.serve(async (req) => {
     if (notificationEmail) {
       try {
         const resendKey = Deno.env.get('RESEND_API_KEY')
-        if (resendKey) {
+        const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL')
+        if (resendKey && fromEmail) {
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
             body: JSON.stringify({
-              from: 'PapeLemi <noreply@emporioPapeLemi.com.br>',
+              from: fromEmail,
               to: [notificationEmail],
               subject: 'Sitemap — relatório de indexação',
               html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">

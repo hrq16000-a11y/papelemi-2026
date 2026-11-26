@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
   // --- 1. Configuração VAPID ---
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") || "";
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") || "";
-  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:emporioPapeLemi@gmail.com";
+  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:PapeLemi@gmail.com";
   const vapidReady = Boolean(vapidPublic && vapidPrivate);
   steps.push({
     step: "Chaves VAPID",

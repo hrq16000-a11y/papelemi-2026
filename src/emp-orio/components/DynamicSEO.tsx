@@ -20,7 +20,7 @@ interface DynamicSEOProps {
   };
 }
 
-const SITE_ORIGIN = 'https://emporioPapeLemi.com.br';
+const SITE_ORIGIN = 'https://www.papelemi.com.br';
 
 const buildCanonical = (pathname: string) => {
   // Strip trailing slash (except root) to enforce single preferred URL — no query/hash

@@ -8,7 +8,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 //  - backlinks_overview: backlinks total + referring domains
 const SEMRUSH = 'https://api.semrush.com/'
 const ANALYTICS = 'https://api.semrush.com/analytics/v1/'
-const DOMAIN = 'emporioPapeLemi.com.br'
+const DOMAIN = 'papelemi.com.br'
 const DATABASE = 'br'
 
 function parseTsv(text: string): Record<string, string>[] {
