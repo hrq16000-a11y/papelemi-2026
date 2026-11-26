@@ -56,10 +56,10 @@ export function roundMoney(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function normalizedOptions(options: Record<string, string>): Record<string, string> {
+function normalizedOptions(options: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(options)
-      .map(([key, value]) => [key.trim(), value.trim()] as const)
+      .map(([key, value]) => [key.trim(), typeof value === "string" ? value.trim() : ""] as const)
       .filter(([key, value]) => key.length > 0 && value.length > 0)
       .sort(([left], [right]) => left.localeCompare(right)),
   );
@@ -71,7 +71,7 @@ function stableStringify(value: unknown): string {
     const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
     return `{${entries.map(([key, child]) => `${JSON.stringify(key)}:${stableStringify(child)}`).join(",")}}`;
   }
-  return JSON.stringify(value);
+  return JSON.stringify(value) ?? "null";
 }
 
 function normalizedAddress(value: unknown): Record<string, string> {
@@ -88,7 +88,7 @@ function normalizedItemsForComparison(value: unknown): Array<{ slug: string; qty
   return value.map((item) => {
     const row = item && typeof item === "object" ? item as Record<string, unknown> : {};
     const options = row.options && typeof row.options === "object" && !Array.isArray(row.options)
-      ? normalizedOptions(row.options as Record<string, string>)
+      ? normalizedOptions(row.options as Record<string, unknown>)
       : {};
     return {
       slug: typeof row.slug === "string" ? row.slug.trim() : "",
@@ -254,11 +254,13 @@ export function orderRequestMatches(
     (existing.customer_notes ?? "").trim() === input.customerNotes.trim() &&
     existing.accepted_privacy === input.acceptedPrivacy &&
     storedItems.length === requestedItems.length &&
-    storedItems.every((item, index) =>
-      item.slug === requestedItems[index].slug &&
-      item.qty === requestedItems[index].qty &&
-      stableStringify(item.options) === stableStringify(requestedItems[index].options),
-    )
+    storedItems.every((item, index) => {
+      const requested = requestedItems[index];
+      return Boolean(requested) &&
+        item.slug === requested.slug &&
+        item.qty === requested.qty &&
+        stableStringify(item.options) === stableStringify(requested.options);
+    })
   );
 }
 
