@@ -157,9 +157,15 @@ async function buildOrderQuote(input: QuoteInput) {
       _subtotal: baseTotals.subtotal,
     });
     if (couponError) throw new Error("Não foi possível revalidar o cupom. Tente novamente.");
-    if (!validation?.valid) throw new Error(String(validation?.error ?? "Cupom inválido ou inativo."));
-    couponCode = String(validation.code ?? input.couponCode);
-    discount = Math.min(baseTotals.subtotal, Math.max(0, roundMoney(Number(validation.discount_applied ?? 0))));
+    const validationData = validation && typeof validation === "object" && !Array.isArray(validation)
+      ? validation as Record<string, Json>
+      : {};
+    if (validationData["valid"] !== true) {
+      const reason = validationData["error"];
+      throw new Error(typeof reason === "string" ? reason : "Cupom inválido ou inativo.");
+    }
+    couponCode = typeof validationData["code"] === "string" ? validationData["code"] : input.couponCode;
+    discount = Math.min(baseTotals.subtotal, Math.max(0, roundMoney(Number(validationData["discount_applied"] ?? 0))));
   }
 
   const { buildShippingQuote } = await import("@/lib/shipping-quote.server");
