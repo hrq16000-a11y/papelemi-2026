@@ -13,6 +13,7 @@ export default defineConfig({
   base: "/admin-engine/",
   plugins: [react()],
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: [
       { find: "@/integrations/supabase/client", replacement: path.resolve(adapterRoot, "src/integrations/supabase/client.ts") },
       { find: "@/hooks/useAuth", replacement: path.resolve(adapterRoot, "src/hooks/useAuth.ts") },
