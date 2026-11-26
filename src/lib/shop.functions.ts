@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
+import type { OrderLifecycleDatabase } from "@/lib/order-lifecycle.types";
 import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 import { categoryAdminSchema, productAdminSchema } from "@/lib/catalog-validation";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
@@ -562,7 +563,7 @@ export const getOrderDetails = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const admin = supabaseAdmin as unknown as SupabaseClient<OrderLifecycleDatabase>;
     const { data: order, error: orderError } = await admin.from("orders")
       .select("*")
       .eq("id", data.id)
@@ -576,8 +577,7 @@ export const getOrderDetails = createServerFn({ method: "GET" })
       .eq("store_key", "papelemi")
       .order("line_number", { ascending: true });
     if (itemsError) throw new Error(itemsError.message);
-    const engineAdmin = admin as unknown as SupabaseClient<any>;
-    const { data: history, error: historyError } = await engineAdmin.from("order_status_history")
+    const { data: history, error: historyError } = await admin.from("order_status_history")
       .select("id,from_status,to_status,note,changed_by,created_at")
       .eq("store_key", "papelemi")
       .eq("order_id", data.id)
@@ -601,7 +601,7 @@ export const setOrderStatus = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient<any>;
+    const admin = supabaseAdmin as unknown as SupabaseClient<OrderLifecycleDatabase>;
     const { data: current, error: currentError } = await admin.from("orders")
       .select("*")
       .eq("id", data.id)
@@ -613,8 +613,7 @@ export const setOrderStatus = createServerFn({ method: "POST" })
     if (data.status === "shipped" && !trackingCode) {
       throw new Error("Informe o código de rastreio antes de marcar o pedido como enviado.");
     }
-    const rpcClient = admin as unknown as SupabaseClient<any>;
-    const { error } = await rpcClient.rpc("admin_update_order", {
+    const { error } = await admin.rpc("admin_update_order", {
       _actor_id: context.userId,
       _order_id: data.id,
       _status: data.status,

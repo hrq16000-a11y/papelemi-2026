@@ -44,6 +44,9 @@ jobs:
           src/lib/catalog-lifecycle.types.ts
           src/lib/catalog-validation.ts
           src/lib/shop.functions.ts
+          src/lib/order-lifecycle.types.ts
+          src/components/admin/EmporioOrdersPanel.tsx
+          src/test/order-admin.test.ts
           src/lib/mp.ts
           src/routes/admin.tsx
           src/routes/checkout.tsx
