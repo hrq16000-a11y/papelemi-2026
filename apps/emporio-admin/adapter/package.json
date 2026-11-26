@@ -88,7 +88,8 @@
     "web-vitals": "^5.2.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.6.7",
-    "zustand": "^5.0.13"
+    "zustand": "^5.0.13",
+    "@dnd-kit/utilities": "^3.2.2"
   },
   "devDependencies": {
     "@axe-core/react": "^4.11.3",
