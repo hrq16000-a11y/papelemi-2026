@@ -24,6 +24,7 @@ export default defineConfig({
       { find: "@/pages/admin/AdminLogin", replacement: path.resolve(adapterRoot, "src/pages/admin/AdminLogin.tsx") },
       { find: "@/pages/admin/AdminSettings", replacement: path.resolve(adapterRoot, "src/pages/admin/AdminSettings.tsx") },
       { find: "@/assets/logo.webp", replacement: path.resolve(adapterRoot, "src/assets/papelemi-logo.svg") },
+      { find: /^@\/assets\/(?!logo\.webp$).+$/, replacement: path.resolve(adapterRoot, "src/assets/papelemi-placeholder.svg") },
       { find: "@/data", replacement: path.resolve(papelemiSrc, "data") },
       { find: "@", replacement: sourceSrc },
     ],
