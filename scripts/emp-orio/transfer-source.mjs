@@ -216,6 +216,81 @@ async function patchPapeLemiStoreIdentity() {
   }
 }
 
+
+async function patchEdgeFunctionSchemaClients() {
+  const sourceRoot = path.join(SOURCE, "supabase/functions");
+  const targetRoot = path.join(ROOT, "supabase/functions");
+  const patchedFiles = [];
+
+  async function walk(dir) {
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      const sourcePath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(sourcePath);
+        continue;
+      }
+      if (!entry.isFile() || !entry.name.endsWith(".ts")) continue;
+
+      const relativePath = path.relative(sourceRoot, sourcePath);
+      const targetPath = path.join(targetRoot, relativePath);
+      let contents = await fs.readFile(targetPath, "utf8");
+      const importPattern = /^import\s*\{\s*createClient\s*\}\s*from\s*(["'][^"']+["']);?\s*$/m;
+      const match = contents.match(importPattern);
+
+      if (match) {
+        const importReplacement = [
+          "import { createClient as createBaseClient } from " + match[1] + ";",
+          "",
+          "const createClient = (url: string, key: string, options: any = {}) =>",
+          "  createBaseClient(url, key, {",
+          "    ...options,",
+          '    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },',
+          "  });"
+        ].join("\n");
+        contents = contents.replace(match[0], importReplacement);
+        patchedFiles.push(path.posix.join("supabase/functions", relativePath.split(path.sep).join("/")));
+      } else if (/\bcreateClient\s*\(/.test(contents) && /supabase-js/.test(contents) && !contents.includes("createBaseClient")) {
+        throw new Error("Unadapted Supabase client import in source Edge Function: " + relativePath);
+      }
+
+      contents = contents.replace(/\.schema\(\s*(['"])public\1\s*\)/g, '.schema("papelemi_engine")');
+      if (/\bcreateBaseClient\b/.test(contents) && !contents.includes('schema: "papelemi_engine"')) {
+        throw new Error("Engine schema option missing in Edge Function: " + relativePath);
+      }
+      if (/\bcreateClient\s*\(/.test(contents) && /supabase-js/.test(contents) && !contents.includes("createBaseClient")) {
+        throw new Error("Edge Function still uses the default public schema: " + relativePath);
+      }
+
+      await fs.writeFile(targetPath, contents, "utf8");
+    }
+  }
+
+  await walk(sourceRoot);
+  if (patchedFiles.length < 50) {
+    throw new Error("Expected at least 50 source Edge Function clients to use papelemi_engine; found " + patchedFiles.length);
+  }
+  return patchedFiles;
+}
+
+async function exposePapeLemiEngineSchemaInLocalApiConfig() {
+  const configPath = path.join(ROOT, "supabase/config.toml");
+  let config = await fs.readFile(configPath, "utf8");
+  const schemaList = 'schemas = ["public", "graphql_public", "papelemi_engine"]';
+
+  if (!/^\[api\]\s*$/m.test(config)) {
+    const projectIdLine = config.match(/^project_id\s*=\s*["'][^"']+["']\s*$/m)?.[0];
+    if (!projectIdLine) throw new Error("Could not find project_id in Supabase config.");
+    config = config.replace(projectIdLine, projectIdLine + "\n\n[api]\n" + schemaList + '\nextra_search_path = ["public", "extensions"]\nmax_rows = 1000');
+  } else if (/^schemas\s*=\s*\[[^\]]*\]\s*$/m.test(config)) {
+    config = config.replace(/^schemas\s*=\s*\[[^\]]*\]\s*$/m, schemaList);
+  } else {
+    config = config.replace(/^\[api\]\s*$/m, "[api]\n" + schemaList);
+  }
+
+  if (!config.includes("papelemi_engine")) throw new Error("PapeLemi engine schema is not exposed in local Supabase API config.");
+  await fs.writeFile(configPath, config, "utf8");
+}
+
 async function writeDataAdapters() {
   const productsSource = await fs.readFile(path.join(SOURCE, "src/data/products.ts"), "utf8");
   const productsIndex = productsSource.indexOf("export const products");
@@ -643,6 +718,7 @@ async function main() {
   await copyFile("src/integrations/supabase/types.ts", "src/emp-orio/integrations/supabase/types.ts", { transform: false, area: "database-types" });
 
   await copyTree("supabase/functions", "supabase/functions", "edge-functions", { brand: true });
+  const edgeSchemaClientFiles = await patchEdgeFunctionSchemaClients();
   await copyTree("supabase/migrations", "tools/emp-orio-supabase/supabase/migrations", "source-migrations", { transform: false });
   await patchLocalMigrations();
   await copyTree("drizzle", "drizzle/emp-orio", "drizzle-reference", { transform: false });
@@ -657,6 +733,7 @@ async function main() {
   const appInfo = await writeEmporioAdminApp();
   await writeDestinationFiles();
   await writeBrandAndLocalProject();
+  await exposePapeLemiEngineSchemaInLocalApiConfig();
 
   const manifest = {
     sourceRepository: "hrq16000-a11y/emporiolelecute-2026",
@@ -671,6 +748,8 @@ async function main() {
     adminPageModulesImportedByOriginalRoute: appInfo.adminPageImports,
     originalAdminPageFilesCopied: counts.byArea["admin-pages"] || 0,
     sourceEdgeFunctionFilesCopied: counts.byArea["edge-functions"] || 0,
+    edgeSchemaClientFiles,
+    edgeSchemaClientCount: edgeSchemaClientFiles.length,
     sourceMigrationFilesCopiedToIsolatedLocalProject: counts.byArea["source-migrations"] || 0,
     dataPolicy: "Empório catalog/blog/landing records and all source media excluded; static adapters read PapeLemi catalog only.",
     typeScriptValidation: { papelemi: "strict tsconfig.order-integrity.json", emporio: "source-compatible tsconfig.emp-orio.json", compatibilityPatches: 7 },

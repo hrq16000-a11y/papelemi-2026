@@ -33,6 +33,8 @@ const migration = await fs.readFile(migrationPath, "utf8");
 const client = await fs.readFile(clientPath, "utf8");
 const types = await fs.readFile(typesPath, "utf8");
 const tests = await fs.readFile(testPath, "utf8");
+const config = await fs.readFile(path.join(root, "supabase/config.toml"), "utf8");
+const manifest = JSON.parse(await fs.readFile(path.join(root, "src/emp-orio/TRANSFER_MANIFEST.json"), "utf8"));
 const searchPaths = [...migration.matchAll(/SET "search_path" TO ((?:'[^']+'(?:,\s*)?)+)/g)].map(m => [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]));
 const safeSearchPaths = searchPaths.filter(parts => parts[0] === "papelemi_engine" && parts[1] === "pg_catalog" && parts[2] === "public" && parts.at(-1) === "pg_temp");
 const withoutDollarBodies = migration.replace(/\$([A-Za-z_][A-Za-z0-9_]*)?\$[\s\S]*?\$\1\$/g, " ");
@@ -68,6 +70,17 @@ check("schema remains isolated and private", migration.includes("GRANT USAGE ON 
 check("admin client routes data/RPC through engine", client.includes('.schema("papelemi_engine")') && client.includes('property === "from"') && client.includes('property === "rpc"'));
 check("generated admin types use engine schema", (types.match(/\n  papelemi_engine: \{/g) || []).length === 2 && (types.match(/\n  public: \{/g) || []).length === 0);
 check("database contract test plan remains 24", /SELECT plan\(24\);/.test(tests));
+
+check("PostgREST exposes the PapeLemi engine schema", /^\[api\][\s\S]*?^schemas\s*=\s*\[[^\]]*"papelemi_engine"/m.test(config));
+const edgeSchemaClientFiles = Array.isArray(manifest.edgeSchemaClientFiles) ? manifest.edgeSchemaClientFiles : [];
+const invalidEdgeSchemaClients = [];
+for (const relativePath of edgeSchemaClientFiles) {
+  const source = await fs.readFile(path.join(root, relativePath), "utf8");
+  if (!source.includes("createClient as createBaseClient") || !source.includes('schema: "papelemi_engine"')) {
+    invalidEdgeSchemaClients.push(relativePath);
+  }
+}
+check("source Edge Functions route PostgREST through papelemi_engine", edgeSchemaClientFiles.length >= 50 && invalidEdgeSchemaClients.length === 0, JSON.stringify({ count: edgeSchemaClientFiles.length, invalid: invalidEdgeSchemaClients }));
 
 const sourceReferences = [];
 for (const dir of ["src/emp-orio", "supabase/functions"]) {
