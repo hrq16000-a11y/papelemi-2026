@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION papelemi_engine.sync_papelemi_admin_roles()
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path TO pg_catalog, papelemi_engine, public, auth, pg_temp
+SET search_path TO pg_catalog, papelemi_engine, pg_temp
 AS $$
 DECLARE
   v_inserted integer := 0;

@@ -2,7 +2,7 @@ BEGIN;
 SELECT plan(25);
 SELECT ok(to_regnamespace('papelemi_engine') IS NOT NULL, 'isolated Emporio engine schema exists');
 SELECT is((SELECT count(*)::int FROM pg_tables WHERE schemaname='papelemi_engine'), 144, 'all 144 source tables are present');
-SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine' AND p.prokind='f'), 84, 'all 84 source functions are present');
+SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine' AND p.prokind='f' AND p.proname <> 'sync_papelemi_admin_roles'), 84, 'all 84 source functions are present, excluding the PapeLemi bootstrap helper');
 SELECT is((SELECT count(*)::int FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='papelemi_engine' AND NOT t.tgisinternal), 94, 'all 94 source triggers are present');
 SELECT is((SELECT count(*)::int FROM pg_policies WHERE schemaname='papelemi_engine'), 234, 'all 234 source RLS policies are present');
 SELECT is((SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='papelemi_engine' AND c.relkind='r' AND c.relrowsecurity), 144, 'RLS is enabled on every engine table');
