@@ -1,11 +1,11 @@
 BEGIN;
 SELECT plan(41);
 SELECT ok(to_regnamespace('papelemi_engine') IS NOT NULL, 'isolated Emporio engine schema exists');
-SELECT is((SELECT count(*)::int FROM pg_tables WHERE schemaname='papelemi_engine'), 150, 'all 150 Supabase + Drizzle source tables are present');
-SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine' AND p.prokind='f' AND p.proname <> 'sync_papelemi_admin_roles'), 88, 'all 88 source functions are present, excluding the PapeLemi bootstrap helper');
+SELECT is((SELECT count(*)::int FROM pg_tables WHERE schemaname='papelemi_engine' AND tablename <> 'shipping_quote_rate_limits'), 150, 'all 150 Supabase + Drizzle source tables are present, excluding the PapeLemi rate-limit table');
+SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine' AND p.prokind='f' AND p.proname NOT IN ('sync_papelemi_admin_roles', 'consume_shipping_quote_rate_limit')), 88, 'all 88 source functions are present, excluding PapeLemi bootstrap and rate-limit helpers');
 SELECT is((SELECT count(*)::int FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='papelemi_engine' AND NOT t.tgisinternal), 95, 'all 95 source triggers are present');
 SELECT is((SELECT count(*)::int FROM pg_policies WHERE schemaname='papelemi_engine'), 246, 'all 246 engine RLS policies are present');
-SELECT is((SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='papelemi_engine' AND c.relkind='r' AND c.relrowsecurity), 150, 'RLS is enabled on every engine table');
+SELECT is((SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='papelemi_engine' AND c.relkind='r' AND c.relrowsecurity), 151, 'RLS is enabled on all 150 source tables plus the PapeLemi rate-limit table');
 SELECT is((SELECT count(*)::int FROM pg_views WHERE schemaname='papelemi_engine'), 4, 'all 4 source views are present');
 SELECT is((
   SELECT count(*)::int
@@ -13,10 +13,14 @@ SELECT is((
   JOIN pg_namespace ns ON ns.oid = idx.relnamespace
   JOIN pg_index i ON i.indexrelid = idx.oid
   LEFT JOIN pg_constraint con ON con.conindid = idx.oid
-  WHERE ns.nspname = 'papelemi_engine' AND con.oid IS NULL
-), 309, 'all 309 explicit source indexes are present, excluding constraint-backed indexes');
+  WHERE ns.nspname = 'papelemi_engine'
+    AND con.oid IS NULL
+    AND idx.relname NOT IN ('customers_email_normalized_uniq', 'orders_request_id_uniq')
+), 309, 'all 309 explicit source indexes are present, excluding constraint-backed and PapeLemi-specific indexes');
 SELECT is((SELECT count(*)::int FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname='papelemi_engine' AND t.typtype='e'), 5, 'all 5 source enum types are present');
-SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine' AND coalesce(array_to_string(p.proconfig, ','),'') LIKE '%search_path=papelemi_engine%pg_catalog%public%pg_temp%'), 88, 'all engine functions use a fixed engine-first search path');
+SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine'
+    AND p.proname NOT IN ('sync_papelemi_admin_roles', 'consume_shipping_quote_rate_limit')
+    AND coalesce(array_to_string(p.proconfig, ','),'') LIKE '%search_path=papelemi_engine%pg_catalog%public%pg_temp%'), 88, 'all source engine functions use a fixed engine-first search path');
 SELECT ok(has_schema_privilege('authenticated','papelemi_engine','USAGE'), 'authenticated role can access the engine schema');
 SELECT ok(has_schema_privilege('service_role','papelemi_engine','USAGE'), 'service role can access the engine schema');
 SELECT ok(NOT has_schema_privilege('anon','papelemi_engine','USAGE'), 'anonymous role cannot access the engine schema');
