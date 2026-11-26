@@ -149,3 +149,8 @@ Não aplicar as 199 migrations cegamente. O destino deverá receber migrations a
 - O workflow agora deve publicar artefato temporário schema-only (DDL público, tipos, métricas, nomes de tabelas e buckets), sem dados comerciais.
 - Os scripts substituem URLs Supabase hospedadas por URL local por regex genérica, sem armazenar project ref da origem.
 - A validação combinada com `papelemi_legacy` permanece exclusivamente local e estrutural; não move dados nem autoriza DDL hospedado.
+
+
+## 10. Correção do workflow de artefato
+
+O primeiro disparo do workflow de schema-only falhou antes do replay porque a versão 3.4.0 foi aplicada indevidamente ao setup do Bun. A configuração foi corrigida: Bun volta a `latest`, Supabase CLI permanece fixado em 3.4.0, as expressões `runner.temp` são avaliadas pelo GitHub Actions e a expressão de redaction do project ref usa escapes corretos. Nenhum banco hospedado foi afetado.

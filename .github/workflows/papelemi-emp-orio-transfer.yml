@@ -43,7 +43,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 3.4.0
+          bun-version: latest
 
       - name: Transfer original source modules in batch
         run: node scripts/emp-orio/transfer-source.mjs
@@ -170,11 +170,11 @@ jobs:
         with:
           name: emp-orio-schema-reference
           path: |
-            \${{ runner.temp }}/emp-orio-schema.sql
-            \${{ runner.temp }}/emp-orio-types.ts
-            \${{ runner.temp }}/emp-orio-schema-metrics.txt
-            \${{ runner.temp }}/emp-orio-public-tables.txt
-            \${{ runner.temp }}/emp-orio-storage-buckets.txt
+            ${{ runner.temp }}/emp-orio-schema.sql
+            ${{ runner.temp }}/emp-orio-types.ts
+            ${{ runner.temp }}/emp-orio-schema-metrics.txt
+            ${{ runner.temp }}/emp-orio-public-tables.txt
+            ${{ runner.temp }}/emp-orio-storage-buckets.txt
           retention-days: 7
 
       - name: Prepare combined PapeLemi and Emporio schema workspace
