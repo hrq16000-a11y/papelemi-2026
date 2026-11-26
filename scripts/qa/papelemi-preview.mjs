@@ -148,6 +148,23 @@ try {
   }
 
   await page.setViewportSize({ width: 390, height: 900 });
+  await openRoute("/produto/caderneta-saude-ursinho-clean");
+  await page.getByRole("button", { name: /Criar dedicatória com a assistente/ }).click();
+  await page.getByRole("heading", { name: "Qual é a ocasião?" }).waitFor({ timeout: 10000 });
+  await page.getByRole("button", { name: /^Nascimento/ }).click();
+  for (let step = 0; step < 3; step += 1) {
+    await page.getByRole("button", { name: /^Continuar/ }).click();
+  }
+  await page.getByRole("button", { name: "Gerar 3 sugestões" }).click();
+  const suggestionFields = page.locator('textarea[aria-label="Editar sugestão"]');
+  await suggestionFields.first().waitFor({ timeout: 20000 });
+  const suggestionLengths = await suggestionFields.evaluateAll((nodes) =>
+    nodes.map((node) => node.value.length),
+  );
+  if (suggestionLengths.length !== 3 || suggestionLengths.some((length) => length > 140)) {
+    throw new Error(`Assistente não retornou 3 sugestões válidas para o campo do produto: ${suggestionLengths.join(",")}`);
+  }
+
   const missingResponse = await openRoute("/produto/qa-produto-inexistente-20261125");
   const missing = await inspectLayout(390);
   if (!missingResponse.ok()) throw new Error(`Rota de produto inexistente retornou HTTP ${missingResponse.status()}`);
@@ -169,6 +186,8 @@ try {
   console.log(JSON.stringify({
     result: "PASS",
     viewports: results,
+    assistantProductContext: "PASS",
+    assistantSuggestions: 3,
     missingProduct: "PASS",
     pageErrors: 0,
   }, null, 2));
