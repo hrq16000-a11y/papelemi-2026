@@ -2,17 +2,18 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clock, Minus, Plus, Sparkles } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
-import { brl, getProduct, type Product } from "@/data/catalog";
+import { brl, type Product } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
 import { useCart } from "@/lib/cart";
 import { aiField } from "@/lib/product-personalization";
+import { getCatalogProduct } from "@/lib/shop.functions";
 const PhraseGenerator = lazy(() => import("@/components/store/PhraseGenerator").then((m) => ({ default: m.PhraseGenerator })));
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ProductGrid } from "@/components/store/ProductCard";
 
 export const Route = createFileRoute("/produto/$slug")({
   validateSearch: (s: Record<string, unknown>): { frase?: string | undefined } => ({ frase: typeof s["frase"] === "string" ? s["frase"].slice(0, 400) : undefined }),
-  loader: ({ params }) => getProduct(params.slug) ?? null,
+  loader: ({ params }) => getCatalogProduct({ data: { slug: params.slug } }),
   head: ({ loaderData: p }) => ({
     meta: p ? [
       { title: `${p.name} — PapeLemi` }, { name: "description", content: p.description },
@@ -26,9 +27,7 @@ export const Route = createFileRoute("/produto/$slug")({
 
 function ProductPage() {
   const loaderP = Route.useLoaderData();
-  const { slug } = Route.useParams();
-  const { getProduct } = useCatalog();
-  const p = getProduct(slug) ?? loaderP;
+  const p = loaderP;
   if (!p) return (
     <div className="mx-auto max-w-xl px-4 py-24 text-center">
       <h1 className="text-4xl">Produto não encontrado</h1>

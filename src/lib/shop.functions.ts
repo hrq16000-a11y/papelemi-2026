@@ -1,10 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Database } from "@/integrations/supabase/types";
-import type { Category, Product } from "@/data/catalog";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -26,45 +25,24 @@ function publicClient() {
   });
 }
 
-type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
-
-const categoryFromRow = (r: CategoryRow): Category => ({
-  slug: r.slug, name: r.name, description: r.description, image: r.image,
-});
-
-const productFromRow = (r: ProductRow): Product => ({
-  slug: r.slug,
-  name: r.name,
-  category: r.category_slug,
-  description: r.description,
-  images: r.images,
-  price: Number(r.price),
-  ...(r.promo_price == null ? {} : { promoPrice: Number(r.promo_price) }),
-  colors: r.colors,
-  sizes: r.sizes,
-  finishes: r.finishes,
-  productionDays: r.production_days,
-  stock: r.stock,
-  published: r.published,
-  bestSeller: r.best_seller,
-  personalizable: r.personalizable,
-  personalization: (r.personalization ?? []) as Product["personalization"],
-  ...(r.min_qty == null ? {} : { minQty: r.min_qty }),
-});
-
 export const getCatalog = createServerFn({ method: "GET" }).handler(async () => {
-  const sb = publicClient();
-  const [{ data: cats, error: e1 }, { data: prods, error: e2 }] = await Promise.all([
-    sb.from("categories").select("*").order("sort"),
-    sb.from("products").select("*"),
-  ]);
-  if (e1 || e2) throw new Error(e1?.message ?? e2?.message ?? "Falha ao carregar catálogo");
-  return {
-    categories: (cats ?? []).map(categoryFromRow),
-    products: (prods ?? []).map(productFromRow),
-  };
+  const { getCatalogFromDatabase } = await import("@/lib/catalog.repository.server");
+  return getCatalogFromDatabase();
 });
+
+export const getCatalogProduct = createServerFn({ method: "GET" })
+  .validator(z.object({ slug: z.string().trim().min(1).max(80) }))
+  .handler(async ({ data }) => {
+    const { getPublishedProductWithFallback } = await import("@/lib/catalog.repository.server");
+    return getPublishedProductWithFallback(data.slug);
+  });
+
+export const getCatalogCategory = createServerFn({ method: "GET" })
+  .validator(z.object({ slug: z.string().trim().min(1).max(80) }))
+  .handler(async ({ data }) => {
+    const { getPublishedCategoryWithFallback } = await import("@/lib/catalog.repository.server");
+    return getPublishedCategoryWithFallback(data.slug);
+  });
 
 export const getCuratedPhrases = createServerFn({ method: "GET" }).handler(async () => {
   const sb = publicClient();
@@ -77,7 +55,8 @@ export const validateCoupon = createServerFn({ method: "GET" })
   .validator(z.object({ code: z.string().trim().min(2).max(40) }))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: row } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).maybeSingle();
+    const { data: row, error } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
+    if (error) throw new Error("Não foi possível validar o cupom.");
     return row ? { code: row.code, percent: row.percent } : null;
   });
 
@@ -118,9 +97,10 @@ function safeOrigin(origin?: string) {
 export const createOrder = createServerFn({ method: "POST" })
   .validator(orderInput)
   .handler(async ({ data: input }) => {
+    const { productFromRow } = await import("@/lib/catalog.repository.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const slugs = input.items.map((i) => i.slug);
-    const { data: rows, error } = await supabaseAdmin.from("products").select("*").in("slug", slugs);
+    const { data: rows, error } = await supabaseAdmin.from("products").select("*").in("slug", slugs).filter("store_key", "eq", "papelemi");
     if (error) throw new Error(error.message);
     const bySlug = new Map((rows ?? []).map((r) => [r.slug, productFromRow(r)]));
     const items = input.items.map((i) => {
@@ -135,24 +115,42 @@ export const createOrder = createServerFn({ method: "POST" })
     let discount = 0;
     let couponCode: string | null = null;
     if (input.couponCode) {
-      const { data: c } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).maybeSingle();
-      if (c) { couponCode = c.code; discount = Math.round(subtotal * c.percent) / 100; }
+      const { data: c, error: couponError } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
+      if (couponError) throw new Error("Não foi possível validar o cupom. Tente novamente.");
+      if (!c || c.percent < 1 || c.percent > 90) throw new Error("Cupom inválido ou inativo.");
+      couponCode = c.code;
+      discount = Math.round(subtotal * c.percent) / 100;
     }
     const total = Math.round((subtotal - discount + shipping) * 100) / 100;
 
-    const { data: order, error: insErr } = await supabaseAdmin.from("orders").insert({
+    const orderPayload: Database["public"]["Tables"]["orders"]["Insert"] & {
+      store_key: string;
+      customer_notes: string;
+      accepted_privacy: boolean;
+      privacy_consent_at: string;
+      source: string;
+    } = {
       customer_name: input.customer.name,
       customer_email: input.customer.email,
       customer_phone: input.customer.phone,
       address: input.address,
       items,
-      subtotal, shipping, discount, coupon_code: couponCode, total,
+      subtotal,
+      shipping,
+      discount,
+      coupon_code: couponCode,
+      total,
       store_key: "papelemi",
       customer_notes: input.customerNotes,
       accepted_privacy: input.acceptedPrivacy,
       privacy_consent_at: new Date().toISOString(),
       source: "storefront",
-    }).select("id").single();
+    };
+    const { data: order, error: insErr } = await supabaseAdmin
+      .from("orders")
+      .insert(orderPayload as unknown as Database["public"]["Tables"]["orders"]["Insert"])
+      .select("id")
+      .single();
     if (insErr || !order) throw new Error(insErr?.message ?? "Não foi possível criar o pedido");
 
     let initPoint: string | null = null;
@@ -215,7 +213,7 @@ export const listOrders = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select("*")
-      .eq("store_key", "papelemi")
+      .filter("store_key", "eq", "papelemi")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
@@ -233,7 +231,7 @@ export const setOrderStatus = createServerFn({ method: "POST" })
       .from("orders")
       .update({ status: data.status })
       .eq("id", data.id)
-      .eq("store_key", "papelemi");
+      .filter("store_key", "eq", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -261,6 +259,7 @@ export const listAdminProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
+    const { productFromRow } = await import("@/lib/catalog.repository.server");
     const { data, error } = await context.supabase.from("products").select("*").order("name");
     if (error) throw new Error(error.message);
     return (data ?? []).map((r) => ({ ...productFromRow(r), minQty: r.min_qty ?? null }));

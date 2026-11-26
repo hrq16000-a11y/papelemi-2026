@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getProduct } from "@/data/catalog";
 import { getAiProfile, OCCASIONS, STYLES } from "@/data/ai-config";
 
 const short = (n: number) => z.string().trim().max(n).default("");
@@ -15,15 +14,17 @@ const Input = z.object({
   feeling: short(240),
   maxLength: z.number().int().min(30).max(400),
 });
-export type SuggestInput = z.input<typeof Input>;
+export type SuggestInput = z.output<typeof Input>;
 type Result = { suggestions: string[]; error: string | null };
 
-function fit(text: string, limit: number) {
+export function fit(text: string, limit: number) {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= limit) return clean;
-  const cut = clean.slice(0, limit);
+  const room = Math.max(0, limit - 1);
+  if (room === 0) return "…";
+  const cut = clean.slice(0, room);
   const boundary = cut.lastIndexOf(" ");
-  return (boundary > Math.floor(limit * 0.6) ? cut.slice(0, boundary) : cut).replace(/[ ,;:.!?-]+$/g, "") + "…";
+  return (boundary > Math.floor(room * 0.6) ? cut.slice(0, boundary) : cut).replace(/[ ,;:.!?-]+$/g, "") + "…";
 }
 
 function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number) {
@@ -82,14 +83,15 @@ function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number
     ],
   };
 
-  const candidates = byStyle[style] ?? byStyle.afetuoso;
+  const candidates = byStyle[style] ?? byStyle["afetuoso"] ?? [];
   return [...new Set(candidates.map((s) => fit(s, limit)))].slice(0, 3);
 }
 
 export const suggestPhrases = createServerFn({ method: "POST" })
   .validator((d: unknown) => Input.parse(d))
   .handler(async ({ data }): Promise<Result> => {
-    const product = getProduct(data.productSlug);
+    const { getPublishedProductWithFallback } = await import("@/lib/catalog.repository.server");
+    const product = await getPublishedProductWithFallback(data.productSlug);
     const field = product?.personalization.find((o) => o.key === data.fieldKey && o.type === "text" && o.ai);
     if (!product || !field || field.type !== "text") return { suggestions: [], error: "Este produto não aceita sugestões de frase." };
 
@@ -101,7 +103,7 @@ export const suggestPhrases = createServerFn({ method: "POST" })
 
     // O Lovable AI Gateway só está ativo quando a chave de servidor existe no ambiente.
     // Sem a chave, o fluxo continua utilizável com sugestões editáveis e sem erro de checkout.
-    if (!process.env.LOVABLE_API_KEY) {
+    if (!process.env["LOVABLE_API_KEY"]) {
       return { suggestions: fallback, error: "A geração por IA ainda não está conectada neste ambiente. Estas sugestões de apoio podem ser editadas livremente." };
     }
 

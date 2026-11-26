@@ -1,0 +1,79 @@
+name: PapeLemi Quality
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: papelemi-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Changed-file lint, tests, TypeScript and production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint changed TypeScript files
+        shell: bash
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          mapfile -t files < <(git diff --diff-filter=ACMR --name-only "origin/${{ github.base_ref }}...HEAD" -- 'src/**/*.ts' 'src/**/*.tsx')
+          if (("${#files[@]}" > 0)); then
+            bunx eslint "${files[@]}" --rule 'prettier/prettier: off'
+          else
+            echo "No changed TypeScript files."
+          fi
+
+      - name: Unit tests
+        run: bun run test
+
+      - name: TypeScript
+        run: bunx tsc --noEmit
+
+      - name: Production build
+        run: bun run build
+
+      - name: Start local SSR server for responsive QA
+        env:
+          SUPABASE_URL: https://gpdpfoxpbferjwbppcmb.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_dzcF2ocd47IN3fetmc4TpA_V2SmJK8p
+          VITE_SUPABASE_URL: https://gpdpfoxpbferjwbppcmb.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_dzcF2ocd47IN3fetmc4TpA_V2SmJK8p
+        run: |
+          (bun run dev -- --host 127.0.0.1 --port 4173 > /tmp/papelemi-vite.log 2>&1 &)
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/produto/caderneta-saude-ursinho-clean > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/papelemi-vite.log
+          exit 1
+
+      - name: Install Chromium for SSR QA
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: SSR and responsive QA
+        env:
+          BASE_URL: http://127.0.0.1:4173
+        run: node scripts/qa/papelemi-preview.mjs
