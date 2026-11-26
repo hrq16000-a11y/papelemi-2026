@@ -94,7 +94,7 @@ for (const dir of ["src/emp-orio", "supabase/functions"]) {
   }
 }
 const sourceEdgeFunctionFiles = (await walkFiles(path.join(root, "supabase/functions")))
-  .filter(file => file !== engineHelperPath && /\.(ts|tsx|js|jsx)$/.test(file)).length;
+  .filter(file => file !== engineHelperPath).length;
 check("no source project/domain references in admin or Edge Functions", sourceReferences.length === 0, sourceReferences.join(", "));
 check("75 source Edge Function files are present", sourceEdgeFunctionFiles === 75, String(sourceEdgeFunctionFiles));
 check("Edge Functions route Supabase clients to papelemi_engine", engineHelper.includes('schema: "papelemi_engine"') && directSupabaseClientImports.length === 0 && explicitPublicSchemaReferences.length === 0 && engineClientImports > 0, JSON.stringify({ directSupabaseClientImports, explicitPublicSchemaReferences, engineClientImports, helperPresent: Boolean(engineHelper) }));
