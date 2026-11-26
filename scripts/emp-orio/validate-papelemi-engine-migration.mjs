@@ -67,7 +67,7 @@ check("bucket creation is guarded and non-overwriting", migration.includes("DO $
 check("schema remains isolated and private", migration.includes("GRANT USAGE ON SCHEMA papelemi_engine TO authenticated, service_role;") && migration.includes("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA papelemi_engine FROM PUBLIC, anon;"));
 check("admin client routes data/RPC through engine", client.includes('.schema("papelemi_engine")') && client.includes('property === "from"') && client.includes('property === "rpc"'));
 check("generated admin types use engine schema", (types.match(/\n  papelemi_engine: \{/g) || []).length === 2 && (types.match(/\n  public: \{/g) || []).length === 0);
-check("database contract test plan remains 24", /SELECT plan\(24\);/.test(tests));
+check("database contract test plan remains 25", /SELECT plan\(25\);/.test(tests));
 
 const sourceReferences = [];
 const directSupabaseClientImports = [];
