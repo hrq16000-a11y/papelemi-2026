@@ -4,6 +4,14 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  calculateCheckoutTotals,
+  orderMatchesIntent,
+  persistOrderIdempotently,
+  validateCheckoutLine,
+  validateCouponRecord,
+  type ExistingOrder,
+} from "@/lib/checkout-validation";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -61,10 +69,11 @@ export const validateCoupon = createServerFn({ method: "GET" })
   });
 
 const orderInput = z.object({
+  idempotencyKey: z.string().uuid(),
   customer: z.object({
     name: z.string().trim().min(2).max(80),
     email: z.string().trim().email().max(120),
-    phone: z.string().trim().max(20).default(""),
+    phone: z.string().trim().min(8).max(20),
   }),
   address: z.object({
     cep: z.string().trim().regex(/^\d{5}-?\d{3}$/, "CEP inválido"),
@@ -73,11 +82,12 @@ const orderInput = z.object({
     complement: z.string().trim().max(80).default(""),
     district: z.string().trim().min(2).max(80),
     city: z.string().trim().min(2).max(80),
-    state: z.string().trim().length(2),
+    state: z.string().trim().regex(/^[A-Za-z]{2}$/, "UF inválida"),
   }),
   items: z.array(z.object({
     slug: z.string().trim().min(1).max(80),
     qty: z.number().int().min(1).max(999),
+    expectedUnitPrice: z.number().min(0.01).max(99999),
     options: z.record(z.string().max(60), z.string().max(500)),
   })).min(1).max(50),
   couponCode: z.string().trim().max(40).optional(),
@@ -99,81 +109,146 @@ export const createOrder = createServerFn({ method: "POST" })
   .handler(async ({ data: input }) => {
     const { productFromRow } = await import("@/lib/catalog.repository.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const slugs = input.items.map((i) => i.slug);
-    const { data: rows, error } = await supabaseAdmin.from("products").select("*").in("slug", slugs).filter("store_key", "eq", "papelemi");
-    if (error) throw new Error(error.message);
-    const bySlug = new Map((rows ?? []).map((r) => [r.slug, productFromRow(r)]));
-    const items = input.items.map((i) => {
-      const p = bySlug.get(i.slug);
-      if (!p || !p.published) throw new Error(`Produto indisponível: ${i.slug}`);
-      const qty = Math.max(i.qty, p.minQty ?? 1);
-      return { slug: p.slug, name: p.name, qty, unit_price: p.promoPrice ?? p.price, options: i.options };
-    });
-    const subtotal = Math.round(items.reduce((s, i) => s + i.unit_price * i.qty, 0) * 100) / 100;
-    // O frete é confirmado pela PapeLemi após revisar o CEP; não estimar um valor não validado.
-    const shipping = 0;
-    let discount = 0;
-    let couponCode: string | null = null;
-    if (input.couponCode) {
-      const { data: c, error: couponError } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
-      if (couponError) throw new Error("Não foi possível validar o cupom. Tente novamente.");
-      if (!c || c.percent < 1 || c.percent > 90) throw new Error("Cupom inválido ou inativo.");
-      couponCode = c.code;
-      discount = Math.round(subtotal * c.percent) / 100;
-    }
-    const total = Math.round((subtotal - discount + shipping) * 100) / 100;
 
-    const orderPayload: Database["public"]["Tables"]["orders"]["Insert"] & {
-      store_key: string;
-      customer_notes: string;
-      accepted_privacy: boolean;
-      privacy_consent_at: string;
-      source: string;
-    } = {
+    const findExisting = async (): Promise<ExistingOrder | null> => {
+      const { data, error } = await supabaseAdmin
+        .from("orders")
+        .select("*")
+        .eq("id", input.idempotencyKey)
+        .filter("store_key", "eq", "papelemi")
+        .maybeSingle();
+      if (error) throw new Error("Não foi possível verificar a tentativa anterior de encomenda.");
+      return data as unknown as ExistingOrder | null;
+    };
+
+    const createPaymentLink = async (order: ExistingOrder) => {
+      let initPoint: string | null = null;
+      const paymentReady = mpConfigured();
+      if (paymentReady && order.status === "pending") {
+        const origin = safeOrigin(input.origin);
+        const pref = (await mpRequest("checkout/preferences", {
+          method: "POST",
+          idempotencyKey: `pref-${order.id}-1`,
+          body: {
+            items: [{
+              title: `Pedido PapeLemi ${order.id.slice(0, 8)}`,
+              quantity: 1,
+              unit_price: Number(order.total),
+              currency_id: "BRL",
+            }],
+            external_reference: order.id,
+            back_urls: {
+              success: `${origin}/pedido/${order.id}`,
+              pending: `${origin}/pedido/${order.id}`,
+              failure: `${origin}/pedido/${order.id}`,
+            },
+            auto_return: "approved",
+            notification_url: `${PUBLISHED_ORIGIN}/api/public/mercadopago-webhook`,
+          },
+        })) as { init_point?: string };
+        initPoint = pref.init_point ?? null;
+      }
+      return {
+        orderId: order.id,
+        initPoint,
+        total: Number(order.total),
+        paymentReady,
+      };
+    };
+
+    // A chave usa o UUID do pedido existente como chave idempotente, sem nova tabela.
+    // Uma repetição com o mesmo conteúdo recupera o pedido; conteúdo diferente é rejeitado.
+    const existing = await findExisting();
+    if (existing) {
+      if (!orderMatchesIntent(existing, input)) {
+        throw new Error("Esta tentativa de encomenda já foi utilizada com outros dados. Revise o carrinho e tente novamente.");
+      }
+      return createPaymentLink(existing);
+    }
+
+    const slugs = [...new Set(input.items.map((item) => item.slug))];
+    const { data: rows, error: productError } = await supabaseAdmin
+      .from("products")
+      .select("*")
+      .in("slug", slugs)
+      .filter("store_key", "eq", "papelemi");
+    if (productError) throw new Error("Não foi possível confirmar os produtos. Tente novamente.");
+    const bySlug = new Map((rows ?? []).map((row) => [row.slug, row]));
+
+    const items = input.items.map((item) => {
+      const row = bySlug.get(item.slug);
+      if (!row) throw new Error(`Produto indisponível: ${item.slug}`);
+      const product = productFromRow(row);
+      return validateCheckoutLine({
+        store_key: (row as unknown as { store_key?: string }).store_key ?? "",
+        slug: product.slug,
+        name: product.name,
+        price: product.price,
+        promo_price: row.promo_price,
+        colors: product.colors,
+        sizes: product.sizes,
+        finishes: product.finishes,
+        stock: product.stock ?? 0,
+        published: product.published,
+        personalizable: product.personalizable,
+        personalization: product.personalization,
+        min_qty: product.minQty ?? null,
+      }, item);
+    });
+
+    let couponCode: string | null = null;
+    let couponPercent = 0;
+    const submittedCoupon = input.couponCode?.trim().toUpperCase();
+    if (submittedCoupon) {
+      const { data: coupon, error: couponError } = await supabaseAdmin
+        .from("coupons")
+        .select("code,percent,active")
+        .eq("code", submittedCoupon)
+        .eq("active", true)
+        .filter("store_key", "eq", "papelemi")
+        .maybeSingle();
+      if (couponError) throw new Error("Não foi possível validar o cupom. Tente novamente.");
+      const validCoupon = validateCouponRecord(coupon, submittedCoupon);
+      couponCode = validCoupon.code;
+      couponPercent = validCoupon.percent;
+    }
+
+    // Frete permanece zerado até confirmação manual; o navegador não envia valores monetários.
+    const totals = calculateCheckoutTotals(items, couponPercent, 0);
+    const orderPayload = {
+      id: input.idempotencyKey,
       customer_name: input.customer.name,
       customer_email: input.customer.email,
       customer_phone: input.customer.phone,
       address: input.address,
       items,
-      subtotal,
-      shipping,
-      discount,
+      subtotal: totals.subtotal,
+      shipping: totals.shipping,
+      discount: totals.discount,
       coupon_code: couponCode,
-      total,
+      total: totals.total,
       store_key: "papelemi",
       customer_notes: input.customerNotes,
       accepted_privacy: input.acceptedPrivacy,
       privacy_consent_at: new Date().toISOString(),
       source: "storefront",
     };
-    const { data: order, error: insErr } = await supabaseAdmin
-      .from("orders")
-      .insert(orderPayload as unknown as Database["public"]["Tables"]["orders"]["Insert"])
-      .select("id")
-      .single();
-    if (insErr || !order) throw new Error(insErr?.message ?? "Não foi possível criar o pedido");
 
-    let initPoint: string | null = null;
-    if (mpConfigured()) {
-      const origin = safeOrigin(input.origin);
-      const pref = (await mpRequest("checkout/preferences", {
-        method: "POST",
-        idempotencyKey: `pref-${order.id}-1`,
-        body: {
-          items: [{ title: `Pedido PapeLemi ${order.id.slice(0, 8)}`, quantity: 1, unit_price: total, currency_id: "BRL" }],
-          external_reference: order.id,
-          back_urls: {
-            success: `${origin}/pedido/${order.id}`,
-            pending: `${origin}/pedido/${order.id}`,
-            failure: `${origin}/pedido/${order.id}`,
-          },
-          auto_return: "approved",
-          notification_url: `${PUBLISHED_ORIGIN}/api/public/mercadopago-webhook`,
-        },
-      })) as { init_point?: string };
-      initPoint = pref.init_point ?? null;
-    }
-    return { orderId: order.id, initPoint, total, paymentReady: mpConfigured() };
+    const order = await persistOrderIdempotently({
+      findExisting,
+      insert: async () => {
+        const { data, error } = await supabaseAdmin
+          .from("orders")
+          .insert(orderPayload as unknown as Database["public"]["Tables"]["orders"]["Insert"])
+          .select("*")
+          .single();
+        return { data: data as unknown as ExistingOrder | null, error };
+      },
+      matches: (stored) => orderMatchesIntent(stored, input),
+    });
+
+    // A encomenda já está persistida. Se o gateway falhar, a repetição recupera o mesmo ID.
+    return createPaymentLink(order);
   });
 
 export const getOrderStatus = createServerFn({ method: "GET" })
@@ -183,7 +258,7 @@ export const getOrderStatus = createServerFn({ method: "GET" })
       try { await confirmOrderByReference(data.orderId); } catch { /* segue com o status atual */ }
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: order } = await supabaseAdmin.from("orders").select("status,total").eq("id", data.orderId).single();
+    const { data: order } = await supabaseAdmin.from("orders").select("status,total").eq("id", data.orderId).filter("store_key", "eq", "papelemi").single();
     if (!order) throw new Error("Pedido não encontrado");
     return { status: !mpConfigured() && order.status === "pending" ? "received" : order.status, total: Number(order.total) };
   });
