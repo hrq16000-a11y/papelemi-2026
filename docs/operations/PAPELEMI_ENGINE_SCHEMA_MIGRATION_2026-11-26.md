@@ -58,7 +58,7 @@ A validação passa a usar o snapshot schema-only e a migration isolada `papelem
 
 ## Adaptação das Edge Functions
 
-O gerador de transferência agora instala `supabase/functions/_shared/createEngineClient.ts` e adapta os clientes Supabase das funções copiadas para usar `db.schema = "papelemi_engine"`. Autenticação e Storage continuam no projeto Supabase dedicado da PapeLemi. As 75 funções ainda precisam de homologação funcional e implantação controlada; nenhuma chave service-role ou segredo do Empório é copiado.
+O gerador de transferência agora instala `supabase/functions/_shared/createEngineClient.ts` e adapta os clientes Supabase das funções copiadas para usar `db.schema = "papelemi_engine"`. Autenticação e Storage continuam no projeto Supabase dedicado da PapeLemi. Os 75 arquivos de Edge Functions (distribuídos em 54 diretórios, incluindo módulos compartilhados) ainda precisam de homologação funcional e implantação controlada; nenhuma chave service-role ou segredo do Empório é copiado.
 
 ## Precisão da contagem de índices
 
