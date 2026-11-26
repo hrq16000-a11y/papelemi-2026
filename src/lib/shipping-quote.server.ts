@@ -157,7 +157,7 @@ export async function buildShippingQuote(input: {
     return { options: [], selectedOption: null, selectedOptionId: null, selectionChanged: Boolean(input.selectedOptionId), shipping: 0, destinationZip: null, destinationState: input.destinationState?.toUpperCase() ?? null };
   }
 
-  const { data: attempts, error: limitError } = await (input.admin as any).rpc("consume_shipping_quote_rate_limit", {
+  const { data: attempts, error: limitError } = await input.admin.rpc("consume_shipping_quote_rate_limit", {
     _ip_hash: getClientIpHash(),
     _window_start: new Date(Math.floor(Date.now() / 60_000) * 60_000).toISOString(),
     _limit: RATE_LIMIT_PER_MINUTE,
