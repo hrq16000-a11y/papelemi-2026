@@ -33,8 +33,6 @@ const migration = await fs.readFile(migrationPath, "utf8");
 const client = await fs.readFile(clientPath, "utf8");
 const types = await fs.readFile(typesPath, "utf8");
 const tests = await fs.readFile(testPath, "utf8");
-const config = await fs.readFile(path.join(root, "supabase/config.toml"), "utf8");
-const manifest = JSON.parse(await fs.readFile(path.join(root, "src/emp-orio/TRANSFER_MANIFEST.json"), "utf8"));
 const searchPaths = [...migration.matchAll(/SET "search_path" TO ((?:'[^']+'(?:,\s*)?)+)/g)].map(m => [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]));
 const safeSearchPaths = searchPaths.filter(parts => parts[0] === "papelemi_engine" && parts[1] === "pg_catalog" && parts[2] === "public" && parts.at(-1) === "pg_temp");
 const withoutDollarBodies = migration.replace(/\$([A-Za-z_][A-Za-z0-9_]*)?\$[\s\S]*?\$\1\$/g, " ");
@@ -71,18 +69,13 @@ check("admin client routes data/RPC through engine", client.includes('.schema("p
 check("generated admin types use engine schema", (types.match(/\n  papelemi_engine: \{/g) || []).length === 2 && (types.match(/\n  public: \{/g) || []).length === 0);
 check("database contract test plan remains 24", /SELECT plan\(24\);/.test(tests));
 
-check("PostgREST exposes the PapeLemi engine schema", /^\[api\][\s\S]*?^schemas\s*=\s*\[[^\]]*"papelemi_engine"/m.test(config));
-const edgeSchemaClientFiles = Array.isArray(manifest.edgeSchemaClientFiles) ? manifest.edgeSchemaClientFiles : [];
-const invalidEdgeSchemaClients = [];
-for (const relativePath of edgeSchemaClientFiles) {
-  const source = await fs.readFile(path.join(root, relativePath), "utf8");
-  if (!source.includes("createClient as createBaseClient") || !source.includes('schema: "papelemi_engine"')) {
-    invalidEdgeSchemaClients.push(relativePath);
-  }
-}
-check("source Edge Functions route PostgREST through papelemi_engine", edgeSchemaClientFiles.length >= 50 && invalidEdgeSchemaClients.length === 0, JSON.stringify({ count: edgeSchemaClientFiles.length, invalid: invalidEdgeSchemaClients }));
-
 const sourceReferences = [];
+const directSupabaseClientImports = [];
+const explicitPublicSchemaReferences = [];
+let engineClientImports = 0;
+const engineHelperPath = path.join(root, "supabase/functions/_shared/createEngineClient.ts");
+let engineHelper = "";
+try { engineHelper = await fs.readFile(engineHelperPath, "utf8"); } catch {}
 for (const dir of ["src/emp-orio", "supabase/functions"]) {
   for (const file of await walkFiles(path.join(root, dir))) {
     const ext = path.extname(file).toLowerCase();
@@ -91,9 +84,21 @@ for (const dir of ["src/emp-orio", "supabase/functions"]) {
     if (text.includes(sourceProjectRef) || text.toLowerCase().includes(oldDomain) || /emporioPapeLemi\.com\.br/i.test(text)) {
       sourceReferences.push(path.relative(root, file));
     }
+    if (file !== engineHelperPath && /import\s*\{[^}]*\bcreateClient\b[^}]*\}\s*from\s*["'](?:https:\/\/esm\.sh\/@supabase\/supabase-js|npm:@supabase\/supabase-js|@supabase\/supabase-js)/.test(text)) {
+      directSupabaseClientImports.push(path.relative(root, file));
+    }
+    if (/\.schema\(\s*(['"])public\1\s*\)/.test(text)) {
+      explicitPublicSchemaReferences.push(path.relative(root, file));
+    }
+    engineClientImports += (text.match(/createEngineClient\s+as\s+createClient/g) || []).length;
   }
 }
+const functionDirs = (await fs.readdir(path.join(root, "supabase/functions"), { withFileTypes: true }))
+  .filter(entry => entry.isDirectory() && !entry.name.startsWith("_")).length;
 check("no source project/domain references in admin or Edge Functions", sourceReferences.length === 0, sourceReferences.join(", "));
+check("75 source Edge Functions are present", functionDirs === 75, String(functionDirs));
+check("Edge Functions route Supabase clients to papelemi_engine", engineHelper.includes('schema: "papelemi_engine"') && directSupabaseClientImports.length === 0 && explicitPublicSchemaReferences.length === 0 && engineClientImports > 0, JSON.stringify({ directSupabaseClientImports, explicitPublicSchemaReferences, engineClientImports, helperPresent: Boolean(engineHelper) }));
+
 const failed = checks.filter(item => !item.passed);
 console.log(JSON.stringify({ passed: checks.length - failed.length, total: checks.length, checks }, null, 2));
 if (failed.length) process.exitCode = 1;

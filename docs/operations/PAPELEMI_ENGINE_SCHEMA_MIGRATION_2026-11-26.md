@@ -55,3 +55,11 @@ A aplicação em Production permanece bloqueada até que o backup seja acessíve
 A antiga etapa de schema combinado foi desativada. Ela movia 12 tabelas públicas atuais da PapeLemi para `papelemi_legacy` e tentava reaplicar as 199 migrations brutas do Empório. O bloqueio de DML detectou 11 possíveis inserções comerciais em produtos, categorias, pedidos e clientes. O gate foi mantido; não foi contornado.
 
 A validação passa a usar o snapshot schema-only e a migration isolada `papelemi_engine`. O replay local da migration da PapeLemi e os contratos pgTAP ficam no workflow de qualidade. O workflow de transferência do código fica manual e sem escrita automática no Git.
+
+## Adaptação das Edge Functions
+
+O gerador de transferência agora instala `supabase/functions/_shared/createEngineClient.ts` e adapta os clientes Supabase das funções copiadas para usar `db.schema = "papelemi_engine"`. Autenticação e Storage continuam no projeto Supabase dedicado da PapeLemi. As 75 funções ainda precisam de homologação funcional e implantação controlada; nenhuma chave service-role ou segredo do Empório é copiado.
+
+## Precisão da contagem de índices
+
+O replay local confirmou 487 entradas em `pg_indexes` para `papelemi_engine`. As 306 declarações `CREATE INDEX` do snapshot são os índices explícitos; a contagem total do catálogo também inclui índices criados por constraints. O teste pgTAP compara agora os 306 índices explícitos, excluindo os índices vinculados a constraints.

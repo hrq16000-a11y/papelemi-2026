@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   validate-transfer:
@@ -92,3 +93,8 @@ jobs:
           else
             echo "Source transfer is already deterministic; no commit required."
           fi
+
+      - name: Dispatch final quality gates on the generated branch head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run .github/workflows/papelemi-quality.yml --ref feat/catalog-admin-parity-01-20261125

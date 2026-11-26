@@ -7,7 +7,14 @@ SELECT is((SELECT count(*)::int FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgr
 SELECT is((SELECT count(*)::int FROM pg_policies WHERE schemaname='papelemi_engine'), 234, 'all 234 source RLS policies are present');
 SELECT is((SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='papelemi_engine' AND c.relkind='r' AND c.relrowsecurity), 144, 'RLS is enabled on every engine table');
 SELECT is((SELECT count(*)::int FROM pg_views WHERE schemaname='papelemi_engine'), 4, 'all 4 source views are present');
-SELECT is((SELECT count(*)::int FROM pg_indexes WHERE schemaname='papelemi_engine'), 306, 'all 306 source indexes are present');
+SELECT is((
+  SELECT count(*)::int
+  FROM pg_class idx
+  JOIN pg_namespace ns ON ns.oid = idx.relnamespace
+  JOIN pg_index i ON i.indexrelid = idx.oid
+  LEFT JOIN pg_constraint con ON con.conindid = idx.oid
+  WHERE ns.nspname = 'papelemi_engine' AND con.oid IS NULL
+), 306, 'all 306 explicit source indexes are present, excluding constraint-backed indexes');
 SELECT is((SELECT count(*)::int FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname='papelemi_engine' AND t.typtype='e'), 5, 'all 5 source enum types are present');
 SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine' AND coalesce(array_to_string(p.proconfig, ','),'') LIKE '%search_path=papelemi_engine%pg_catalog%public%pg_temp%'), 84, 'all engine functions use a fixed engine-first search path');
 SELECT ok(has_schema_privilege('authenticated','papelemi_engine','USAGE'), 'authenticated role can access the engine schema');
