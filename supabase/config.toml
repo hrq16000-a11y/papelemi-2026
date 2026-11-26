@@ -1,1 +1,17 @@
 project_id = "gpdpfoxpbferjwbppcmb"
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+
+[functions.track-visit]
+verify_jwt = false
+
+
+[functions.order-stream]
+verify_jwt = false
+
+
+[functions.notify-order-status]
+verify_jwt = false
+

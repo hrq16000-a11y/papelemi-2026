@@ -1,3 +1,4 @@
+import { useRouterState } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -126,6 +127,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -133,9 +136,9 @@ function RootComponent() {
       <CartProvider>
         <CatalogProvider>
           <div className="flex min-h-screen flex-col overflow-x-hidden">
-            <Header />
+            {!isAdminRoute && <Header />}
             <main className="flex-1"><Outlet /></main>
-            <Footer />
+            {!isAdminRoute && <Footer />}
           </div>
           <Toaster />
         </CatalogProvider>
