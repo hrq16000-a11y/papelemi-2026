@@ -346,6 +346,10 @@ async function writeBrandAndLocalProject() {
 
   const sourceConfig = await fs.readFile(path.join(SOURCE, "supabase/config.toml"), "utf8");
   let localConfig = sourceConfig.replace(/^project_id\s*=.*$/m, 'project_id = "papelemi-emp-orio-local"');
+  localConfig = localConfig
+    .replace("[studio]\nenabled = true", "[studio]\nenabled = false")
+    .replace("[inbucket]\nenabled = true", "[inbucket]\nenabled = false")
+    .replace("[edge_runtime]\nenabled = true", "[edge_runtime]\nenabled = false");
   if (!localConfig.includes("[db.seed]")) localConfig += "\n[db.seed]\nenabled = false\n";
   const localDir = path.join(ROOT, "tools/emp-orio-supabase/supabase");
   await fs.mkdir(localDir, { recursive: true });

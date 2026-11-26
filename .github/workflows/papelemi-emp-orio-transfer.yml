@@ -65,18 +65,37 @@ jobs:
         with:
           version: latest
 
+      - name: Diagnose isolated local Supabase prerequisites
+        shell: bash
+        working-directory: tools/emp-orio-supabase
+        run: |
+          docker info
+          supabase --version
+          echo "Original migrations: $(find supabase/migrations -maxdepth 1 -name '*.sql' -type f | wc -l)"
+          grep -n -A2 -E '^\\[(studio|inbucket|edge_runtime)\\]' supabase/config.toml
+
       - name: Replay original migrations in isolated local Supabase
         shell: bash
         working-directory: tools/emp-orio-supabase
         run: |
-          supabase start > "$RUNNER_TEMP/emp-orio-start.log" 2>&1
-          if supabase db reset > "$RUNNER_TEMP/emp-orio-reset.log" 2>&1; then
-            echo "Original Emporio migrations replayed in the isolated local project."
-            grep -E "Applying migration|Finished supabase db reset|Local database is up to date" "$RUNNER_TEMP/emp-orio-reset.log" | tail -n 30 || true
-          else
-            echo "Isolated migration replay failed:"
-            tail -n 120 "$RUNNER_TEMP/emp-orio-reset.log"
+          if ! supabase start --debug > "$RUNNER_TEMP/emp-orio-start.log" 2>&1; then
+            echo "Supabase local stack failed to start:"
+            tail -n 160 "$RUNNER_TEMP/emp-orio-start.log"
+            exit 1
+          fi
+          if ! supabase db reset > "$RUNNER_TEMP/emp-orio-reset.log" 2>&1; then
+            echo "Original Emporio migration replay failed:"
+            tail -n 160 "$RUNNER_TEMP/emp-orio-reset.log"
             supabase stop --no-backup > /dev/null 2>&1 || true
             exit 1
           fi
+          applied="$(grep -c 'Applying migration' "$RUNNER_TEMP/emp-orio-reset.log" || true)"
+          supabase db dump --local --schema public --file "$RUNNER_TEMP/emp-orio-schema.sql"
+          tables="$(grep -Eic '^CREATE TABLE' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
+          functions="$(grep -Eic '^CREATE( OR REPLACE)? FUNCTION' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
+          views="$(grep -Eic '^CREATE( OR REPLACE)? VIEW' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
+          indexes="$(grep -Eic '^CREATE (UNIQUE )?INDEX' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
+          policies="$(grep -Eic '^CREATE POLICY' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
+          triggers="$(grep -Eic '^CREATE TRIGGER' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
+          echo "Emporio isolated replay PASS — migrations applied: $applied; tables: $tables; functions: $functions; views: $views; indexes: $indexes; policies: $policies; triggers: $triggers."
           supabase stop --no-backup > /dev/null 2>&1 || true
