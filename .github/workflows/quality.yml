@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/catalog-source-of-truth-01a-20261125
 
 permissions:
   contents: read

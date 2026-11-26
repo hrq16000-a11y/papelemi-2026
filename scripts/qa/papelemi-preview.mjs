@@ -165,6 +165,56 @@ try {
     throw new Error(`Assistente não retornou 3 sugestões válidas para o campo do produto: ${suggestionLengths.join(",")}`);
   }
 
+  await page.addInitScript((cart) => {
+    localStorage.setItem("papelemi-cart", JSON.stringify(cart));
+  }, [{
+    id: "qa-checkout-line",
+    slug: "caderneta-saude-ursinho-clean",
+    qty: 1,
+    options: {
+      Cor: "",
+      Tamanho: "",
+      Acabamento: "",
+      Nome: "QA PapeLemi",
+      "Mensagem ou dedicatória": "Teste de persistência do carrinho",
+      "Observações para a encomenda": "QA sem envio ou cobrança",
+    },
+  }]);
+
+  const checkoutViewports = [];
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const checkoutResponse = await openRoute("/checkout");
+    if (!checkoutResponse.ok()) throw new Error(`Checkout retornou HTTP ${checkoutResponse.status()} em ${width}px`);
+    await page.waitForFunction(() => {
+      const body = document.body.innerText;
+      return body.includes("Caderneta de Saúde · Ursinho Clean")
+        && body.includes("Nome: QA PapeLemi")
+        && body.includes("Mensagem ou dedicatória: Teste de persistência do carrinho")
+        && !document.querySelector('[role="alert"]');
+    }, { timeout: 20000 });
+    const checkoutLayout = await inspectLayout(width);
+    if (checkoutLayout.documentWidth > width || checkoutLayout.bodyWidth > width) {
+      throw new Error(`Checkout tem overflow horizontal em ${width}px: ${Math.max(checkoutLayout.documentWidth, checkoutLayout.bodyWidth) - width}px`);
+    }
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator("h1").first().waitFor({ timeout: 15000 });
+    await page.waitForFunction(() => document.documentElement.dataset.appHydrated === "true", { timeout: 15000 });
+    await page.waitForFunction(() => {
+      const body = document.body.innerText;
+      return body.includes("Caderneta de Saúde · Ursinho Clean")
+        && body.includes("Nome: QA PapeLemi")
+        && body.includes("Mensagem ou dedicatória: Teste de persistência do carrinho")
+        && !document.querySelector('[role="alert"]');
+    }, { timeout: 20000 });
+    const restoredLayout = await inspectLayout(width);
+    if (restoredLayout.documentWidth > width || restoredLayout.bodyWidth > width) {
+      throw new Error(`Checkout restaurado tem overflow horizontal em ${width}px`);
+    }
+    checkoutViewports.push({ viewport: width, cartPersistence: "PASS", quote: "PASS", horizontalOverflow: "none" });
+  }
+
   const missingResponse = await openRoute("/produto/qa-produto-inexistente-20261125");
   const missing = await inspectLayout(390);
   if (!missingResponse.ok()) throw new Error(`Rota de produto inexistente retornou HTTP ${missingResponse.status()}`);
@@ -188,6 +238,8 @@ try {
     viewports: results,
     assistantProductContext: "PASS",
     assistantSuggestions: 3,
+    checkoutViewports,
+    checkoutPersistence: "PASS",
     missingProduct: "PASS",
     pageErrors: 0,
   }, null, 2));

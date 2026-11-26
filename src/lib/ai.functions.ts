@@ -14,7 +14,7 @@ const Input = z.object({
   feeling: short(240),
   maxLength: z.number().int().min(30).max(400),
 });
-export type SuggestInput = z.output<typeof Input>;
+export type SuggestInput = z.input<typeof Input>;
 type Result = { suggestions: string[]; error: string | null };
 
 export function fit(text: string, limit: number) {
@@ -28,9 +28,9 @@ export function fit(text: string, limit: number) {
 }
 
 function fallbackSuggestions(data: SuggestInput, occasion: string, limit: number) {
-  const recipient = data.recipientName.trim() || "você";
-  const giver = data.giverName.trim();
-  const feeling = data.feeling.trim();
+  const recipient = data.recipientName?.trim() || "você";
+  const giver = data.giverName?.trim() ?? "";
+  const feeling = data.feeling?.trim() ?? "";
   const feelingText = feeling ? feeling : "carinho";
   const event = occasion.toLowerCase();
   const style = data.style;

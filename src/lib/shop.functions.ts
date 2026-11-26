@@ -2,8 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { confirmOrderByReference, mpConfigured, mpRequest } from "@/lib/mp";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { calculateOrderTotals, isSameOrderRequest, isSameOrderSubmission, persistOrderIdempotently, prepareOrderItems, roundMoney, validateCouponRecord, type OrderLineInput, type OrderRequestSnapshot } from "@/lib/order-integrity";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
 
@@ -46,7 +47,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
 
 export const getCuratedPhrases = createServerFn({ method: "GET" }).handler(async () => {
   const sb = publicClient();
-  const { data, error } = await sb.from("curated_phrases").select("id,phrase,occasion").eq("active", true).order("created_at", { ascending: false }).limit(12);
+  const { data, error } = await sb.from("curated_phrases").select("id,phrase,occasion").eq("active", true).filter("store_key", "eq", "papelemi").order("created_at", { ascending: false }).limit(12);
   if (error) throw new Error(error.message);
   return data ?? [];
 });
@@ -56,15 +57,30 @@ export const validateCoupon = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const sb = publicClient();
     const { data: row, error } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
-    if (error) throw new Error("Não foi possível validar o cupom.");
+    if (error) throw new Error("Não foi possível consultar o cupom.");
     return row ? { code: row.code, percent: row.percent } : null;
   });
 
-const orderInput = z.object({
+const orderLineInput = z.object({
+  slug: z.string().trim().min(1).max(80),
+  qty: z.number().int().min(1).max(999),
+  options: z.record(z.string().max(60), z.string().max(500)).refine((options) => Object.keys(options).length <= 23, "Número de opções inválido."),
+});
+
+const quoteInput = z.object({
+  items: z.array(orderLineInput).min(1).max(50),
+  couponCode: z.string().trim().toUpperCase().min(2).max(40).optional(),
+});
+
+const orderInput = quoteInput.extend({
+  requestId: z.string().uuid(),
   customer: z.object({
     name: z.string().trim().min(2).max(80),
-    email: z.string().trim().email().max(120),
-    phone: z.string().trim().max(20).default(""),
+    email: z.string().trim().email().max(120).toLowerCase(),
+    phone: z.string().trim().min(10).max(20).refine((value) => {
+      const digits = value.replace(/\D/g, "");
+      return digits.length === 10 || digits.length === 11;
+    }, "Telefone inválido. Informe DDD e número."),
   }),
   address: z.object({
     cep: z.string().trim().regex(/^\d{5}-?\d{3}$/, "CEP inválido"),
@@ -73,18 +89,87 @@ const orderInput = z.object({
     complement: z.string().trim().max(80).default(""),
     district: z.string().trim().min(2).max(80),
     city: z.string().trim().min(2).max(80),
-    state: z.string().trim().length(2),
+    state: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "UF inválida"),
   }),
-  items: z.array(z.object({
-    slug: z.string().trim().min(1).max(80),
-    qty: z.number().int().min(1).max(999),
-    options: z.record(z.string().max(60), z.string().max(500)),
-  })).min(1).max(50),
-  couponCode: z.string().trim().max(40).optional(),
   origin: z.string().url().max(200).optional(),
   customerNotes: z.string().trim().max(1000).default(""),
   acceptedPrivacy: z.literal(true),
+  quoteToken: z.string().regex(/^[a-f0-9]{64}$/).optional(),
 });
+
+type QuoteInput = z.infer<typeof quoteInput>;
+
+async function buildOrderQuote(input: QuoteInput) {
+  const { productFromRow } = await import("@/lib/catalog.repository.server");
+  // Produtos e cupons são leituras públicas protegidas por RLS; service_role fica restrita à gravação do pedido.
+  const sb = publicClient();
+  const slugs = [...new Set(input.items.map((item) => item.slug))];
+  const { data: rows, error } = await sb
+    .from("products")
+    .select("*")
+    .in("slug", slugs)
+    .eq("published", true)
+    .filter("store_key", "eq", "papelemi");
+
+  if (error) throw new Error("Não foi possível consultar os produtos. Tente novamente.");
+  const products = (rows ?? []).map((row) => productFromRow(row));
+  const items = prepareOrderItems(products, input.items as OrderLineInput[]);
+
+  let couponCode: string | null = null;
+  let couponPercent: number | null = null;
+  if (input.couponCode) {
+    const { data: coupon, error: couponError } = await sb
+      .from("coupons")
+      .select("code,percent")
+      .eq("code", input.couponCode)
+      .eq("active", true)
+      .filter("store_key", "eq", "papelemi")
+      .maybeSingle();
+
+    if (couponError) throw new Error("Não foi possível revalidar o cupom. Tente novamente.");
+    const validatedCoupon = validateCouponRecord(input.couponCode, coupon ? { code: coupon.code, percent: Number(coupon.percent), active: true } : null);
+    couponCode = validatedCoupon.code;
+    couponPercent = validatedCoupon.percent;
+  }
+
+  return {
+    items,
+    couponCode,
+    ...calculateOrderTotals(items, couponPercent),
+  };
+}
+
+async function createQuoteToken(quote: Awaited<ReturnType<typeof buildOrderQuote>>) {
+  const { createHash } = await import("node:crypto");
+  const payload = JSON.stringify({
+    items: quote.items,
+    couponCode: quote.couponCode,
+    subtotal: quote.subtotal,
+    discount: quote.discount,
+    shipping: quote.shipping,
+    total: quote.total,
+  });
+  return createHash("sha256").update(payload).digest("hex");
+}
+
+export const getOrderQuote = createServerFn({ method: "POST" })
+  .validator(quoteInput)
+  .handler(async ({ data }) => {
+    const quote = await buildOrderQuote(data);
+    const quoteToken = await createQuoteToken(quote);
+    return {
+      items: quote.items.map((item) => ({
+        ...item,
+        line_total: roundMoney(item.unit_price * item.qty),
+      })),
+      couponCode: quote.couponCode,
+      quoteToken,
+      subtotal: quote.subtotal,
+      discount: quote.discount,
+      shipping: quote.shipping,
+      total: quote.total,
+    };
+  });
 
 function safeOrigin(origin?: string) {
   try {
@@ -94,97 +179,142 @@ function safeOrigin(origin?: string) {
   return PUBLISHED_ORIGIN;
 }
 
+async function createPaymentPreference(orderId: string, total: number, origin?: string) {
+  const safe = safeOrigin(origin);
+  const pref = (await mpRequest("checkout/preferences", {
+    method: "POST",
+    idempotencyKey: `pref-${orderId}-1`,
+    body: {
+      items: [{ title: `Pedido PapeLemi ${orderId.slice(0, 8)}`, quantity: 1, unit_price: total, currency_id: "BRL" }],
+      external_reference: orderId,
+      back_urls: {
+        success: `${safe}/pedido/${orderId}`,
+        pending: `${safe}/pedido/${orderId}`,
+        failure: `${safe}/pedido/${orderId}`,
+      },
+      auto_return: "approved",
+      notification_url: `${PUBLISHED_ORIGIN}/api/public/mercadopago-webhook`,
+    },
+  })) as { init_point?: string };
+  return pref.init_point ?? null;
+}
+
 export const createOrder = createServerFn({ method: "POST" })
   .validator(orderInput)
   .handler(async ({ data: input }) => {
-    const { productFromRow } = await import("@/lib/catalog.repository.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const slugs = input.items.map((i) => i.slug);
-    const { data: rows, error } = await supabaseAdmin.from("products").select("*").in("slug", slugs).filter("store_key", "eq", "papelemi");
-    if (error) throw new Error(error.message);
-    const bySlug = new Map((rows ?? []).map((r) => [r.slug, productFromRow(r)]));
-    const items = input.items.map((i) => {
-      const p = bySlug.get(i.slug);
-      if (!p || !p.published) throw new Error(`Produto indisponível: ${i.slug}`);
-      const qty = Math.max(i.qty, p.minQty ?? 1);
-      return { slug: p.slug, name: p.name, qty, unit_price: p.promoPrice ?? p.price, options: i.options };
-    });
-    const subtotal = Math.round(items.reduce((s, i) => s + i.unit_price * i.qty, 0) * 100) / 100;
-    // O frete é confirmado pela PapeLemi após revisar o CEP; não estimar um valor não validado.
-    const shipping = 0;
-    let discount = 0;
-    let couponCode: string | null = null;
-    if (input.couponCode) {
-      const { data: c, error: couponError } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
-      if (couponError) throw new Error("Não foi possível validar o cupom. Tente novamente.");
-      if (!c || c.percent < 1 || c.percent > 90) throw new Error("Cupom inválido ou inativo.");
-      couponCode = c.code;
-      discount = Math.round(subtotal * c.percent) / 100;
-    }
-    const total = Math.round((subtotal - discount + shipping) * 100) / 100;
+    const admin = supabaseAdmin as unknown as SupabaseClient;
 
-    const orderPayload: Database["public"]["Tables"]["orders"]["Insert"] & {
-      store_key: string;
-      customer_notes: string;
-      accepted_privacy: boolean;
-      privacy_consent_at: string;
-      source: string;
-    } = {
+    // Recupera primeiro uma tentativa já persistida. Isso continua funcionando se preço,
+    // disponibilidade ou cupom mudarem depois de um timeout da resposta anterior.
+    const { data: previous, error: previousError } = await admin
+      .from("orders")
+      .select("*")
+      .eq("id", input.requestId)
+      .eq("store_key", "papelemi")
+      .maybeSingle();
+    if (previousError) throw new Error("Não foi possível recuperar a tentativa anterior.");
+    if (previous) {
+      if (!isSameOrderSubmission(previous, input)) {
+        throw new Error("ORDER_REQUEST_CONFLICT: Esta tentativa já foi usada com outros dados. Gere uma nova tentativa e envie novamente.");
+      }
+      if (previous.status === "cancelled") {
+        throw new Error("ORDER_REQUEST_CONFLICT: Esta encomenda foi cancelada. Inicie uma nova solicitação.");
+      }
+      const total = Number(previous.total);
+      const paymentReady = mpConfigured();
+      const initPoint = paymentReady && previous.status === "pending"
+        ? await createPaymentPreference(previous.id, total, input.origin)
+        : null;
+      return { orderId: previous.id as string, initPoint, total, paymentReady, recovered: true };
+    }
+
+    const quote = await buildOrderQuote(input);
+    if (!input.quoteToken || await createQuoteToken(quote) !== input.quoteToken) {
+      throw new Error("PRICE_CHANGED: Os valores ou condições mudaram. O resumo foi atualizado; confira antes de enviar novamente.");
+    }
+    const orderValues = {
       customer_name: input.customer.name,
       customer_email: input.customer.email,
       customer_phone: input.customer.phone,
-      address: input.address,
-      items,
-      subtotal,
-      shipping,
-      discount,
-      coupon_code: couponCode,
-      total,
+      address: {
+        cep: input.address.cep.replace(/\D/g, ""),
+        street: input.address.street,
+        number: input.address.number,
+        complement: input.address.complement,
+        district: input.address.district,
+        city: input.address.city,
+        state: input.address.state,
+      },
+      items: quote.items,
+      subtotal: quote.subtotal,
+      shipping: quote.shipping,
+      discount: quote.discount,
+      coupon_code: quote.couponCode,
+      total: quote.total,
       store_key: "papelemi",
       customer_notes: input.customerNotes,
       accepted_privacy: input.acceptedPrivacy,
       privacy_consent_at: new Date().toISOString(),
       source: "storefront",
     };
-    const { data: order, error: insErr } = await supabaseAdmin
-      .from("orders")
-      .insert(orderPayload as unknown as Database["public"]["Tables"]["orders"]["Insert"])
-      .select("id")
-      .single();
-    if (insErr || !order) throw new Error(insErr?.message ?? "Não foi possível criar o pedido");
 
-    let initPoint: string | null = null;
-    if (mpConfigured()) {
-      const origin = safeOrigin(input.origin);
-      const pref = (await mpRequest("checkout/preferences", {
-        method: "POST",
-        idempotencyKey: `pref-${order.id}-1`,
-        body: {
-          items: [{ title: `Pedido PapeLemi ${order.id.slice(0, 8)}`, quantity: 1, unit_price: total, currency_id: "BRL" }],
-          external_reference: order.id,
-          back_urls: {
-            success: `${origin}/pedido/${order.id}`,
-            pending: `${origin}/pedido/${order.id}`,
-            failure: `${origin}/pedido/${order.id}`,
-          },
-          auto_return: "approved",
-          notification_url: `${PUBLISHED_ORIGIN}/api/public/mercadopago-webhook`,
-        },
-      })) as { init_point?: string };
-      initPoint = pref.init_point ?? null;
-    }
-    return { orderId: order.id, initPoint, total, paymentReady: mpConfigured() };
+    // A chave primária orders.id protege cliques duplicados, reenvios e corridas concorrentes.
+    const persisted = await persistOrderIdempotently({
+      findExisting: async () => {
+        const { data, error } = await admin
+          .from("orders")
+          .select("*")
+          .eq("id", input.requestId)
+          .eq("store_key", "papelemi")
+          .maybeSingle();
+        if (error) throw new Error("Não foi possível confirmar a solicitação anterior.");
+        return data as unknown as (OrderRequestSnapshot & { id: string }) | null;
+      },
+      insert: async () => {
+        const { data, error } = await admin
+          .from("orders")
+          .upsert(
+            { id: input.requestId, ...orderValues },
+            { onConflict: "id", ignoreDuplicates: true },
+          )
+          .select("*")
+          .maybeSingle();
+        if (error) {
+          if ((error as { code?: string }).code === "23505") return null;
+          throw new Error("Não foi possível registrar a encomenda. Tente novamente.");
+        }
+        return data as unknown as (OrderRequestSnapshot & { id: string }) | null;
+      },
+      matches: (existing) => isSameOrderRequest(existing, orderValues),
+    });
+    const orderId = persisted.record.id;
+    const paymentReady = mpConfigured();
+    const initPoint = paymentReady ? await createPaymentPreference(orderId, quote.total, input.origin) : null;
+    return { orderId, initPoint, total: quote.total, paymentReady, recovered: !persisted.created };
   });
 
 export const getOrderStatus = createServerFn({ method: "GET" })
   .validator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data }) => {
-    if (mpConfigured()) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const readOrder = () => admin
+      .from("orders")
+      .select("status,total")
+      .eq("id", data.orderId)
+      .eq("store_key", "papelemi")
+      .maybeSingle();
+
+    const { data: initial, error: initialError } = await readOrder();
+    if (initialError || !initial) throw new Error("Pedido não encontrado");
+
+    if (mpConfigured() && initial.status === "pending") {
       try { await confirmOrderByReference(data.orderId); } catch { /* segue com o status atual */ }
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: order } = await supabaseAdmin.from("orders").select("status,total").eq("id", data.orderId).single();
-    if (!order) throw new Error("Pedido não encontrado");
+
+    const { data: order, error } = await readOrder();
+    if (error || !order) throw new Error("Pedido não encontrado");
     return { status: !mpConfigured() && order.status === "pending" ? "received" : order.status, total: Number(order.total) };
   });
 
@@ -210,10 +340,11 @@ export const listOrders = createServerFn({ method: "GET" })
     // A tabela orders aceita acesso somente pelo servidor (service_role).
     // A autorização do usuário é validada antes de usar o cliente privilegiado.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const { data, error } = await admin
       .from("orders")
       .select("*")
-      .filter("store_key", "eq", "papelemi")
+      .eq("store_key", "papelemi")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
@@ -227,11 +358,12 @@ export const setOrderStatus = createServerFn({ method: "POST" })
     await requireAdmin(context);
     // Atualizações usam service_role somente após validar o papel do usuário.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const { error } = await admin
       .from("orders")
       .update({ status: data.status })
       .eq("id", data.id)
-      .filter("store_key", "eq", "papelemi");
+      .eq("store_key", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -260,7 +392,7 @@ export const listAdminProducts = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context);
     const { productFromRow } = await import("@/lib/catalog.repository.server");
-    const { data, error } = await context.supabase.from("products").select("*").order("name");
+    const { data, error } = await context.supabase.from("products").select("*").filter("store_key", "eq", "papelemi").order("name");
     if (error) throw new Error(error.message);
     return (data ?? []).map((r) => ({ ...productFromRow(r), minQty: r.min_qty ?? null }));
   });
@@ -270,9 +402,10 @@ export const saveProduct = createServerFn({ method: "POST" })
   .validator(productInput)
   .handler(async ({ context, data: p }) => {
     await requireAdmin(context);
-    const { data: existing } = await context.supabase.from("products").select("personalization").eq("slug", p.slug).maybeSingle();
+    const { data: existing } = await context.supabase.from("products").select("personalization").eq("slug", p.slug).filter("store_key", "eq", "papelemi").maybeSingle();
     const { error } = await context.supabase.from("products").upsert({
       slug: p.slug,
+      store_key: "papelemi",
       category_slug: p.categorySlug,
       name: p.name,
       description: p.description,
@@ -299,7 +432,7 @@ export const deleteProduct = createServerFn({ method: "POST" })
   .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("products").delete().eq("slug", data.slug);
+    const { error } = await context.supabase.from("products").delete().eq("slug", data.slug).filter("store_key", "eq", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -316,7 +449,7 @@ export const listAdminCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("categories").select("*").order("sort");
+    const { data, error } = await context.supabase.from("categories").select("*").filter("store_key", "eq", "papelemi").order("sort");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -326,7 +459,7 @@ export const saveCategory = createServerFn({ method: "POST" })
   .validator(categoryInput)
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("categories").upsert({ slug: c.slug, name: c.name, description: c.description, image: c.image, sort: c.sort });
+    const { error } = await context.supabase.from("categories").upsert({ slug: c.slug, store_key: "papelemi", name: c.name, description: c.description, image: c.image, sort: c.sort });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -336,7 +469,7 @@ export const deleteCategory = createServerFn({ method: "POST" })
   .validator(z.object({ slug: z.string().min(1).max(80) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("categories").delete().eq("slug", data.slug);
+    const { error } = await context.supabase.from("categories").delete().eq("slug", data.slug).filter("store_key", "eq", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -345,7 +478,7 @@ export const listAdminPhrases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("curated_phrases").select("*").order("created_at", { ascending: false });
+    const { data, error } = await context.supabase.from("curated_phrases").select("*").filter("store_key", "eq", "papelemi").order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -360,9 +493,9 @@ export const savePhrase = createServerFn({ method: "POST" })
   }))
   .handler(async ({ context, data: p }) => {
     await requireAdmin(context);
-    const row = { phrase: p.phrase, occasion: p.occasion, active: p.active };
+    const row = { store_key: "papelemi", phrase: p.phrase, occasion: p.occasion, active: p.active };
     const { error } = p.id
-      ? await context.supabase.from("curated_phrases").update(row).eq("id", p.id)
+      ? await context.supabase.from("curated_phrases").update(row).eq("id", p.id).filter("store_key", "eq", "papelemi")
       : await context.supabase.from("curated_phrases").insert(row);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -373,7 +506,7 @@ export const deletePhrase = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.string().uuid() }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("curated_phrases").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("curated_phrases").delete().eq("id", data.id).filter("store_key", "eq", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -382,7 +515,7 @@ export const listAdminCoupons = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const { data, error } = await context.supabase.from("coupons").select("*").order("code");
+    const { data, error } = await context.supabase.from("coupons").select("*").filter("store_key", "eq", "papelemi").order("code");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -396,7 +529,7 @@ export const saveCoupon = createServerFn({ method: "POST" })
   }))
   .handler(async ({ context, data: c }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("coupons").upsert({ code: c.code, percent: c.percent, active: c.active });
+    const { error } = await context.supabase.from("coupons").upsert({ code: c.code, store_key: "papelemi", percent: c.percent, active: c.active });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -406,7 +539,7 @@ export const deleteCoupon = createServerFn({ method: "POST" })
   .validator(z.object({ code: z.string().min(2).max(40) }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    const { error } = await context.supabase.from("coupons").delete().eq("code", data.code);
+    const { error } = await context.supabase.from("coupons").delete().eq("code", data.code).filter("store_key", "eq", "papelemi");
     if (error) throw new Error(error.message);
     return { ok: true };
   });

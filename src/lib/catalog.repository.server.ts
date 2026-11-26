@@ -18,17 +18,20 @@ const personalizationOptionSchema = z.discriminatedUnion("type", [
     label: z.string().trim().min(1).max(120),
     maxLength: z.number().int().min(1).max(400),
     ai: z.boolean().optional().default(false),
+    required: z.boolean().optional(),
   }),
   z.object({
     type: z.literal("choice"),
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
     options: z.array(z.string().trim().min(1).max(60)).min(1).max(50),
+    required: z.boolean().optional(),
   }),
   z.object({
     type: z.literal("notes"),
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
+    required: z.boolean().optional(),
   }),
 ]);
 
@@ -75,7 +78,7 @@ export const productFromRow = (row: ProductRow): Product => ({
   published: row.published,
   bestSeller: row.best_seller,
   personalizable: row.personalizable,
-  personalization: personalizationSchema.parse(row.personalization ?? []),
+  personalization: personalizationSchema.parse(row.personalization ?? []) as Product["personalization"],
   ...(row.min_qty == null ? {} : { minQty: row.min_qty }),
 });
 

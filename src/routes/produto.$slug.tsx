@@ -90,16 +90,16 @@ function ProductDetail({ p }: { p: Product }) {
               <h2 className="text-2xl">Personalize com afeto</h2>
               {p.personalization.map((o) => (
                 <div key={o.key}>
-                  <label htmlFor={o.key} className="mb-1.5 block text-sm font-medium">{o.label}</label>
+                  <label htmlFor={o.key} className="mb-1.5 block text-sm font-medium">{o.label}{o.required ? " *" : ""}</label>
                   {o.type === "choice" ? (
-                    <select id={o.key} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} className={field}><option value="">Escolha…</option>{o.options.map((v) => <option key={v}>{v}</option>)}</select>
+                    <select id={o.key} required={o.required} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} className={field}><option value="">Escolha…</option>{o.options.map((v) => <option key={v}>{v}</option>)}</select>
                   ) : o.type === "notes" ? (
-                    <textarea id={o.key} rows={2} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} placeholder="Algo que precisamos saber?" className={field} maxLength={400} />
+                    <textarea id={o.key} required={o.required} rows={2} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} placeholder="Algo que precisamos saber?" className={field} maxLength={400} />
                   ) : (
                     <>
                       {o.maxLength > 60
-                        ? <textarea id={o.key} rows={3} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={`${field} font-display text-lg italic`} />
-                        : <input id={o.key} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={field} />}
+                        ? <textarea id={o.key} required={o.required} rows={3} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={`${field} font-display text-lg italic`} />
+                        : <input id={o.key} required={o.required} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={field} />}
                       <p className="mt-1 text-right text-xs text-muted-foreground">{(opts[o.key] ?? "").length}/{o.maxLength}</p>
                       {o.ai && <button type="button" onClick={() => setGenOpen(true)} className="mt-1 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"><Sparkles className="size-4" /> Criar dedicatória com a assistente</button>}
                     </>
@@ -127,7 +127,7 @@ function ProductDetail({ p }: { p: Product }) {
             <div className="flex items-center rounded-full border border-border">
               <button type="button" aria-label="Diminuir" onClick={() => setQty(Math.max(p.minQty ?? 1, qty - 1))} className="p-3"><Minus className="size-4" /></button>
               <span className="w-10 text-center">{qty}</span>
-              <button type="button" aria-label="Aumentar" onClick={() => setQty(qty + 1)} className="p-3"><Plus className="size-4" /></button>
+              <button type="button" aria-label="Aumentar" onClick={() => setQty(Math.min(999, qty + 1))} className="p-3"><Plus className="size-4" /></button>
             </div>
             <button className="flex-1 rounded-full bg-primary py-3.5 text-sm font-medium text-primary-foreground shadow-soft transition-transform hover:-translate-y-0.5">Adicionar ao carrinho · {brl((p.promoPrice ?? p.price) * qty)}</button>
           </div>
