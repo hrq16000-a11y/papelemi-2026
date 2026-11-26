@@ -96,7 +96,7 @@ jobs:
           docker info
           supabase --version
           echo "Original migrations: $(find supabase/migrations -maxdepth 1 -name '*.sql' -type f | wc -l)"
-          grep -n -A2 -E '^\\[(studio|inbucket|edge_runtime)\\]' supabase/config.toml
+          grep -n -A2 -E '^\[(studio|inbucket|edge_runtime)\]' supabase/config.toml || true
 
       - name: Replay original migrations in isolated local Supabase
         shell: bash
