@@ -49,22 +49,6 @@ jobs:
       - name: Build PapeLemi with original admin runtime mounted
         run: bun run build
 
-      - name: SSR smoke test for original admin entry route
-        shell: bash
-        run: |
-          bun run preview --host 127.0.0.1 > "$RUNNER_TEMP/papelemi-preview.log" 2>&1 &
-          preview_pid=$!
-          trap 'kill "$preview_pid" >/dev/null 2>&1 || true' EXIT
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:4173/admin/login -o "$RUNNER_TEMP/admin-login.html"; then
-              break
-            fi
-            sleep 1
-          done
-          test -s "$RUNNER_TEMP/admin-login.html"
-          grep -q "Painel administrativo" "$RUNNER_TEMP/admin-login.html"
-          echo "SSR /admin/login PASS — PapeLemi shell responds without loading Emporio runtime on the server."
-
       - name: Commit verified structural transfer
         shell: bash
         run: |
@@ -75,6 +59,30 @@ jobs:
             git commit -m "feat(engine): transfer Emporio admin runtime and source schema"
             git push origin HEAD:feat/catalog-admin-parity-01-20261125
           fi
+
+
+      - name: SSR smoke test for original admin entry route
+        shell: bash
+        run: |
+          bun run preview --host 127.0.0.1 > "$RUNNER_TEMP/papelemi-preview.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            root_status="$(curl -sS -o "$RUNNER_TEMP/root.html" -w '%{http_code}' http://127.0.0.1:4173/ || true)"
+            if [ "$root_status" = "200" ]; then break; fi
+            sleep 1
+          done
+          admin_status="$(curl -sS -o "$RUNNER_TEMP/admin-login.html" -w '%{http_code}' http://127.0.0.1:4173/admin/login || true)"
+          if [ "$root_status" != "200" ] || [ "$admin_status" != "200" ]; then
+            echo "SSR smoke failed — root: $root_status; admin: $admin_status"
+            echo "--- preview server log ---"
+            tail -n 180 "$RUNNER_TEMP/papelemi-preview.log" || true
+            echo "--- admin response body ---"
+            head -n 100 "$RUNNER_TEMP/admin-login.html" || true
+            exit 1
+          fi
+          grep -q "Painel administrativo" "$RUNNER_TEMP/admin-login.html"
+          echo "SSR /admin/login PASS — PapeLemi shell responds without loading Emporio runtime on the server."
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
