@@ -1,8 +1,13 @@
 // Mercado Pago Webhook — atualiza orders.payment_status / payment_id / paid_at
 // Configure no MP: webhook URL apontando para esta função.
 // Secrets necessários: MERCADOPAGO_ACCESS_TOKEN, MERCADOPAGO_WEBHOOK_SECRET (recomendado)
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
 
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-signature, x-request-id',

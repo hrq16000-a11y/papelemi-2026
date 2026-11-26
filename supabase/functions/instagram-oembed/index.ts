@@ -3,7 +3,13 @@
 //   - extract: { url }                 → parse og:image/og:title de um post
 //   - profile: { username }            → tentativa best-effort de listar últimas postagens do perfil
 //   - bulk-refresh: {}                 → re-extrai thumbnail/título de todos os posts cadastrados
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 import { authorizeOperationalRequest } from "../_shared/operational-auth.ts";
 
 const corsHeaders = {

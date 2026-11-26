@@ -1,6 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { buildStatusEmailData } from "../_shared/order-status-email.ts";
 

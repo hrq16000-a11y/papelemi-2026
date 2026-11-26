@@ -18,7 +18,13 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 //
 // Nunca apaga: arquivos 'active' (em uso) nem 'missing'. Nunca apaga sem backup.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const BUCKET = "product-images";

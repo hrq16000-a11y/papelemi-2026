@@ -3,7 +3,13 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 // chama submit-sitemap e limpa a flag. Roda via pg_cron a cada 15 min
 // para fazer debounce de várias edições no admin.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 import { sendSeoFailureAlert } from '../_shared/seoAlert.ts'
 import { isLocalEnv, mockIntegration } from '../_shared/localEnv.ts'
 

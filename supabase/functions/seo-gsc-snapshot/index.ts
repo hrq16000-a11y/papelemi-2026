@@ -12,7 +12,13 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
  *
  * Idempotente: reexecutar no mesmo dia faz upsert na mesma linha.
  */
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 import { sendSeoFailureAlert } from '../_shared/seoAlert.ts';
 
 const corsHeaders = {

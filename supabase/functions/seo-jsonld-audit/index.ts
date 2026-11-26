@@ -7,7 +7,13 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
  * comparando com os dados reais do banco. Retorna `upload_allowed=false`
  * quando houver inconsistência — usado para bloquear o envio do feed.
  */
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 import { CANONICAL_ORIGIN, productAbsolute } from '../_shared/urls.ts';
 
 const corsHeaders = {

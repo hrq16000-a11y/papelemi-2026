@@ -14,7 +14,13 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 // Segurança: endpoint público (chamado pelo cron), mas não expõe dados nem
 // deleta nada. Apenas inventaria, registra e alerta.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";

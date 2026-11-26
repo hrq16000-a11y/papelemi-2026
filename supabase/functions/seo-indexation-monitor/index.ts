@@ -7,7 +7,13 @@
 // usamos a Search Analytics (que retorna URLs com impressões) como sinal de
 // indexação e o HTTP status do servidor como sinal de saúde da página.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { authorizeOperationalRequest } from '../_shared/operational-auth.ts'
 import { parseIndexationRequest, safeIndexationUrl } from './policy.ts'

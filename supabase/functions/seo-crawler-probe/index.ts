@@ -4,8 +4,13 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
  * IndexNow, ao sitemap e ao robots.txt, registrando status e cabeçalhos.
  * Serve para confirmar bloqueios em tempo real a partir do admin.
  */
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',

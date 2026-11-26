@@ -10,8 +10,13 @@
 // O img_ref é a referência estável e portável de cada imagem, independente do
 // id interno do storage do Lovable.
 
-import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { createClient as createBaseClient } from "npm:@supabase/supabase-js@2.45.0";
 
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",

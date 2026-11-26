@@ -1,7 +1,12 @@
 // Instagram Graph API — actions: validate | preview | sync | scheduled
 // Secrets: IG_ACCESS_TOKEN, IG_BUSINESS_ACCOUNT_ID
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
 
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',

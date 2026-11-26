@@ -2,8 +2,13 @@
 // meta tags, Open Graph/Twitter, JSON-LD (schema.org/Product) e o
 // feed do Google Merchant. Somente leitura.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
 
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 const ORIGIN = 'https://www.papelemi.com.br'
 const PRODUCT_PREFIX = '/produto'
 

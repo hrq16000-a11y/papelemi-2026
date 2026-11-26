@@ -1,7 +1,12 @@
 import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
 
+const createClient = (url: string, key: string, options: any = {}) =>
+  createBaseClient(url, key, {
+    ...options,
+    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
+  });
 const ORIGIN = 'https://www.papelemi.com.br'
 const ROBOTS_UPSTREAM = `${Deno.env.get('SUPABASE_URL')}/functions/v1/robots-txt`
 
