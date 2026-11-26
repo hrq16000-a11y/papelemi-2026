@@ -8075,6 +8075,10 @@ export type Database = {
       cleanup_seo_url_status: { Args: never; Returns: undefined }
       cleanup_stale_bundle_logs: { Args: never; Returns: Json }
       cleanup_web_vitals_history: { Args: never; Returns: number }
+      consume_shipping_quote_rate_limit: {
+        Args: { _ip_hash: string; _window_start: string; _limit?: number }
+        Returns: number
+      }
       create_order_with_items: {
         Args: { _items: Json; _order: Json }
         Returns: Json
