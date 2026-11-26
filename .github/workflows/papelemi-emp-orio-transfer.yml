@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      EMPORIO_SOURCE_DIR: ${{ runner.temp }}/emporio-source
+      EMPORIO_SOURCE_DIR: /tmp/emporio-source
       EMPORIO_SOURCE_SHA: d01d843c266b5a32d03af22eeaac6eda4a7fcf0f
       PAPELEMI_BRANCH: feat/catalog-admin-parity-01-20261125
       SUPABASE_TELEMETRY_DISABLED: "1"
@@ -55,9 +55,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then
-            echo "No transfer changes to commit."
-          else
+          if git diff --cached --quiet; then echo 'No transfer changes to commit.'; else
             git commit -m "feat(engine): transfer Emporio admin runtime and source schema"
             git push origin HEAD:feat/catalog-admin-parity-01-20261125
           fi
