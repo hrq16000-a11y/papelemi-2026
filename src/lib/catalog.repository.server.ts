@@ -24,11 +24,13 @@ const personalizationOptionSchema = z.discriminatedUnion("type", [
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
     options: z.array(z.string().trim().min(1).max(60)).min(1).max(50),
+    required: z.boolean().optional(),
   }),
   z.object({
     type: z.literal("notes"),
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
+    required: z.boolean().optional(),
   }),
 ]);
 
