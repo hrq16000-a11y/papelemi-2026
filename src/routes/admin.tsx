@@ -603,9 +603,8 @@ function OrdersTab() {
                     ))}</ul> : null}
                   </section>
                 </div>
-              </div>
             {operationsForm ? (
-              <form onSubmit={(event) => { event.preventDefault(); void saveOperations(); }} className="mt-6 space-y-4 border-t border-border pt-5">
+              <form onSubmit={(event) => { event.preventDefault(); void saveOperations(); }} className="lg:col-span-2 mt-6 space-y-4 border-t border-border pt-5">
                 <div><h4 className="text-sm font-semibold">Atualizar operação do pedido</h4><p className="mt-1 text-xs text-muted-foreground">A alteração é auditada e o total é recalculado quando o frete muda.</p></div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <label className="text-xs text-muted-foreground">Status
@@ -625,6 +624,7 @@ function OrdersTab() {
                 <div className="flex justify-end"><button type="submit" disabled={updatingId === detail.order.id} className={btn}>{updatingId === detail.order.id ? <Loader2 className="size-3.5 animate-spin" /> : null} Salvar operação</button></div>
               </form>
             ) : null}
+              </div>
             );
           })() : <p className="py-8 text-sm text-muted-foreground">Não foi possível carregar os detalhes deste pedido.</p>}
         </div>
