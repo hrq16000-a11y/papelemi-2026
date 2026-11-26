@@ -7,7 +7,7 @@ import { Skeleton } from '@/emp-orio/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/emp-orio/components/ui/table';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, ExternalLink, Download, Bell, Send, Filter } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, ExternalLink, Download, Bell, Send, Filter } from 'lucide-react-v462';
 import { Input } from '@/emp-orio/components/ui/input';
 import { Switch } from '@/emp-orio/components/ui/switch';
 import { Label } from '@/emp-orio/components/ui/label';

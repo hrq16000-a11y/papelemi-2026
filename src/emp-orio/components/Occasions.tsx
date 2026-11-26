@@ -1,4 +1,4 @@
-import { Baby, Heart, Church, Gift, Cake, Sparkles } from "lucide-react";
+import { Baby, Heart, Church, Gift, Cake, Sparkles } from "lucide-react-v462";
 
 const Occasions = () => {
   const occasions = [

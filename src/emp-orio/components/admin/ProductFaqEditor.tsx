@@ -10,7 +10,7 @@ import {
 } from "@/emp-orio/components/ui/alert-dialog";
 import { Switch } from "@/emp-orio/components/ui/switch";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { Loader2, Plus, Trash2, Save, Sparkles } from "lucide-react";
+import { Loader2, Plus, Trash2, Save, Sparkles } from "lucide-react-v462";
 import { toast } from "sonner";
 import {
   useAdminProductFaqs,

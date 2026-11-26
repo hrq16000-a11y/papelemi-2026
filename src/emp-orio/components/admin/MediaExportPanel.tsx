@@ -21,7 +21,7 @@ import {
   Boxes,
   CheckCircle2,
   Clock,
-} from "lucide-react";
+} from "lucide-react-v462";
 
 interface ExportAsset {
   img_ref: string;

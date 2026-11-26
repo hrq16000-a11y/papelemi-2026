@@ -1,6 +1,6 @@
 // Fase 8 — Pré-visualizações Google / OG (WhatsApp/Facebook) / Pinterest.
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react-v462';
 import { PRODUCT_PATH_PREFIX } from '@/emp-orio/lib/urls';
 
 interface Props {

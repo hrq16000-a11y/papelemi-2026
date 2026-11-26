@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, Save, Phone, Mail, MapPin, Instagram, Facebook, ShoppingBag, Truck, Loader2, CreditCard, Percent, Plus, X, FileText, ExternalLink } from 'lucide-react';
+import { Settings, Save, Phone, Mail, MapPin, Instagram, Facebook, ShoppingBag, Truck, Loader2, CreditCard, Percent, Plus, X, FileText, ExternalLink } from 'lucide-react-v462';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';

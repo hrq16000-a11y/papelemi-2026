@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/emp-orio/components/ui/select";
 import { cn } from "@/emp-orio/lib/utils";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon } from "lucide-react-v462";
 import type { ComponentProps, CSSProperties, HTMLAttributes } from "react";
 import {
   createContext,

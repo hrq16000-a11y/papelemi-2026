@@ -1,7 +1,7 @@
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { X, GripVertical, Star } from 'lucide-react';
+import { X, GripVertical, Star } from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { cn } from '@/emp-orio/lib/utils';
 

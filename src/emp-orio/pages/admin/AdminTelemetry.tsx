@@ -7,7 +7,7 @@ import { Button } from "@/emp-orio/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/emp-orio/components/ui/table";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/emp-orio/components/ui/dialog";
-import { ArrowLeft, RefreshCw, Activity, Search, Download, Copy, Eye } from "lucide-react";
+import { ArrowLeft, RefreshCw, Activity, Search, Download, Copy, Eye } from "lucide-react-v462";
 import { toast } from "sonner";
 import { escapeCsv as csvEscape } from '@/emp-orio/lib/seoExport';
 

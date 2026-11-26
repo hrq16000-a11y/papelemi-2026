@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Gift, Heart, Sparkles, X } from "lucide-react";
+import { ArrowRight, Gift, Heart, Sparkles, X } from "lucide-react-v462";
 
 const PRESEPIO_IMAGE = "https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/products/1794003037869-dgml8q.webp";
 const MINI_VELA_IMAGE = "https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/products/1794158842992-pambq.webp";

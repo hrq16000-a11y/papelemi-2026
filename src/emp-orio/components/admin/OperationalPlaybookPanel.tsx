@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { BookMarked } from "lucide-react";
+import { BookMarked } from "lucide-react-v462";
 
 interface Playbook { id: string; name: string; cadence: "weekly" | "monthly" | "quarterly"; steps: string[] }
 interface Props { playbooks: Playbook[] }

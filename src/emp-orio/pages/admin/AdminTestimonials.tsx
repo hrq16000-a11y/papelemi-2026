@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/emp-orio/components/ui/card';
 import { Switch } from '@/emp-orio/components/ui/switch';
 import { Label } from '@/emp-orio/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/emp-orio/components/ui/dialog';
-import { Plus, Pencil, Trash2, Eye, EyeOff, Star } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Star } from 'lucide-react-v462';
 import DraftStatusBadge from '@/emp-orio/components/admin/DraftStatusBadge';
 import { useFormDraft } from '@/emp-orio/hooks/useFormDraft';
 

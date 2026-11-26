@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ShoppingCart, MessageCircle } from "lucide-react";
+import { ShoppingCart, MessageCircle } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { cn } from "@/emp-orio/lib/utils";
 import { trackFunnelEvent } from "@/emp-orio/lib/analytics";

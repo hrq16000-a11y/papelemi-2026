@@ -20,7 +20,7 @@ import {
   RefreshCw,
   Send,
   X
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';
 import { Badge } from '@/emp-orio/components/ui/badge';

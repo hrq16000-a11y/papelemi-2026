@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Plus, Trash2, Loader2, Search, Edit, Eye, Copy, MoreVertical, Globe, EyeOff, ToggleLeft, ToggleRight } from 'lucide-react';
+import { FileText, Plus, Trash2, Loader2, Search, Edit, Eye, Copy, MoreVertical, Globe, EyeOff, ToggleLeft, ToggleRight } from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';
 import { Badge } from '@/emp-orio/components/ui/badge';

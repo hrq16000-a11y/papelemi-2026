@@ -1,6 +1,6 @@
 import { Component, ReactNode, ErrorInfo } from "react";
 import { Button } from "@/emp-orio/components/ui/button";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react-v462";
 import { logClientError, logTelemetryEvent } from "@/emp-orio/lib/telemetry";
 
 interface State {

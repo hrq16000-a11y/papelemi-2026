@@ -13,7 +13,7 @@ import { Input } from '@/emp-orio/components/ui/input';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import { Skeleton } from '@/emp-orio/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/emp-orio/components/ui/select';
-import { Check, X, Loader2, Inbox } from 'lucide-react';
+import { Check, X, Loader2, Inbox } from 'lucide-react-v462';
 import { toast } from 'sonner';
 
 const THRESHOLD = 0.45;

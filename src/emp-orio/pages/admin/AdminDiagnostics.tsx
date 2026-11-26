@@ -12,7 +12,7 @@ import { Switch } from "@/emp-orio/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/emp-orio/components/ui/select";
 import { useToast } from "@/emp-orio/hooks/use-toast";
-import { Download, RefreshCw, Trash2 } from "lucide-react";
+import { Download, RefreshCw, Trash2 } from "lucide-react-v462";
 import { toCsv as toCSV } from '@/emp-orio/lib/seoExport';
 
 interface StaleLog {

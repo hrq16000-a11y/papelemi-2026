@@ -10,7 +10,7 @@ import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Link } from "react-router-dom";
-import { Activity, AlertTriangle, BookOpen, Image, Link2, ShieldCheck, Sparkles, Star, TrendingUp } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Image, Link2, ShieldCheck, Sparkles, Star, TrendingUp } from "lucide-react-v462";
 import {
   buildExecutionBuckets,
   type EditorialTargetInput,

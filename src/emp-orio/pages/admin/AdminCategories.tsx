@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, Edit, Check, X, Search, GripVertical, Loader2, AlertCircle, FileEdit, Globe, EyeOff, Eye } from 'lucide-react';
+import { Plus, Trash2, Edit, Check, X, Search, GripVertical, Loader2, AlertCircle, FileEdit, Globe, EyeOff, Eye } from 'lucide-react-v462';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import { Switch } from '@/emp-orio/components/ui/switch';
 import { trackAdminEvent } from '@/emp-orio/lib/adminUsage';

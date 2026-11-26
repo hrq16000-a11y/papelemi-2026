@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/emp-orio/components/ui/alert";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react-v462";
 import { Badge } from "@/emp-orio/components/ui/badge";
 
 export default function IntegrityBreakAlert({ breaks }: { breaks: string[] }) {

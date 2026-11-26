@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check } from "lucide-react-v462";
 import { Input } from "@/emp-orio/components/ui/input";
 import { cn } from "@/emp-orio/lib/utils";
 import {

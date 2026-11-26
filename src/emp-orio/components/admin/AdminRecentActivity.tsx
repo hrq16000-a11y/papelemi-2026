@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Button } from "@/emp-orio/components/ui/button";
-import { Activity, RefreshCw, ArrowRight } from "lucide-react";
+import { Activity, RefreshCw, ArrowRight } from "lucide-react-v462";
 import { Link } from "react-router-dom";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 

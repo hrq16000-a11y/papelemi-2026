@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/emp-orio/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react-v462";
 
 export default function VanityComplexityAlert({ items }: { items: { id: string; reason: string }[] }) {
   if (!items || items.length === 0) {

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Button } from '@/emp-orio/components/ui/button';
-import { RefreshCw, Download } from 'lucide-react';
+import { RefreshCw, Download } from 'lucide-react-v462';
 import { toast } from 'sonner';
 import { parseSitemapStatus } from '@/emp-orio/lib/sitemap-status';
 import { Link } from 'react-router-dom';

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Progress } from "@/emp-orio/components/ui/progress";
-import { Leaf } from "lucide-react";
+import { Leaf } from "lucide-react-v462";
 
 interface Props { sustainable: number; bloat: number; backlog: number }
 

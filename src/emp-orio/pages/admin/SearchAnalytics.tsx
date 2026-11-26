@@ -20,7 +20,7 @@ import {
   Download,
   TrendingUp,
   Calendar,
-} from "lucide-react";
+} from "lucide-react-v462";
 import {
   Card,
   CardContent,

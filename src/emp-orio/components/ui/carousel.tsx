@@ -1,6 +1,6 @@
 import * as React from "react";
 import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react-v462";
 
 import { cn } from "@/emp-orio/lib/utils";
 import { Button } from "@/emp-orio/components/ui/button";

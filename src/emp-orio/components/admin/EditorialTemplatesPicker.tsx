@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
-import { Sparkles, ClipboardCopy } from 'lucide-react';
+import { Sparkles, ClipboardCopy } from 'lucide-react-v462';
 import { findEditorialTemplates, fillTemplate, EDITORIAL_TEMPLATES } from '@/emp-orio/lib/editorialTemplates';
 import { useToast } from '@/emp-orio/hooks/use-toast';
 

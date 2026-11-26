@@ -1,7 +1,7 @@
 // Fase 8 — Hints (sugestões) heurísticos de taxonomia. Nunca aplica automaticamente.
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react-v462';
 import { suggestTaxonomies, SuggestionInput, TaxonomySuggestion } from '@/emp-orio/lib/taxonomySuggestions';
 
 interface Props extends SuggestionInput {

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Filter, X } from "lucide-react";
+import { Filter, X } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Checkbox } from "@/emp-orio/components/ui/checkbox";
 import { Slider } from "@/emp-orio/components/ui/slider";

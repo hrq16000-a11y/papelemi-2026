@@ -1,4 +1,4 @@
-import { icons, type LucideProps, Sparkles } from "lucide-react";
+import { icons, type LucideProps, Sparkles } from "lucide-react-v462";
 
 interface LucideIconProps extends LucideProps {
   name?: string | null;

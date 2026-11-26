@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, X, Loader2, ArrowRight } from "lucide-react";
+import { Search, X, Loader2, ArrowRight } from "lucide-react-v462";
 import { Input } from "@/emp-orio/components/ui/input";
 import { useDebounce } from "@/emp-orio/hooks/useDebounce";
 import { EXECUTIVE_NAV, type NavLeaf } from "@/emp-orio/lib/executiveNavigation";

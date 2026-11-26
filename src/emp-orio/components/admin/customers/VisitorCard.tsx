@@ -1,5 +1,5 @@
 // Card responsivo para visitante — usado em viewports mobile.
-import { Eye, Smartphone, Monitor, Tablet, Bot, MapPin, Clock } from "lucide-react";
+import { Eye, Smartphone, Monitor, Tablet, Bot, MapPin, Clock } from "lucide-react-v462";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Button } from "@/emp-orio/components/ui/button";
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns-v3';
 import { ptBR } from 'date-fns/locale';
-import { AlertTriangle, MailCheck, MailX, Clock, RefreshCw, Download } from 'lucide-react';
+import { AlertTriangle, MailCheck, MailX, Clock, RefreshCw, Download } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';

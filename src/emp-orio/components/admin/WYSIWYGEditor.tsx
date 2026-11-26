@@ -21,7 +21,7 @@ import {
   Redo,
   Eye,
   Code2
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import { cn } from '@/emp-orio/lib/utils';
 
 interface WYSIWYGEditorProps {

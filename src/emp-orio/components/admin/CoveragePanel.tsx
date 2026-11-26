@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
-import { Compass } from 'lucide-react';
+import { Compass } from 'lucide-react-v462';
 
 interface CoverageRow {
   kind: 'categoria' | 'ocasiao' | 'segmento' | 'tag';

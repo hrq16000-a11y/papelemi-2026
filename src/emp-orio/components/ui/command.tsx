@@ -1,7 +1,7 @@
 import * as React from "react";
 import { type DialogProps } from "@radix-ui/react-dialog";
 import { Command as CommandPrimitive } from "cmdk";
-import { Search } from "lucide-react";
+import { Search } from "lucide-react-v462";
 
 import { cn } from "@/emp-orio/lib/utils";
 import { Dialog, DialogContent } from "@/emp-orio/components/ui/dialog";

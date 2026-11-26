@@ -3,7 +3,7 @@
 // invalida o cache da busca pública via `invalidateSearchCaches` no hook.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Save, Loader2, Tag, X } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Tag, X } from "lucide-react-v462";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Button, buttonVariants } from "@/emp-orio/components/ui/button";

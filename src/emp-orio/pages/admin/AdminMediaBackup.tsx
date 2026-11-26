@@ -24,7 +24,7 @@ import {
   PlayCircle,
   FileText,
   FileSpreadsheet,
-} from "lucide-react";
+} from "lucide-react-v462";
 
 interface MissingAsset {
   img_ref: string;

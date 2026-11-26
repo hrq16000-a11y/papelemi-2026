@@ -6,7 +6,7 @@ import { Label } from '@/emp-orio/components/ui/label';
 import { Switch } from '@/emp-orio/components/ui/switch';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import { Skeleton } from '@/emp-orio/components/ui/skeleton';
-import { BellRing, CheckCircle2, XCircle, MinusCircle, Loader2, Mail } from 'lucide-react';
+import { BellRing, CheckCircle2, XCircle, MinusCircle, Loader2, Mail } from 'lucide-react-v462';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { toast } from 'sonner';
 

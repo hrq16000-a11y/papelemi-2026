@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Wand2 } from 'lucide-react';
+import { Loader2, Wand2 } from 'lucide-react-v462';
 import {
   Dialog,
   DialogContent,

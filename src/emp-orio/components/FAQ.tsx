@@ -1,4 +1,4 @@
-import { HelpCircle, MessageSquare } from "lucide-react";
+import { HelpCircle, MessageSquare } from "lucide-react-v462";
 import {
   Accordion,
   AccordionContent,

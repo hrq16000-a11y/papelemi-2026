@@ -13,7 +13,7 @@ import { Skeleton } from "@/emp-orio/components/ui/skeleton";
 import {
   MessageCircle, Mail, Phone, Globe, MapPin, Smartphone, Monitor,
   Tablet, Bot, Clock, Activity, Tag, Eye,
-} from "lucide-react";
+} from "lucide-react-v462";
 
 export type ProfileKind = "visitor" | "customer" | "user";
 

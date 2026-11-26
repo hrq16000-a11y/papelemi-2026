@@ -8,7 +8,7 @@ import { Input } from '@/emp-orio/components/ui/input';
 import { Label } from '@/emp-orio/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { useToast } from '@/emp-orio/hooks/use-toast';
-import { Eye, EyeOff, Lock, Mail, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowLeft } from 'lucide-react-v462';
 import { Link } from 'react-router-dom';
 
 const loginSchema = z.object({

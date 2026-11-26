@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react-v462";
 
 export default function CircularReasoningAlert({ risk }: { risk: number }) {
   const level = risk >= 60 ? "critical" : risk >= 35 ? "watch" : "clear";

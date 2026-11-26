@@ -17,7 +17,7 @@ import { Badge } from "@/emp-orio/components/ui/badge";
 import { ScrollArea } from "@/emp-orio/components/ui/scroll-area";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Upload, Database, Image as ImageIcon, ShoppingBag, FileCode2, AlertTriangle, Loader2, Package, ShieldCheck } from "lucide-react";
+import { Download, Upload, Database, Image as ImageIcon, ShoppingBag, FileCode2, AlertTriangle, Loader2, Package, ShieldCheck } from "lucide-react-v462";
 
 type ExportManifest = {
   version: number;

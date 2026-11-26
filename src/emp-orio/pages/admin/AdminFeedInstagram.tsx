@@ -14,7 +14,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, Trash2, ExternalLink, Eye, EyeOff, Instagram, GripVertical, Save, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Eye, EyeOff, Instagram, GripVertical, Save, AlertCircle, CheckCircle2 } from "lucide-react-v462";
 import { toast } from "sonner";
 import {
   useInstagramFeedEmbedsAdmin,

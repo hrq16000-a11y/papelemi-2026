@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, XCircle, Loader2, ShieldCheck, Save } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, ShieldCheck, Save } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';

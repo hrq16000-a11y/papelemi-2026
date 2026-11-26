@@ -1,5 +1,5 @@
 import { Card } from "@/emp-orio/components/ui/card";
-import { Orbit } from "lucide-react";
+import { Orbit } from "lucide-react-v462";
 
 export default function UnifiedBusScoreCard({
   score, verdict, reasons,

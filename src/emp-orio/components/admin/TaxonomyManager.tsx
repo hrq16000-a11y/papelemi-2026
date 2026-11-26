@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Check, AlertTriangle, EyeOff, FileEdit } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Check, AlertTriangle, EyeOff, FileEdit } from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';
 import { Card, CardContent } from '@/emp-orio/components/ui/card';

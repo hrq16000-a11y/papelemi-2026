@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
-import { MessageCircle, Plus, UserRound, Check, Trash2 } from 'lucide-react';
+import { MessageCircle, Plus, UserRound, Check, Trash2 } from 'lucide-react-v462';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { useAuth } from '@/emp-orio/hooks/useAuth';
 import { useContactInfo } from '@/emp-orio/hooks/useContactInfo';

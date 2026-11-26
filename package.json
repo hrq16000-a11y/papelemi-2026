@@ -107,7 +107,8 @@
     "zustand": "^5.0.13",
     "date-fns-v3": "npm:date-fns@^3.6.0",
     "react-day-picker-v8": "npm:react-day-picker@^8.10.1",
-    "react-resizable-panels-v2": "npm:react-resizable-panels@^2.1.9"
+    "react-resizable-panels-v2": "npm:react-resizable-panels@^2.1.9",
+    "lucide-react-v462": "npm:lucide-react@^0.462.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",

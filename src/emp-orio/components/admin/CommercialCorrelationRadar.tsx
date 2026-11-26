@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
-import { Radar } from "lucide-react";
+import { Radar } from "lucide-react-v462";
 
 interface CorrelationItem { label: string; pearson: number; sampleSize: number }
 interface Props { items: CorrelationItem[]; leverage: number }

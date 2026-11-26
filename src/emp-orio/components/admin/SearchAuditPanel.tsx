@@ -2,7 +2,7 @@
 // Somente admin (RLS em `search_audit_log`).
 
 import { useMemo, useState } from "react";
-import { History, Loader2, Download } from "lucide-react";
+import { History, Loader2, Download } from "lucide-react-v462";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Badge } from "@/emp-orio/components/ui/badge";

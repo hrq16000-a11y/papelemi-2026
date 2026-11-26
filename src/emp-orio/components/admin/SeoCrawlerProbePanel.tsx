@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bot, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Bot, Loader2, CheckCircle2, XCircle } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';

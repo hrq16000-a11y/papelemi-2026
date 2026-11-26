@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';
-import { ArrowLeft, AlertTriangle, EyeOff, ImageOff, FileQuestion, Link2Off, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, EyeOff, ImageOff, FileQuestion, Link2Off, ArrowRightLeft, CheckCircle2 } from 'lucide-react-v462';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { useDbCategories, useDbOccasions } from '@/emp-orio/hooks/useProducts';
 import { useSegments } from '@/emp-orio/hooks/useSegments';

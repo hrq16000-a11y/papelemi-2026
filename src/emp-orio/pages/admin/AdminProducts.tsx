@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Search, Eye, EyeOff, ExternalLink, Scale, Loader2, ArrowUp, ArrowDown, ArrowUpDown, X, CheckSquare, Wand2, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Eye, EyeOff, ExternalLink, Scale, Loader2, ArrowUp, ArrowDown, ArrowUpDown, X, CheckSquare, Wand2, AlertTriangle } from 'lucide-react-v462';
 import { Checkbox } from '@/emp-orio/components/ui/checkbox';
 import BulkEditProductsDialog from '@/emp-orio/components/admin/BulkEditProductsDialog';
 import {

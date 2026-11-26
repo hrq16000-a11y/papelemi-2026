@@ -28,7 +28,7 @@ import {
   ShieldCheck, AlertCircle, CheckCircle2, Download, ShieldOff,
   Users, UserPlus, ExternalLink, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown,
   Mail, Calendar, LogIn, User as UserIcon, Link2, Copy, MessageCircle,
-} from "lucide-react";
+} from "lucide-react-v462";
 import { format } from "date-fns-v3";
 import { ptBR } from "date-fns/locale";
 import { useAdminWorkspaceStore } from "@/emp-orio/stores/adminWorkspaceStore";

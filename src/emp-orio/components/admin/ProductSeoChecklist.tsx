@@ -1,5 +1,5 @@
 // Fase 8 — Checklist operacional de produto (não bloqueia save).
-import { Check, X, ShieldCheck } from 'lucide-react';
+import { Check, X, ShieldCheck } from 'lucide-react-v462';
 import { Progress } from '@/emp-orio/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import type { ChecklistResult } from '@/emp-orio/lib/thinContent';

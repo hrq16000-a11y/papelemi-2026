@@ -1,4 +1,4 @@
-import { Truck, Percent, Headset, CreditCard, Shield, Heart, Sparkles, Package, Clock, Star, type LucideIcon } from "lucide-react";
+import { Truck, Percent, Headset, CreditCard, Shield, Heart, Sparkles, Package, Clock, Star, type LucideIcon } from "lucide-react-v462";
 import { useTrustBadgesConfig, type TrustBadgeItem } from "@/emp-orio/hooks/useStoreSettings";
 
 const ICON_MAP: Record<TrustBadgeItem['icon'], LucideIcon> = {

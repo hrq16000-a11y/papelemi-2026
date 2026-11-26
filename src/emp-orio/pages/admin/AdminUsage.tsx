@@ -6,7 +6,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/emp-orio/components/ui/alert-dialog';
 import { Badge } from '@/emp-orio/components/ui/badge';
-import { Activity, Download, RotateCcw, RefreshCw } from 'lucide-react';
+import { Activity, Download, RotateCcw, RefreshCw } from 'lucide-react-v462';
 import { toast } from 'sonner';
 import {
   getUsageAggregates,

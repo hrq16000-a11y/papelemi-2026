@@ -1,7 +1,7 @@
 // Banner de consentimento LGPD — compacto, controlado pelo admin via cookie_consent_config.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Cookie, X } from "lucide-react";
+import { Cookie, X } from "lucide-react-v462";
 import { getConsentStatus, recordConsent } from "@/emp-orio/hooks/useVisitorTracking";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { Button } from '@/emp-orio/components/ui/button';

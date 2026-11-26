@@ -6,7 +6,7 @@ import { Switch } from "@/emp-orio/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/emp-orio/components/ui/dialog";
 import { useShippingProviders, type ShippingProvider } from "@/emp-orio/hooks/useShippingAdmin";
 import { useToast } from "@/emp-orio/hooks/use-toast";
-import { Loader2, Pencil, AlertTriangle, ShieldOff, CheckCircle2 } from "lucide-react";
+import { Loader2, Pencil, AlertTriangle, ShieldOff, CheckCircle2 } from "lucide-react-v462";
 
 // Provedores que só funcionam com credenciais válidas (api_key + endpoint).
 const REQUIRES_CREDENTIALS = new Set(["melhor_envio"]);

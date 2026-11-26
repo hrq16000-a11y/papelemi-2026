@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
-import { Infinity as InfinityIcon, Save } from "lucide-react";
+import { Infinity as InfinityIcon, Save } from "lucide-react-v462";
 import { toast } from "sonner";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 

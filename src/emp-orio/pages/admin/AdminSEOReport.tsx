@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Search,
   Link as LinkIcon
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Progress } from '@/emp-orio/components/ui/progress';

@@ -4,7 +4,7 @@ import { Label } from '@/emp-orio/components/ui/label';
 import { Switch } from '@/emp-orio/components/ui/switch';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import SingleImageUpload from '@/emp-orio/components/admin/SingleImageUpload';
-import { ArrowDown, ArrowUp, Plus, Trash2, Type, Palette, Image as ImageIcon, ListChecks } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, Trash2, Type, Palette, Image as ImageIcon, ListChecks } from 'lucide-react-v462';
 import {
   OPTION_TYPE_LABEL,
   createChoice,

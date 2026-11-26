@@ -24,7 +24,7 @@ import { buildContentValueMap } from "@/emp-orio/lib/contentValueMap";
 import {
   AlertTriangle, Sparkles, Zap, Rocket, TrendingUp, Coins,
   ListChecks, ShieldAlert, Target, DollarSign,
-} from "lucide-react";
+} from "lucide-react-v462";
 
 export default function AdminSeoWarRoom() {
   const { data: hubs = [] } = useThemeHubs();

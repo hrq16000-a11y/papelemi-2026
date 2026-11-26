@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Button } from '@/emp-orio/components/ui/button';
-import { Sparkles, MinusCircle, Loader2 } from 'lucide-react';
+import { Sparkles, MinusCircle, Loader2 } from 'lucide-react-v462';
 import { setPrivateMotionScope, useReducedMotion } from '@/emp-orio/hooks/useReducedMotion';
 import { useToast } from '@/emp-orio/hooks/use-toast';
 

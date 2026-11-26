@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns-v3';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle2, XCircle, History, RefreshCw, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, History, RefreshCw, Loader2 } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';

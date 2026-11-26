@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Rss, Save, Loader2, RefreshCw, ExternalLink, CheckCircle2, 
   AlertCircle, Globe, Truck, Tag, FileText, Copy, Check
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';

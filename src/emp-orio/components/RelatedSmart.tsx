@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react-v462";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import ProductCard from "@/emp-orio/components/ProductCard";
 import { sortByFeatured } from "@/emp-orio/lib/catalogFilter";

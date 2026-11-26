@@ -6,7 +6,7 @@ import { Label } from "@/emp-orio/components/ui/label";
 import { Switch } from "@/emp-orio/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/emp-orio/components/ui/dialog";
-import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowRight } from "lucide-react-v462";
 import { useToast } from "@/emp-orio/hooks/use-toast";
 
 const empty: Partial<Redirect> = { from_path: "", to_path: "", status_code: 301, is_active: true };

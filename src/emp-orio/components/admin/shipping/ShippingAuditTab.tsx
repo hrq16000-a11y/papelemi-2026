@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/emp-orio/components/ui/select";
 import { useShippingAuditLogs } from "@/emp-orio/hooks/useShippingAdmin";
-import { AlertTriangle, KeyRound, Loader2, Truck, XCircle } from "lucide-react";
+import { AlertTriangle, KeyRound, Loader2, Truck, XCircle } from "lucide-react-v462";
 
 type EventFilter = "all" | "provider_error" | "estimate_fallback" | "missing_credentials";
 

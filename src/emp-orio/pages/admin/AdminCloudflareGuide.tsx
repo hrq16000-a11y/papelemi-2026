@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';
-import { Copy, Check, ExternalLink, AlertCircle } from 'lucide-react';
+import { Copy, Check, ExternalLink, AlertCircle } from 'lucide-react-v462';
 import { toast } from 'sonner';
 
 const WORKER_CODE = `// worker.js — Cloudflare Worker

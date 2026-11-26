@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type TouchEvent } from "react";
 import { Helmet } from "react-helmet-async";
-import { Heart, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, Sparkles, ChevronLeft, ChevronRight } from "lucide-react-v462";
 
 import TrustBadges from "@/emp-orio/components/TrustBadges";
 import HeroLoading from "@/emp-orio/components/HeroLoading";

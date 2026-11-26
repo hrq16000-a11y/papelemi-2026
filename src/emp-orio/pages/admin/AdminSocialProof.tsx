@@ -10,7 +10,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/emp-orio/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Save, RotateCcw, MessageCircle } from "lucide-react";
+import { Loader2, Save, RotateCcw, MessageCircle } from "lucide-react-v462";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import StickySaveBar from "@/emp-orio/components/admin/StickySaveBar";
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/emp-orio/components/ui/dialog";
 import { Button } from "@/emp-orio/components/ui/button";
-import { MessageCircle, Gift, Package, Clock } from "lucide-react";
+import { MessageCircle, Gift, Package, Clock } from "lucide-react-v462";
 import { trackFunnelEvent } from "@/emp-orio/lib/analytics";
 
 interface ExitIntentPopupProps {

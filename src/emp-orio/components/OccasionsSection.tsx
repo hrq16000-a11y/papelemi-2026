@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, ArrowRight } from "lucide-react";
+import { Heart, ArrowRight } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { useDbOccasions } from "@/emp-orio/hooks/useProducts";
 import { BlurImage } from "@/emp-orio/components/BlurImage";

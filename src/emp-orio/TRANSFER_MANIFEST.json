@@ -4,7 +4,7 @@
   "destinationBranch": "feat/catalog-admin-parity-01-20261125",
   "strategy": "original admin route group mounted inside the existing TanStack /admin route",
   "reusedFiles": 1373,
-  "reusedBytes": 6241931,
+  "reusedBytes": 6243311,
   "skippedSourceMediaFiles": 0,
   "byArea": {
     "components": 563,

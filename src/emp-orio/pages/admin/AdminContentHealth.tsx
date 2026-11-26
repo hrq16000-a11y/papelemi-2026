@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Card, CardContent } from '@/emp-orio/components/ui/card';
-import { Activity, ChevronRight } from 'lucide-react';
+import { Activity, ChevronRight } from 'lucide-react-v462';
 import { detectThinContent } from '@/emp-orio/lib/thinContent';
 import CoveragePanel from '@/emp-orio/components/admin/CoveragePanel';
 import TagGovernancePanel from '@/emp-orio/components/admin/TagGovernancePanel';

@@ -4,7 +4,7 @@
  */
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { Check, Circle } from "lucide-react";
+import { Check, Circle } from "lucide-react-v462";
 import {
   buildChecklistFromTarget,
   checklistProgress,

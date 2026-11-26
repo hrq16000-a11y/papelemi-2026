@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Instagram, Facebook, ShoppingCart, LogIn, Search, Heart } from "lucide-react";
+import { Menu, X, Instagram, Facebook, ShoppingCart, LogIn, Search, Heart } from "lucide-react-v462";
 import MiniCart from "@/emp-orio/components/MiniCart";
 import { Button } from "@/emp-orio/components/ui/button";
 import SearchBar from "@/emp-orio/components/SearchBar";

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Switch } from "@/emp-orio/components/ui/switch";
 import { Label } from "@/emp-orio/components/ui/label";
-import { Loader2, MessageCircle, Power, Star } from "lucide-react";
+import { Loader2, MessageCircle, Power, Star } from "lucide-react-v462";
 import { useFeatureFlags, useUpdateFeatureFlags, FeatureFlags } from "@/emp-orio/hooks/useFeatureFlags";
 import { toast } from "sonner";
 

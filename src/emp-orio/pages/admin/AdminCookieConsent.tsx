@@ -12,7 +12,7 @@ import {
 } from "@/emp-orio/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { toast } from "sonner";
-import { Cookie, Save, Eye } from "lucide-react";
+import { Cookie, Save, Eye } from "lucide-react-v462";
 import StickySaveBar from "@/emp-orio/components/admin/StickySaveBar";
 
 type Cfg = {

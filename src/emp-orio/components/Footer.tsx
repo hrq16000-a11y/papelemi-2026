@@ -1,4 +1,4 @@
-import { Heart, Instagram, Facebook, MapPin, Phone, ExternalLink, Package } from "lucide-react"; // Heart/Package mantidos por uso em getIcon()
+import { Heart, Instagram, Facebook, MapPin, Phone, ExternalLink, Package } from "lucide-react-v462"; // Heart/Package mantidos por uso em getIcon()
 import { Link } from "react-router-dom";
 import logo from "@/emp-orio/assets/papelemi-mark.svg";
 import { useFooterConfig, defaultFooterConfig } from "@/emp-orio/hooks/useStoreSettings";

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, ChevronRight, ZoomIn, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, X } from "lucide-react-v462";
 import { Dialog, DialogContent } from "@/emp-orio/components/ui/dialog";
 import { cn } from "@/emp-orio/lib/utils";
 import { optimizeImage } from "@/emp-orio/lib/image";

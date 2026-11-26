@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Tag } from "lucide-react";
+import { Tag } from "lucide-react-v462";
 import CrossSellComplete from "@/emp-orio/components/CrossSellComplete";
 import ProductBundleBelongsTo from "@/emp-orio/components/ProductBundleBelongsTo";
 import VisualComposition from "@/emp-orio/components/VisualComposition";

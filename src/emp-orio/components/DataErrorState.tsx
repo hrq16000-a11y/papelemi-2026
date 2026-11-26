@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { AlertTriangle, RefreshCw, WifiOff } from "lucide-react";
+import { AlertTriangle, RefreshCw, WifiOff } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { reportError, type ErrorScope } from "@/emp-orio/lib/errorReporting";
 import CopyCorrelationId from "@/emp-orio/components/CopyCorrelationId";

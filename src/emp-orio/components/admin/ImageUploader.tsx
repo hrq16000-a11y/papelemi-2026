@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, X, Loader2, Image as ImageIcon, GripVertical, Star } from 'lucide-react';
+import { Upload, X, Loader2, Image as ImageIcon, GripVertical, Star } from 'lucide-react-v462';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';

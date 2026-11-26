@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Gauge, Loader2, RefreshCw, AlertTriangle, Download, BellRing } from 'lucide-react';
+import { Gauge, Loader2, RefreshCw, AlertTriangle, Download, BellRing } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';

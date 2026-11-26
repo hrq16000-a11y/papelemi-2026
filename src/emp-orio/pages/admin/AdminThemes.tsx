@@ -4,7 +4,7 @@
  */
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Plus, ExternalLink, Trash2, Save } from "lucide-react";
+import { Loader2, Plus, ExternalLink, Trash2, Save } from "lucide-react-v462";
 import { Button, buttonVariants } from "@/emp-orio/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Tags, Calendar, TrendingUp, ArrowUpRight, Plus, Sparkles, DollarSign, ShoppingCart, Users, BarChart3 } from 'lucide-react';
+import { Package, Tags, Calendar, TrendingUp, ArrowUpRight, Plus, Sparkles, DollarSign, ShoppingCart, Users, BarChart3 } from 'lucide-react-v462';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { useDbProducts, useDbCategories, useDbOccasions } from '@/emp-orio/hooks/useProducts';
 import { supabase } from '@/emp-orio/integrations/supabase/client';

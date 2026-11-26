@@ -19,7 +19,7 @@ import { Button } from "@/emp-orio/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
-import { Loader2, RefreshCw, AlertTriangle, Sparkles, TrendingUp } from "lucide-react";
+import { Loader2, RefreshCw, AlertTriangle, Sparkles, TrendingUp } from "lucide-react-v462";
 import { useAuthorityRefresh } from "@/emp-orio/hooks/useAuthorityRefresh";
 import { toast } from "sonner";
 import { calculateIndexReadiness } from "@/emp-orio/lib/authorityEngine";

@@ -10,7 +10,7 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
-} from "lucide-react";
+} from "lucide-react-v462";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Input } from "@/emp-orio/components/ui/input";

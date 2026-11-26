@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react-v462";
 
 import { cn } from "@/emp-orio/lib/utils";
 import { ButtonProps, buttonVariants } from "@/emp-orio/components/ui/button";

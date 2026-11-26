@@ -16,7 +16,7 @@ import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { Loader2, Activity, AlertTriangle, Link2, GitBranch, ShieldOff } from "lucide-react";
+import { Loader2, Activity, AlertTriangle, Link2, GitBranch, ShieldOff } from "lucide-react-v462";
 import { detectOverlinking, type OverlinkLink } from "@/emp-orio/lib/internalLinking";
 import { computeTelemetry } from "@/emp-orio/lib/seoTelemetry";
 import {

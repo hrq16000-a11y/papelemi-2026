@@ -5,7 +5,7 @@ import { Input } from "@/emp-orio/components/ui/input";
 import { Label } from "@/emp-orio/components/ui/label";
 import { Switch } from "@/emp-orio/components/ui/switch";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { Loader2, Save, Clock, History, RefreshCcw } from "lucide-react";
+import { Loader2, Save, Clock, History, RefreshCcw } from "lucide-react-v462";
 import { useToast } from "@/emp-orio/hooks/use-toast";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, X, Save, Loader2, Tag, Check, AlertCircle, Truck } from 'lucide-react';
+import { ArrowLeft, Plus, X, Save, Loader2, Tag, Check, AlertCircle, Truck } from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import ImageUploader from '@/emp-orio/components/admin/ImageUploader';
 import PersonalizationOptionsEditor from '@/emp-orio/components/admin/PersonalizationOptionsEditor';
@@ -48,7 +48,7 @@ import SocialSeoPreviews from '@/emp-orio/components/admin/SocialSeoPreviews';
 import EditorialTemplatesPicker from '@/emp-orio/components/admin/EditorialTemplatesPicker';
 import TaxonomySuggestionsHints from '@/emp-orio/components/admin/TaxonomySuggestionsHints';
 import { Link } from 'react-router-dom';
-import { FileText, ExternalLink } from 'lucide-react';
+import { FileText, ExternalLink } from 'lucide-react-v462';
 import { useFormUsageTracking } from '@/emp-orio/hooks/useFormUsageTracking';
 import { trackAdminEvent } from '@/emp-orio/lib/adminUsage';
 import { PdpBadge } from '@/emp-orio/components/PdpBadge';

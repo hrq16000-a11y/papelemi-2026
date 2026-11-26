@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Progress } from "@/emp-orio/components/ui/progress";
-import { BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react-v462";
 
 interface Props { reliability: number; priorities: string[] }
 

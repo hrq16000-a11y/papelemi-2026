@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, Eye, EyeOff, Home, Loader2, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, Home, Loader2, Package } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Switch } from "@/emp-orio/components/ui/switch";

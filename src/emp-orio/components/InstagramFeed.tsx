@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Instagram, Heart, ExternalLink, X, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Instagram, Heart, ExternalLink, X, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react-v462";
 import { useInstagramPosts } from "@/emp-orio/hooks/useInstagramPosts";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/emp-orio/components/ui/dialog";
 import sabonetesImg from "@/emp-orio/assets/papelemi-mark.svg";

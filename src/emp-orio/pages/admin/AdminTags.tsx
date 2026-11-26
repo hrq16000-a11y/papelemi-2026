@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Tag, Plus, Trash2, Loader2, Search, Edit, Check, X } from 'lucide-react';
+import { Tag, Plus, Trash2, Loader2, Search, Edit, Check, X } from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';

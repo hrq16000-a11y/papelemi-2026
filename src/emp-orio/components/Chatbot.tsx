@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { useFeatureFlags } from '@/emp-orio/hooks/useFeatureFlags';
 const Chatbot = () => {

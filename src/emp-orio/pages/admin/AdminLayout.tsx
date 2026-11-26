@@ -11,7 +11,7 @@ import {
   Activity, Clock, Star, BookOpen, TrendingUp, Network, Rocket, BrainCircuit,
   Brain, Landmark, Cpu, Orbit, Eye, Compass, Crown, Infinity as InfinityIcon,
   Hexagon, Layers3, ShieldAlert, Boxes, ChevronDown, Cookie, Truck, Power, BellRing,
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import { cn } from '@/emp-orio/lib/utils';
 import { EXECUTIVE_NAV, type NavGroup, type NavLeaf } from '@/emp-orio/lib/executiveNavigation';
 import { useAdminPageTracking } from '@/emp-orio/hooks/useAdminPageTracking';

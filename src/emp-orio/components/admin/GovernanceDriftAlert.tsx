@@ -1,5 +1,5 @@
 import { Card } from "@/emp-orio/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react-v462";
 
 export default function GovernanceDriftAlert({ drift, alerts }: { drift: number; alerts: string[] }) {
   const severity = drift >= 60 ? "destructive" : drift >= 40 ? "secondary" : "muted";

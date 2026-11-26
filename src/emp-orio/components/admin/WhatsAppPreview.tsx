@@ -1,4 +1,4 @@
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck } from "lucide-react-v462";
 
 interface WhatsAppPreviewProps {
   /** Texto da mensagem (\n é convertido em quebra de linha). */

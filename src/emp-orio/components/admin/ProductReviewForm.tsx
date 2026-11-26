@@ -1,6 +1,6 @@
 // Fase 7.1 — Formulário reutilizável para criar/editar avaliações
 import { useEffect, useState } from 'react';
-import { Star } from 'lucide-react';
+import { Star } from 'lucide-react-v462';
 import { Input } from '@/emp-orio/components/ui/input';
 import { Label } from '@/emp-orio/components/ui/label';
 import { Textarea } from '@/emp-orio/components/ui/textarea';

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Input } from '@/emp-orio/components/ui/input';
-import { FileEdit, Globe, Loader2, RefreshCw } from 'lucide-react';
+import { FileEdit, Globe, Loader2, RefreshCw } from 'lucide-react-v462';
 import { Label } from '@/emp-orio/components/ui/label';
 import { Textarea } from '@/emp-orio/components/ui/textarea';
 import { Switch } from '@/emp-orio/components/ui/switch';
 import { Button } from '@/emp-orio/components/ui/button';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react-v462';
 import { toast } from 'sonner';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import SeoPreview from './SeoPreview';

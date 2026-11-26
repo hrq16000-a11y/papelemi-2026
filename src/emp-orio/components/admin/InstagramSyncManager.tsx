@@ -10,7 +10,7 @@ import { ScrollArea } from "@/emp-orio/components/ui/scroll-area";
 import {
   Loader2, RefreshCw, ShieldCheck, AlertTriangle, CheckCircle2,
   Eye, Download, Clock, History, ExternalLink,
-} from "lucide-react";
+} from "lucide-react-v462";
 import { toast } from "sonner";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 

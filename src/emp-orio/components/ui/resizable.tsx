@@ -1,4 +1,4 @@
-import { GripVertical } from "lucide-react";
+import { GripVertical } from "lucide-react-v462";
 import * as ResizablePrimitive from "react-resizable-panels-v2";
 
 import { cn } from "@/emp-orio/lib/utils";

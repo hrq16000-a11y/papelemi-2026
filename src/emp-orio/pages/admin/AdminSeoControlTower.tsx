@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
 import { Textarea } from "@/emp-orio/components/ui/textarea";
 import { toast } from "@/emp-orio/hooks/use-toast";
-import { Loader2, Camera } from "lucide-react";
+import { Loader2, Camera } from "lucide-react-v462";
 
 import { computeTelemetry, type TelemetrySnapshot } from "@/emp-orio/lib/seoTelemetry";
 import { buildControlTowerReport } from "@/emp-orio/lib/seoControlTower";

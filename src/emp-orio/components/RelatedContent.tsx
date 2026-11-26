@@ -3,7 +3,7 @@
  * Fase 11 — Editorial mode: prioriza posts reais, hubs fortes e taxonomias com autoridade.
  */
 import { Link } from "react-router-dom";
-import { BookOpen, Tag as TagIcon, Package } from "lucide-react";
+import { BookOpen, Tag as TagIcon, Package } from "lucide-react-v462";
 import { PRODUCT_PATH_PREFIX } from "@/emp-orio/lib/urls";
 
 export interface RelatedItem {

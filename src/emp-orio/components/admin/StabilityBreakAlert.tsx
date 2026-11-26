@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react-v462";
 
 export default function StabilityBreakAlert({ breaks }: { breaks: string[] }) {
   const level = breaks.length >= 3 ? "critical" : breaks.length >= 1 ? "watch" : "clear";

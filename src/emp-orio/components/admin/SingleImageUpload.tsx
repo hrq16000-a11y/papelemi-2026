@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Upload, Loader2, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, Loader2, X, Image as ImageIcon } from 'lucide-react-v462';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';

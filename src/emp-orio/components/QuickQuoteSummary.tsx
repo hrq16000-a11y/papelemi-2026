@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { MessageCircle, Package, Clock, Truck } from "lucide-react";
+import { MessageCircle, Package, Clock, Truck } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { trackFunnelEvent } from "@/emp-orio/lib/analytics";
 import { normalizePersonalization, normalizeQuantity } from "@/emp-orio/lib/whatsappTemplate";

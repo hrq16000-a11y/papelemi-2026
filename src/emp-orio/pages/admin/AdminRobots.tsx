@@ -7,7 +7,7 @@ import { Switch } from "@/emp-orio/components/ui/switch";
 import { Textarea } from "@/emp-orio/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/emp-orio/components/ui/card";
 import { useToast } from "@/emp-orio/hooks/use-toast";
-import { Bot, Save, Copy, ExternalLink } from "lucide-react";
+import { Bot, Save, Copy, ExternalLink } from "lucide-react-v462";
 import StickySaveBar from "@/emp-orio/components/admin/StickySaveBar";
 
 const FUNC_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/robots-txt`;

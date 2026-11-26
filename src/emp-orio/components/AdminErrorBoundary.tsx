@@ -1,6 +1,6 @@
 import { Component, ReactNode } from "react";
 import { Button } from "@/emp-orio/components/ui/button";
-import { AlertTriangle, RefreshCw, ArrowLeft } from "lucide-react";
+import { AlertTriangle, RefreshCw, ArrowLeft } from "lucide-react-v462";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { logTelemetryEvent } from "@/emp-orio/lib/telemetry";
 

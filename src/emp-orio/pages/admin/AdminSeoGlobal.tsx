@@ -8,7 +8,7 @@ import { Input } from '@/emp-orio/components/ui/input';
 import { Label } from '@/emp-orio/components/ui/label';
 import { Textarea } from '@/emp-orio/components/ui/textarea';
 import { Switch } from '@/emp-orio/components/ui/switch';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react-v462';
 import { toast } from 'sonner';
 import GlobalSitemapPanel from '@/emp-orio/components/admin/GlobalSitemapPanel';
 

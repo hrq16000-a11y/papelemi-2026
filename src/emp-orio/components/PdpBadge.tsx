@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Truck } from "lucide-react";
+import { Truck } from "lucide-react-v462";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import type { PdpBadgeConfig } from "@/emp-orio/hooks/useConversionCtaConfig";

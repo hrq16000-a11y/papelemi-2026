@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/emp-orio/hooks/useAuth';
-import { Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react-v462';
 
 interface Props {
   children: React.ReactNode;

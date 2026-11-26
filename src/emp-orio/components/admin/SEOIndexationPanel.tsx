@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/emp
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/emp-orio/components/ui/table';
-import { RefreshCw, AlertTriangle, CheckCircle2, ExternalLink, Send, ListChecks, TrendingUp } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle2, ExternalLink, Send, ListChecks, TrendingUp } from 'lucide-react-v462';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns-v3';

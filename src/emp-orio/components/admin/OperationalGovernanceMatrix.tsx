@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react-v462";
 
 interface Gap { area: string; severity: "low" | "medium" | "high"; description: string }
 interface Props { maturity: number; gaps: Gap[] }

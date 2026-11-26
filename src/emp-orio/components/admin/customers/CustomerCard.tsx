@@ -1,5 +1,5 @@
 // Card responsivo para cliente — usado em viewports mobile.
-import { Edit, Trash2, ShieldCheck, Mail, Phone, MapPin } from "lucide-react";
+import { Edit, Trash2, ShieldCheck, Mail, Phone, MapPin } from "lucide-react-v462";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Button } from "@/emp-orio/components/ui/button";
 

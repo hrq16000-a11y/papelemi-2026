@@ -5,7 +5,7 @@ import ShippingSettingsTab from "@/emp-orio/components/admin/shipping/ShippingSe
 import ShippingProvidersTab from "@/emp-orio/components/admin/shipping/ShippingProvidersTab";
 import ShippingRulesTab from "@/emp-orio/components/admin/shipping/ShippingRulesTab";
 import ShippingAuditTab from "@/emp-orio/components/admin/shipping/ShippingAuditTab";
-import { Truck, Settings as SettingsIcon, ExternalLink } from "lucide-react";
+import { Truck, Settings as SettingsIcon, ExternalLink } from "lucide-react-v462";
 
 export default function AdminShipping() {
   return (

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { OperationalSettingsPanel } from '@/emp-orio/components/admin/OperationalSettingsPanel';
 import ImageJobsPanel from '@/emp-orio/components/admin/ImageJobsPanel';
-import { ShieldAlert, RefreshCw, Loader2, ExternalLink, MailCheck, MailX } from 'lucide-react';
+import { ShieldAlert, RefreshCw, Loader2, ExternalLink, MailCheck, MailX } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';

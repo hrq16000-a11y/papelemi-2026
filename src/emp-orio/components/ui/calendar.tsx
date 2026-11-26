@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react-v462";
 import { DayPicker } from "react-day-picker-v8";
 
 import { cn } from "@/emp-orio/lib/utils";

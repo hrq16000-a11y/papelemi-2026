@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Button } from "@/emp-orio/components/ui/button";
-import { Copy, ExternalLink, EyeOff } from "lucide-react";
+import { Copy, ExternalLink, EyeOff } from "lucide-react-v462";
 import { buildInternalLinkPlan, type BriefEntityInput } from "@/emp-orio/lib/editorialBriefs";
 import { useToast } from "@/emp-orio/hooks/use-toast";
 

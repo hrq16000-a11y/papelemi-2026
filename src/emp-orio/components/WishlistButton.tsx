@@ -1,4 +1,4 @@
-import { Heart } from 'lucide-react';
+import { Heart } from 'lucide-react-v462';
 import { useWishlist } from '@/emp-orio/hooks/useWishlist';
 import { useToast } from '@/emp-orio/hooks/use-toast';
 import { cn } from '@/emp-orio/lib/utils';

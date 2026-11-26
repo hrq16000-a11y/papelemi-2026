@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Clock, Loader2, RefreshCw, AlertTriangle } from 'lucide-react-v462';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Skeleton } from '@/emp-orio/components/ui/skeleton';

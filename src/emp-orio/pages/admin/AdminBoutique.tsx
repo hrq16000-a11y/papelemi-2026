@@ -8,7 +8,7 @@ import { Textarea } from '@/emp-orio/components/ui/textarea';
 import { Label } from '@/emp-orio/components/ui/label';
 import { Switch } from '@/emp-orio/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/emp-orio/components/ui/tabs';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react-v462';
 import { toast } from 'sonner';
 import AfterSalesRuleFields from '@/emp-orio/components/admin/AfterSalesRuleFields';
 import { defaultAfterSalesRule, followupDueAt, canScheduleFollowup, type AfterSalesRule, type FollowupEvent } from '@/emp-orio/lib/after-sales';

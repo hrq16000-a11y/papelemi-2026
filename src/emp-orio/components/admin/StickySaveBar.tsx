@@ -1,6 +1,6 @@
 // Sprint final — barra fixa de salvar para formulários admin longos.
 // Mantém o CTA primário sempre visível e indica estado dirty / autosave.
-import { Save, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Save, Loader2, CheckCircle2, AlertCircle } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { cn } from "@/emp-orio/lib/utils";
 

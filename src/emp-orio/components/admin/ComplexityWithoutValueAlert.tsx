@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/emp-orio/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react-v462";
 
 interface Props { items: Array<{ name: string; complexity: number; valueScore: number }> }
 

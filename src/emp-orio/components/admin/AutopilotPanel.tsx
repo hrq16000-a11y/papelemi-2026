@@ -8,7 +8,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/emp-orio/components/ui/alert-dialog";
-import { Bot, Play, FlaskConical, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Bot, Play, FlaskConical, CheckCircle2, XCircle, AlertTriangle } from "lucide-react-v462";
 import { useSeoAutopilot, type AutopilotAction } from "@/emp-orio/hooks/useSeoAutopilot";
 
 const classColor: Record<string, string> = {

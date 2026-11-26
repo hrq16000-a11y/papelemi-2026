@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Save, RefreshCw, Loader2, Globe, FileText, Tag, Mail, CheckCircle, ExternalLink, BarChart3 } from 'lucide-react';
+import { Search, Save, RefreshCw, Loader2, Globe, FileText, Tag, Mail, CheckCircle, ExternalLink, BarChart3 } from 'lucide-react-v462';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react-v462';
 
 interface Item { id: string; name: string; slug: string; reason: string; href: string; }
 

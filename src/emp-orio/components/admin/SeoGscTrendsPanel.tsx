@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns-v3';
 import { ptBR } from 'date-fns/locale';
-import { TrendingUp, RefreshCw, Download, Loader2, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { TrendingUp, RefreshCw, Download, Loader2, ArrowUp, ArrowDown, Minus } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';

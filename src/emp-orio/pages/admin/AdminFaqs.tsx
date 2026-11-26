@@ -32,7 +32,7 @@ import {
   Eye,
   EyeOff,
   MessageSquare
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import {
   DndContext,
   closestCenter,

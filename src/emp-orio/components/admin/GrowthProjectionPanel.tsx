@@ -1,5 +1,5 @@
 import { Card } from "@/emp-orio/components/ui/card";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react-v462";
 import type { SimulationProjection } from "@/emp-orio/lib/seoDigitalTwin";
 
 export default function GrowthProjectionPanel({ projection }: { projection: SimulationProjection }) {

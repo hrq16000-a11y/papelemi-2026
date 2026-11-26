@@ -7,7 +7,7 @@ import { Switch } from "@/emp-orio/components/ui/switch";
 import { Textarea } from "@/emp-orio/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/emp-orio/components/ui/card";
 import { useToast } from "@/emp-orio/hooks/use-toast";
-import { BarChart3, Save } from "lucide-react";
+import { BarChart3, Save } from "lucide-react-v462";
 import StickySaveBar from "@/emp-orio/components/admin/StickySaveBar";
 
 export default function AdminTracking() {

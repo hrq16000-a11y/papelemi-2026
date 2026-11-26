@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import {
   Loader2, MessageCircle, Save, RotateCcw, Eye, BarChart3, ClipboardCheck,
   ExternalLink, RefreshCw, Trash2,
-} from "lucide-react";
+} from "lucide-react-v462";
 import {
   useConversionCtaConfig,
   useSaveConversionCtaConfig,

@@ -4,7 +4,7 @@
 // trigram. Toda alteração invalida o cache da busca pública.
 
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Eye, Trash2, Save, Loader2, Pin } from "lucide-react";
+import { Pencil, Eye, Trash2, Save, Loader2, Pin } from "lucide-react-v462";
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import SearchBoostPreview from './SearchBoostPreview';
 import { boostDraftKey, canPublishBoost, validBoostDraft, type BoostPreviewResult } from '@/emp-orio/lib/search-boost-preview';

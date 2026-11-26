@@ -6,7 +6,7 @@ import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Card, CardContent } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';
-import { AlertCircle, Pencil, RefreshCw } from 'lucide-react';
+import { AlertCircle, Pencil, RefreshCw } from 'lucide-react-v462';
 import { evaluateProductSeo } from '@/emp-orio/lib/productSeo';
 import ProductSeoScoreBadge from '@/emp-orio/components/admin/ProductSeoScoreBadge';
 import { PRODUCT_PATH_PREFIX } from '@/emp-orio/lib/urls';

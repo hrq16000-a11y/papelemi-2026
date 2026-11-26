@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
-import { PanelLeft } from "lucide-react";
+import { PanelLeft } from "lucide-react-v462";
 
 import { useIsMobile } from "@/emp-orio/hooks/use-mobile";
 import { cn } from "@/emp-orio/lib/utils";

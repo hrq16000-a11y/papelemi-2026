@@ -20,7 +20,7 @@ import { useToast } from '@/emp-orio/hooks/use-toast';
 import {
   ArrowLeft, RefreshCw, Search, Download, History, FileText, ArrowUp, ArrowDown,
   AlertTriangle, ShieldAlert, EyeOff, Eye,
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react-v462";
 import { HOME_SECTIONS_ORIGIN } from "@/emp-orio/lib/homeSectionsDestinations";
 
 /**

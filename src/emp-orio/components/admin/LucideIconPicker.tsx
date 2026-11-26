@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
-import { icons } from "lucide-react";
+import { icons } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/emp-orio/components/ui/popover";
 import { ScrollArea } from "@/emp-orio/components/ui/scroll-area";
 import { LucideIcon } from "@/emp-orio/components/LucideIcon";
 import { cn } from "@/emp-orio/lib/utils";
-import { X } from "lucide-react";
+import { X } from "lucide-react-v462";
 
 interface LucideIconPickerProps {
   value?: string | null;

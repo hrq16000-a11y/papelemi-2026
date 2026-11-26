@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { MessageCircle, Plus, Sparkles } from "lucide-react";
+import { MessageCircle, Plus, Sparkles } from "lucide-react-v462";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { sortByFeatured } from "@/emp-orio/lib/catalogFilter";
 import { Badge } from "@/emp-orio/components/ui/badge";

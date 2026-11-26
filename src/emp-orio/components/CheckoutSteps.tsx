@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check } from "lucide-react-v462";
 import { cn } from "@/emp-orio/lib/utils";
 
 interface Props {

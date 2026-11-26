@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, Sparkles } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/emp-orio/components/ui/dialog";

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Gauge, Upload, Trash2, ArrowRight, Loader2 } from 'lucide-react';
+import { Gauge, Upload, Trash2, ArrowRight, Loader2 } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';

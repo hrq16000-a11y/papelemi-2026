@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Progress } from "@/emp-orio/components/ui/progress";
-import { Wrench } from "lucide-react";
+import { Wrench } from "lucide-react-v462";
 
 interface Props { liability: number; topItems: Array<{ name: string; complexity: number; valueScore: number }> }
 

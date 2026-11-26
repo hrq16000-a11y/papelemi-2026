@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/
 import { Button } from "@/emp-orio/components/ui/button";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/emp-orio/components/ui/table";
-import { RefreshCw, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { RefreshCw, Clock, CheckCircle2, XCircle } from "lucide-react-v462";
 import { Helmet } from "react-helmet-async";
 
 interface CronJob {

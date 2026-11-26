@@ -1,6 +1,6 @@
 // Fase 7 — Bloco visual de avaliações de produto (com fotos)
 import { useMemo, useState } from 'react';
-import { Star, BadgeCheck, ExternalLink, X, ChevronDown, ChevronUp, Quote } from 'lucide-react';
+import { Star, BadgeCheck, ExternalLink, X, ChevronDown, ChevronUp, Quote } from 'lucide-react-v462';
 import { useProductReviews, useProductReviewStats } from '@/emp-orio/hooks/useProductReviews';
 import { useFeatureFlags } from '@/emp-orio/hooks/useFeatureFlags';
 import { optimizeImage } from '@/emp-orio/lib/image';

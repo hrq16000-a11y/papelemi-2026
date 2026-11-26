@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Type, Wand2, Loader2, CheckCircle2 } from 'lucide-react';
+import { Type, Wand2, Loader2, CheckCircle2 } from 'lucide-react-v462';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';

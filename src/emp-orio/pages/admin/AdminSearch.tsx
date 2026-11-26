@@ -2,7 +2,7 @@
 // Reúne Insights, Sinônimos e Boosts em abas.
 
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search } from "lucide-react-v462";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
 import { Card, CardContent } from "@/emp-orio/components/ui/card";
 import SearchInsights from "@/emp-orio/components/admin/SearchInsights";

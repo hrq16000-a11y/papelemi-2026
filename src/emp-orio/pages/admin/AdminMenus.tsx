@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Plus, Trash2, Loader2, ExternalLink, FileText, ChevronDown, ChevronUp, Check, X, Pencil } from 'lucide-react';
+import { Menu, Plus, Trash2, Loader2, ExternalLink, FileText, ChevronDown, ChevronUp, Check, X, Pencil } from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';
 import { Label } from '@/emp-orio/components/ui/label';

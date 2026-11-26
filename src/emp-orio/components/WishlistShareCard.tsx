@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, Share2, Loader2, Globe, Lock } from 'lucide-react';
+import { Copy, Share2, Loader2, Globe, Lock } from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';
 import { Label } from '@/emp-orio/components/ui/label';

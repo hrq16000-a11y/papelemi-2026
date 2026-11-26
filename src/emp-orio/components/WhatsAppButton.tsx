@@ -1,4 +1,4 @@
-import { MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react-v462";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { useContactInfo } from "@/emp-orio/hooks/useContactInfo";

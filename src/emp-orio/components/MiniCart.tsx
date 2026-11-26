@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, Trash2 } from "lucide-react";
+import { ShoppingCart, Trash2 } from "lucide-react-v462";
 import {
   Popover,
   PopoverContent,

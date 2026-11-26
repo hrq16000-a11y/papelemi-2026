@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Truck, Sparkles, Gift } from 'lucide-react';
+import { Truck, Sparkles, Gift } from 'lucide-react-v462';
 import { useFreeShippingThreshold } from '@/emp-orio/hooks/useFreeShippingThreshold';
 import { formatBRL } from '@/emp-orio/lib/format';
 

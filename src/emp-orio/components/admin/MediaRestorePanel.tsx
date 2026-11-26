@@ -18,7 +18,7 @@ import {
   Link2,
   Eye,
   ArrowRight,
-} from "lucide-react";
+} from "lucide-react-v462";
 
 interface RelinkPreviewRow {
   img_ref: string;

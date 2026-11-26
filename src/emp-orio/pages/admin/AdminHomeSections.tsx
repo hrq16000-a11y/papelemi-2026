@@ -13,7 +13,7 @@ import {
   Settings,
   ArrowUpRight,
   Info,
-} from "lucide-react";
+} from "lucide-react-v462";
 import {
   DndContext,
   PointerSensor,

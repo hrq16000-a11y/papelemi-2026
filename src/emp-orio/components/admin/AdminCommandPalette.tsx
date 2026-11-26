@@ -12,7 +12,7 @@ import {
   Loader2,
   ArrowRight,
   Receipt,
-} from "lucide-react";
+} from "lucide-react-v462";
 import {
   CommandDialog,
   CommandInput,

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/emp-orio/components/ui/dialog";
 import { useShippingRules, type ShippingRule } from "@/emp-orio/hooks/useShippingAdmin";
 import { useToast } from "@/emp-orio/hooks/use-toast";
-import { Pencil, Plus, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Plus, Trash2, Loader2 } from "lucide-react-v462";
 
 type FormState = Omit<ShippingRule, "id"> & { id?: string };
 

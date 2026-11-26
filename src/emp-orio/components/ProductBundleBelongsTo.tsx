@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Sparkles, ArrowRight, Package } from "lucide-react";
+import { Sparkles, ArrowRight, Package } from "lucide-react-v462";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Button } from "@/emp-orio/components/ui/button";
 import { useKitsContainingProduct } from "@/emp-orio/hooks/useKits";

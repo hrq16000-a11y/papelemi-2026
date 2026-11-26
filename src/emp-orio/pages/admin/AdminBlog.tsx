@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Star } from "lucide-react-v462";
 import { Button, buttonVariants } from "@/emp-orio/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,

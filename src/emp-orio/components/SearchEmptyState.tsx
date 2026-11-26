@@ -9,7 +9,7 @@
 
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Sparkles, Tag, Flame, LayoutGrid, FileText } from 'lucide-react';
+import { MessageCircle, Sparkles, Tag, Flame, LayoutGrid, FileText } from 'lucide-react-v462';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/emp-orio/components/ui/button';
 import ProductCard from '@/emp-orio/components/ProductCard';

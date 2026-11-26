@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/emp-orio/components/ui/button";
-import { Download, X } from "lucide-react";
+import { Download, X } from "lucide-react-v462";
 
 const VISIT_KEY = "pwa:visit-count";
 const DISMISSED_KEY = "pwa:install-dismissed";

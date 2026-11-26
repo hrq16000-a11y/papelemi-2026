@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/emp-orio/components/ui/alert";
-import { Boxes } from "lucide-react";
+import { Boxes } from "lucide-react-v462";
 import { Badge } from "@/emp-orio/components/ui/badge";
 
 export default function CoherenceBreakAlert({ breaks }: { breaks: string[] }) {

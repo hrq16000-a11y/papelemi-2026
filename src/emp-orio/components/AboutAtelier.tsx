@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Instagram, Facebook, ArrowRight } from 'lucide-react';
+import { Instagram, Facebook, ArrowRight } from 'lucide-react-v462';
 import { useContactInfo } from '@/emp-orio/hooks/useContactInfo';
 import SectionEyebrow from '@/emp-orio/components/SectionEyebrow';
 

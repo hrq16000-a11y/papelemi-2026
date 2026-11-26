@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react-v462";
 import { useDbOccasions } from "@/emp-orio/hooks/useProducts";
 import { useAccessibleCarousel } from "@/emp-orio/hooks/useAccessibleCarousel";
 import { usePauseAnimationsOffscreen } from "@/emp-orio/hooks/usePauseAnimationsOffscreen";

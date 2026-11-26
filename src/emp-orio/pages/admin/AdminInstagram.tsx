@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/emp-orio/components/ui/al
 import {
   Loader2, Trash2, Save, Instagram, Sparkles, GripVertical, ExternalLink, Pencil,
   CheckCircle2, AlertTriangle, Upload, RefreshCcw, Heart, Download,
-} from "lucide-react";
+} from "lucide-react-v462";
 import { useToast } from "@/emp-orio/hooks/use-toast";
 import {
   useAdminInstagramPosts,

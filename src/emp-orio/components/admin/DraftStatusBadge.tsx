@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Check, CloudUpload, FileEdit } from "lucide-react";
+import { Check, CloudUpload, FileEdit } from "lucide-react-v462";
 import { cn } from "@/emp-orio/lib/utils";
 import { useDraftStore } from "@/emp-orio/stores/draftStore";
 

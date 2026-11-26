@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { Activity, TrendingUp, TrendingDown, AlertTriangle, Save } from "lucide-react";
+import { Activity, TrendingUp, TrendingDown, AlertTriangle, Save } from "lucide-react-v462";
 import { toast } from "sonner";
 import { recordSeoSnapshotBatch, type EntitySnapshotInput, type EntitySnapshotRow } from "@/emp-orio/lib/seoMemory";
 import { detectRegressions, regressionRiskScore, type EntitySeries } from "@/emp-orio/lib/regressionEngine";

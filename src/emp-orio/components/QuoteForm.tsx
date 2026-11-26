@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, Heart, MessageSquare } from "lucide-react";
+import { Send, Heart, MessageSquare } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Textarea } from "@/emp-orio/components/ui/textarea";

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react-v462";
 
 export default function StrategicFatigueAlert({
   fatigue, breathingRoom, overextended, activeThreads,

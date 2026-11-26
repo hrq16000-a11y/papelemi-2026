@@ -1,4 +1,4 @@
-import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react-v462";
 import { useState } from "react";
 import { useTestimonials } from "@/emp-orio/hooks/useTestimonials";
 

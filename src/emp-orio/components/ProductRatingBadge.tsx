@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Star } from "lucide-react-v462";
 import { useProductReviewStats } from "@/emp-orio/hooks/useProductReviews";
 import { cn } from "@/emp-orio/lib/utils";
 

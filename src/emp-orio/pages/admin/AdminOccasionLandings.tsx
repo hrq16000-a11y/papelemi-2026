@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/emp-orio/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, MapPin, Image as ImageIcon, Trash } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, MapPin, Image as ImageIcon, Trash } from "lucide-react-v462";
 import SingleImageUpload from "@/emp-orio/components/admin/SingleImageUpload";
 import ImageUploader from "@/emp-orio/components/admin/ImageUploader";
 

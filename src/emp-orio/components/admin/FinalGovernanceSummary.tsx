@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
-import { Crown } from "lucide-react";
+import { Crown } from "lucide-react-v462";
 
 interface Props {
   governance: number;

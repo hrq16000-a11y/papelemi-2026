@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Star, X, CheckCircle2 } from "lucide-react";
+import { Star, X, CheckCircle2 } from "lucide-react-v462";
 import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { urls } from "@/emp-orio/lib/urls";
 import { optimizeImage } from "@/emp-orio/lib/image";

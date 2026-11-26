@@ -8,7 +8,7 @@ import { Badge } from '@/emp-orio/components/ui/badge';
 import { Input } from '@/emp-orio/components/ui/input';
 import { useToast } from '@/emp-orio/hooks/use-toast';
 import { useAuth } from '@/emp-orio/hooks/useAuth';
-import { ArrowLeft, ShieldCheck, RefreshCw, Check, Search, ArrowUp, ArrowDown, Eye, X } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, RefreshCw, Check, Search, ArrowUp, ArrowDown, Eye, X } from 'lucide-react-v462';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
   ClipboardList, Loader2, Search, Sparkles, CheckCircle2, XCircle, HelpCircle, Upload,
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Card, CardContent } from '@/emp-orio/components/ui/card';
 import { Input } from '@/emp-orio/components/ui/input';

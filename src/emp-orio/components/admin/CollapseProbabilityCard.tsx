@@ -1,5 +1,5 @@
 import { Card } from "@/emp-orio/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react-v462";
 
 export default function CollapseProbabilityCard({ probability }: { probability: number }) {
   const level = probability > 70 ? "critical" : probability > 45 ? "high" : probability > 20 ? "moderate" : "low";

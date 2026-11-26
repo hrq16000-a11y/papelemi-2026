@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react-v462";
 
 import { cn } from "@/emp-orio/lib/utils";
 

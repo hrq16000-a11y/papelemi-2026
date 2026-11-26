@@ -7,7 +7,7 @@ import { Textarea } from "@/emp-orio/components/ui/textarea";
 import { useShippingSettings } from "@/emp-orio/hooks/useShippingAdmin";
 import { useToast } from "@/emp-orio/hooks/use-toast";
 import { useFormDraft } from "@/emp-orio/hooks/useFormDraft";
-import { Loader2, Power, Store, Gift } from "lucide-react";
+import { Loader2, Power, Store, Gift } from "lucide-react-v462";
 
 export default function ShippingSettingsTab() {
   const { data, isLoading, update } = useShippingSettings();

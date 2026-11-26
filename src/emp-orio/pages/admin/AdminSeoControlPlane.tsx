@@ -12,7 +12,7 @@ import {
 import {
   Activity, AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, Bot,
   Database, FileSearch, Layers,
-} from "lucide-react";
+} from "lucide-react-v462";
 import { useSeoControlPlane, type ControlPlaneFinding } from "@/emp-orio/hooks/useSeoControlPlane";
 import AutopilotPanel from "@/emp-orio/components/admin/AutopilotPanel";
 

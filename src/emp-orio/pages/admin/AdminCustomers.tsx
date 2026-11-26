@@ -6,7 +6,7 @@ import {
   Users, UserPlus, Search, Edit, Trash2,
   Eye, Globe, Smartphone, Monitor, Tablet, Bot, ShieldCheck,
   ChevronLeft, ChevronRight, X, ArrowUpDown,
-} from "lucide-react";
+} from "lucide-react-v462";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Badge } from "@/emp-orio/components/ui/badge";

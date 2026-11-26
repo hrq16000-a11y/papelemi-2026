@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image as ImageIcon, Library, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Library, Loader2 } from 'lucide-react-v462';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Button } from '@/emp-orio/components/ui/button';
 import {

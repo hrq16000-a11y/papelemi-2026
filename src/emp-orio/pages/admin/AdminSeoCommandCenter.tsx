@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Progress } from "@/emp-orio/components/ui/progress";
-import { Activity, BarChart3, AlertTriangle, Map as MapIcon, ListChecks, Network } from "lucide-react";
+import { Activity, BarChart3, AlertTriangle, Map as MapIcon, ListChecks, Network } from "lucide-react-v462";
 
 import { buildExecutionBuckets, calculateEditorialMaturity, type EditorialTargetInput } from "@/emp-orio/lib/editorialPriorities";
 import { buildGapBuckets, detectGaps, type GapEntityInput } from "@/emp-orio/lib/contentGapEngine";

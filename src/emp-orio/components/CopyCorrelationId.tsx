@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 
 interface CopyCorrelationIdProps {

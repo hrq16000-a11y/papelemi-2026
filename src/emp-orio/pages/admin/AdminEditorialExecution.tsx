@@ -19,7 +19,7 @@ import {
   type EditorialTargetInput,
 } from "@/emp-orio/lib/editorialPriorities";
 import EditorialActionChecklist from "@/emp-orio/components/admin/EditorialActionChecklist";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { Sparkles, TrendingUp } from "lucide-react-v462";
 
 function priorityVariant(p: EditorialTarget["priority"]) {
   if (p === "critical") return "destructive" as const;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Instagram, ExternalLink } from "lucide-react";
+import { Instagram, ExternalLink } from "lucide-react-v462";
 import { useInstagramFeedEmbedsPublic } from "@/emp-orio/hooks/useInstagramFeedEmbeds";
 import { useInstagramFeedConfig } from "@/emp-orio/hooks/useInstagramFeedConfig";
 import { supabase } from "@/emp-orio/integrations/supabase/client";

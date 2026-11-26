@@ -1,6 +1,6 @@
 import SingleImageUpload from '@/emp-orio/components/admin/SingleImageUpload';
 import { useState } from 'react';
-import { Loader2, LayoutGrid, Save, Eye, EyeOff, Image, Link, Type, FileText, Plus, Trash2 } from 'lucide-react';
+import { Loader2, LayoutGrid, Save, Eye, EyeOff, Image, Link, Type, FileText, Plus, Trash2 } from 'lucide-react-v462';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Input } from '@/emp-orio/components/ui/input';

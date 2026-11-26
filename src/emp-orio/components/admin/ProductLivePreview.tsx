@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import { Button } from '@/emp-orio/components/ui/button';
-import { Monitor, Smartphone, ShoppingBag, MessageCircle, Star } from 'lucide-react';
+import { Monitor, Smartphone, ShoppingBag, MessageCircle, Star } from 'lucide-react-v462';
 import { cn } from '@/emp-orio/lib/utils';
 import ProductPersonalizationOptions from '@/emp-orio/components/ProductPersonalizationOptions';
 import type { PersonalizationOption, PersonalizationValues } from '@/emp-orio/lib/personalizationOptions';

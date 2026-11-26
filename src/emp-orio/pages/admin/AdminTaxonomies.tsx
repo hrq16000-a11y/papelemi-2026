@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/emp-orio/components/ui/tabs';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Card, CardContent } from '@/emp-orio/components/ui/card';
-import { Activity, Calendar, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
+import { Activity, Calendar, ArrowRight, RefreshCw, Loader2 } from 'lucide-react-v462';
 import { toast } from 'sonner';
 
 import TaxonomyManager from '@/emp-orio/components/admin/TaxonomyManager';

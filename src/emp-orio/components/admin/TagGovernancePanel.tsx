@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
-import { Tag, AlertTriangle } from 'lucide-react';
+import { Tag, AlertTriangle } from 'lucide-react-v462';
 
 interface TagRow {
   id: string;

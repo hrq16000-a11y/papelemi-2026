@@ -9,7 +9,7 @@ import { Button } from "@/emp-orio/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/emp-orio/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/emp-orio/components/ui/select";
 import { useToast } from "@/emp-orio/hooks/use-toast";
-import { ArrowLeft, RefreshCw, Truck, Search, Copy, ExternalLink } from "lucide-react";
+import { ArrowLeft, RefreshCw, Truck, Search, Copy, ExternalLink } from "lucide-react-v462";
 
 interface LogRow {
   id: string;

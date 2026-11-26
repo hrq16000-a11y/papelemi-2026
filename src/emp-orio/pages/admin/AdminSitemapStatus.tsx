@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import { useToast } from '@/emp-orio/hooks/use-toast';
-import { Activity, CheckCircle2, XCircle, RefreshCw, ExternalLink, Clock } from 'lucide-react';
+import { Activity, CheckCircle2, XCircle, RefreshCw, ExternalLink, Clock } from 'lucide-react-v462';
 
 interface Submission {
   submitted_at: string;

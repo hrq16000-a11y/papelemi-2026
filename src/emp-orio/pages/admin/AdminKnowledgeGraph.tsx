@@ -10,7 +10,7 @@ import { supabase } from "@/emp-orio/integrations/supabase/client";
 import { Card, CardContent } from "@/emp-orio/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/emp-orio/components/ui/tabs";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { Network, AlertTriangle, GitBranch, Layers, Eye, Activity } from "lucide-react";
+import { Network, AlertTriangle, GitBranch, Layers, Eye, Activity } from "lucide-react-v462";
 import { buildKnowledgeGraph, calculateKnowledgeHealth, detectAuthorityLeaks, detectSemanticLoops } from "@/emp-orio/lib/knowledgeGraph";
 import { evaluateAuthority } from "@/emp-orio/lib/authorityEngine";
 

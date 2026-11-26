@@ -4,7 +4,7 @@ import { Input } from "@/emp-orio/components/ui/input";
 import { Label } from "@/emp-orio/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/emp-orio/components/ui/radio-group";
 import { Skeleton } from "@/emp-orio/components/ui/skeleton";
-import { Loader2, Truck, Info, MapPin, AlertCircle } from "lucide-react";
+import { Loader2, Truck, Info, MapPin, AlertCircle } from "lucide-react-v462";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/emp-orio/components/ui/tooltip";
 import { supabase } from "@/emp-orio/integrations/supabase/client";

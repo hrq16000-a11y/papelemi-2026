@@ -1,4 +1,4 @@
-import { CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
+import { CheckCircle2, HelpCircle, XCircle } from 'lucide-react-v462';
 import { Badge } from '@/emp-orio/components/ui/badge';
 import { Progress } from '@/emp-orio/components/ui/progress';
 import { classifyScore, type MatchExplanation } from '@/emp-orio/lib/fuzzyMatch';

@@ -1,5 +1,5 @@
 import { Card } from "@/emp-orio/components/ui/card";
-import { Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react-v462";
 
 export default function SingularityScoreCard({ score, verdict }: { score: number; verdict: string }) {
   const tone = score >= 78 ? "text-emerald-600" : score >= 60 ? "text-blue-600" : score >= 45 ? "text-amber-600" : "text-red-600";

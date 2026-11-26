@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Save, Plus, Trash2, GripVertical, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, GripVertical, Loader2, Search } from "lucide-react-v462";
 import { Button } from "@/emp-orio/components/ui/button";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Label } from "@/emp-orio/components/ui/label";

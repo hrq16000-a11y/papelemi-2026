@@ -15,7 +15,7 @@ import {
 } from '@/emp-orio/components/ui/select';
 import { Switch } from '@/emp-orio/components/ui/switch';
 import { Label } from '@/emp-orio/components/ui/label';
-import { Plus, Pencil, Trash2, Eye, EyeOff, Star, Sparkles } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Star, Sparkles } from 'lucide-react-v462';
 import { useToast } from '@/emp-orio/hooks/use-toast';
 import ProductReviewForm from '@/emp-orio/components/admin/ProductReviewForm';
 import ReviewImportAuditPanel from '@/emp-orio/components/admin/ReviewImportAuditPanel';

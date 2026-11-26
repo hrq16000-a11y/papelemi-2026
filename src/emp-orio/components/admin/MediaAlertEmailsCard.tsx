@@ -6,7 +6,7 @@ import { Button } from "@/emp-orio/components/ui/button";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Badge } from "@/emp-orio/components/ui/badge";
 import { toast } from "sonner";
-import { Mail, Plus, X, Save, Loader2, Users } from "lucide-react";
+import { Mail, Plus, X, Save, Loader2, Users } from "lucide-react-v462";
 
 interface AlertConfig {
   emails: string[];

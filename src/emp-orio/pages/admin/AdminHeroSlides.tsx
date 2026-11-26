@@ -37,7 +37,7 @@ import {
   LayoutTemplate,
   Play,
   Pause,
-} from 'lucide-react';
+} from 'lucide-react-v462';
 import { cn } from '@/emp-orio/lib/utils';
 import HeroPreviewFrame from '@/emp-orio/components/admin/HeroPreviewFrame';
 import { useHeroPreviewMotion } from '@/emp-orio/hooks/useHeroPreviewMotion';

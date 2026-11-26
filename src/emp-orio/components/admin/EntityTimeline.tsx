@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { buildEntityTimeline, detectRegressionRisk, detectPositiveTrend } from "@/emp-orio/lib/seoMemory";
 import { Card, CardContent } from "@/emp-orio/components/ui/card";
 import { Badge } from "@/emp-orio/components/ui/badge";
-import { ArrowDown, ArrowRight, ArrowUp, AlertTriangle, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, AlertTriangle, TrendingUp } from "lucide-react-v462";
 
 interface Props {
   entityType: string;

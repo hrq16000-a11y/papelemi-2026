@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
 import { Button } from '@/emp-orio/components/ui/button';
 import { Badge } from '@/emp-orio/components/ui/badge';
-import { RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, ListTree } from 'lucide-react';
+import { RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, ListTree } from 'lucide-react-v462';
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { toast } from 'sonner';
 

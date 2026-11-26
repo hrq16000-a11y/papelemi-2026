@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/emp-orio/components/ui/button";
-import { Heart, MessageCircle, Sparkles } from "lucide-react";
+import { Heart, MessageCircle, Sparkles } from "lucide-react-v462";
 import { useContactInfo } from "@/emp-orio/hooks/useContactInfo";
 
 const QuoteCTABanner = () => {

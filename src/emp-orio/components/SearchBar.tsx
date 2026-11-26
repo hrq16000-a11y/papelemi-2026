@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, X, Loader2, Package, Tag, Calendar, FileText } from "lucide-react";
+import { Search, X, Loader2, Package, Tag, Calendar, FileText } from "lucide-react-v462";
 import { Link, useNavigate } from "react-router-dom";
 import { useDbProducts, useDbCategories, useDbOccasions } from "@/emp-orio/hooks/useProducts";
 import { useDebounce } from "@/emp-orio/hooks/useDebounce";

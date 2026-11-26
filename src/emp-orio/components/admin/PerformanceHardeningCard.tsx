@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Progress } from "@/emp-orio/components/ui/progress";
-import { Gauge } from "lucide-react";
+import { Gauge } from "lucide-react-v462";
 
 interface Props {
   pressure: number;

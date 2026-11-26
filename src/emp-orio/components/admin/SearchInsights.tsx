@@ -3,7 +3,7 @@
 // (oportunidade clara para o lojista criar um sinônimo ou pinar um produto).
 
 import { useMemo, useState } from "react";
-import { Search, AlertTriangle, Loader2, RefreshCw, Download, FileText } from "lucide-react";
+import { Search, AlertTriangle, Loader2, RefreshCw, Download, FileText } from "lucide-react-v462";
 import { Card, CardContent, CardHeader, CardTitle } from "@/emp-orio/components/ui/card";
 import { Input } from "@/emp-orio/components/ui/input";
 import { Badge } from "@/emp-orio/components/ui/badge";
