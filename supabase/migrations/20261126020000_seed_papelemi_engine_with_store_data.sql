@@ -6,9 +6,10 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM public.products p
-    LEFT JOIN papelemi_engine.categories c
-      ON c.external_ref = 'papelemi:category:' || p.category_slug
-    WHERE p.store_key = 'papelemi' AND c.id IS NULL
+    LEFT JOIN public.categories c
+      ON c.store_key = p.store_key
+     AND c.slug = p.category_slug
+    WHERE p.store_key = 'papelemi' AND c.slug IS NULL
   ) THEN
     RAISE EXCEPTION 'PapeLemi catalog seed aborted: a product has no matching engine category';
   END IF;
