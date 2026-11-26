@@ -159,29 +159,14 @@ async function writeDataAdapters() {
 
 async function writeSupabaseAdapters() {
   const client = [
-    'import { createClient } from "@supabase/supabase-js";',
+    'import { supabase as papeLemiSupabase } from "@/integrations/supabase/client";',
+    'import type { SupabaseClient } from "@supabase/supabase-js";',
     'import type { Database } from "./types";',
-    "function getEnvironment(name: string): string | undefined {",
-    '  const viteValue = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.[name];',
-    "  if (viteValue) return viteValue;",
-    '  if (typeof process !== "undefined") return process.env[name];',
-    "  return undefined;",
-    "}",
-    "function createPapeLemiClient() {",
-    '  const url = getEnvironment("VITE_SUPABASE_URL") || getEnvironment("SUPABASE_URL");',
-    '  const key = getEnvironment("VITE_SUPABASE_PUBLISHABLE_KEY") || getEnvironment("SUPABASE_PUBLISHABLE_KEY");',
-    '  if (!url || !key) throw new Error("PapeLemi Supabase environment is not configured.");',
-    "  return createClient<Database>(url, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });",
-    "}",
-    "let instance: ReturnType<typeof createPapeLemiClient> | undefined;",
-    "export const supabase = new Proxy({} as ReturnType<typeof createPapeLemiClient>, {",
-    "  get(_target, property, receiver) { if (!instance) instance = createPapeLemiClient(); return Reflect.get(instance, property, receiver); },",
-    "});"
+    "export const supabase = papeLemiSupabase as unknown as SupabaseClient<Database>;"
   ].join("\n");
   const clientPath = path.join(ROOT, "src/emp-orio/integrations/supabase/client.ts");
   await fs.mkdir(path.dirname(clientPath), { recursive: true });
   await fs.writeFile(clientPath, client, "utf8");
-
   const lovableAdapter = [
     'import { supabase } from "../supabase/client";',
     "type SignInOptions = { redirect_uri?: string; extraParams?: Record<string, string> };",
@@ -354,7 +339,7 @@ async function writeBrandAndLocalProject() {
   await fs.writeFile(path.join(ROOT, "src/emp-orio/admin-theme.css"), scopedAdminTheme(), "utf8");
 
   const sourceConfig = await fs.readFile(path.join(SOURCE, "supabase/config.toml"), "utf8");
-  let localConfig = sourceConfig.replace(/^project_id\s*=.*$/m, 'project_id = "papelemi-emp-orio-local"');
+  let localConfig = sourceConfig.replace(/^project_id\s*=.*$/m, 'project_id = "papelemi-emp-orio-local"').replace(/^\[inbucket\]/m, "[local_smtp]");
   localConfig = localConfig
     .replace("[studio]\nenabled = true", "[studio]\nenabled = false")
     .replace("[inbucket]\nenabled = true", "[inbucket]\nenabled = false")
@@ -394,6 +379,52 @@ async function writeBrandAndLocalProject() {
   await fs.writeFile(rootConfigPath, rootConfig, "utf8");
 }
 
+
+async function patchLocalMigrations() {
+  const migrationDir = path.join(ROOT, "tools/emp-orio-supabase/supabase/migrations");
+  const migrationName = "20260814154716_b2258712-76bd-49f4-b81e-5854d32e5bd9.sql";
+  const migrationPath = path.join(migrationDir, migrationName);
+  const sourceSql = await fs.readFile(migrationPath, "utf8");
+  const start = sourceSql.indexOf("-- Consolida agendamentos duplicados");
+  const end = sourceSql.indexOf("-- Validação diária", start);
+  if (start < 0 || end < 0) throw new Error("Expected cron compatibility block not found in the pinned source migration.");
+  const safeCronBlock = [
+    "-- Local-only replay shim: the source project already has these jobs; a fresh local DB does not.",
+    "DO $$",
+    "DECLARE",
+    "  v_job_id integer;",
+    "BEGIN",
+    "  SELECT jobid INTO v_job_id FROM cron.job WHERE jobname = 'submit-sitemap-weekly' ORDER BY jobid LIMIT 1;",
+    "  IF v_job_id IS NOT NULL THEN PERFORM cron.unschedule(v_job_id); END IF;",
+    "  SELECT jobid INTO v_job_id FROM cron.job WHERE jobname = 'weekly-sitemap-submission' ORDER BY jobid LIMIT 1;",
+    "  IF v_job_id IS NOT NULL THEN PERFORM cron.unschedule(v_job_id); END IF;",
+    "  SELECT jobid INTO v_job_id FROM cron.job WHERE jobname = 'submit-sitemap-12h' ORDER BY jobid LIMIT 1;",
+    "  IF v_job_id IS NOT NULL THEN PERFORM cron.unschedule(v_job_id); END IF;",
+    "  SELECT jobid INTO v_job_id FROM cron.job WHERE jobname = 'seo-sitemap-auto-resubmit-15m' ORDER BY jobid LIMIT 1;",
+    "  IF v_job_id IS NOT NULL THEN PERFORM cron.alter_job(v_job_id, schedule := '7 * * * *'); END IF;",
+    "  SELECT jobid INTO v_job_id FROM cron.job WHERE jobname = 'telemetry-alert-monitor-15m' ORDER BY jobid LIMIT 1;",
+    "  IF v_job_id IS NOT NULL THEN PERFORM cron.alter_job(v_job_id, schedule := '23 * * * *'); END IF;",
+    "  SELECT jobid INTO v_job_id FROM cron.job WHERE jobname = 'instagram-sync-hourly' ORDER BY jobid LIMIT 1;",
+    "  IF v_job_id IS NOT NULL THEN PERFORM cron.alter_job(v_job_id, schedule := '0 */6 * * *'); END IF;",
+    "  SELECT jobid INTO v_job_id FROM cron.job WHERE jobname = 'instagram-bulk-refresh-hourly' ORDER BY jobid LIMIT 1;",
+    "  IF v_job_id IS NOT NULL THEN PERFORM cron.alter_job(v_job_id, schedule := '17 */6 * * *'); END IF;",
+    "END;",
+    "$$;",
+    ""
+  ].join("\n");
+  let sql = sourceSql.slice(0, start) + safeCronBlock + sourceSql.slice(end);
+  sql = sql.replaceAll("https://xfqffqxqiuqauefrrcxn.supabase.co", "http://127.0.0.1:54321");
+  await fs.writeFile(migrationPath, sql, "utf8");
+
+  for (const entry of await fs.readdir(migrationDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".sql") || entry.name === migrationName) continue;
+    const file = path.join(migrationDir, entry.name);
+    const contents = await fs.readFile(file, "utf8");
+    const localized = contents.replaceAll("https://xfqffqxqiuqauefrrcxn.supabase.co", "http://127.0.0.1:54321");
+    if (localized !== contents) await fs.writeFile(file, localized, "utf8");
+  }
+}
+
 async function main() {
   const stat = await fs.stat(SOURCE);
   if (!stat.isDirectory()) throw new Error("Pinned Empório source checkout not found: " + SOURCE);
@@ -410,6 +441,7 @@ async function main() {
 
   await copyTree("supabase/functions", "supabase/functions", "edge-functions", { brand: true });
   await copyTree("supabase/migrations", "tools/emp-orio-supabase/supabase/migrations", "source-migrations", { transform: false });
+  await patchLocalMigrations();
   await copyTree("drizzle", "drizzle/emp-orio", "drizzle-reference", { transform: false });
   await copyTree("scripts", "scripts/emp-orio/source", "source-scripts", { transform: false });
   await copyTree("e2e", "e2e/emp-orio", "source-e2e", { transform: false });

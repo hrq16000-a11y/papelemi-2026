@@ -28,7 +28,7 @@ port = 54323
 api_url = "http://127.0.0.1:54321"
 
 # Captura todos os e-mails locais (Auth, magic link, recuperação de senha).
-[inbucket]
+[local_smtp]
 enabled = false
 port = 54324
 
