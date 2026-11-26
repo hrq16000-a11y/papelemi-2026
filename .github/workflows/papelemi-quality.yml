@@ -57,7 +57,7 @@ jobs:
           src/test/customer-summary.test.ts src/lib/shipping-quote.ts src/lib/shipping-quote.server.ts src/test/shipping-quote.test.ts
 
       - name: TypeScript
-        run: bunx tsc --noEmit -p tsconfig.order-integrity.json
+        run: bunx tsc --noEmit -p tsconfig.order-integrity.json && bunx tsc --noEmit -p tsconfig.emp-orio.json
 
 
 

@@ -15,6 +15,7 @@ function transformText(text, namespaced = false, brand = false) {
     text = text.replace(/(["'])date-fns\1/g, '$1date-fns-v3$1');
     text = text.replace(/(["'])react-day-picker\1/g, '$1react-day-picker-v8$1');
     text = text.replace(/(["'])react-resizable-panels\1/g, '$1react-resizable-panels-v2$1');
+    text = text.replace(/(["'])lucide-react\1/g, '$1lucide-react-v462$1');
     text = text.replaceAll('"/acesso-restrito"', '"/admin/acesso-restrito"');
     text = text.replaceAll("'/acesso-restrito'", "'/admin/acesso-restrito'");
     brand = true;
@@ -241,10 +242,69 @@ async function writeEmporioAdminApp() {
     "</Routes></RouteTransition></BrowserRouter></TooltipProvider></HelmetProvider></QueryClientProvider>;",
     "}"
   ].join("\n");
-  const appPath = path.join(ROOT, "src/emp-orio/EmporioAdminApp.tsx");
+  const appPath = path.join(ROOT, "src/emp-orio/EmporioAdminApp.jsx");
+  const declarationPath = path.join(ROOT, "src/emp-orio/EmporioAdminApp.d.ts");
   await fs.mkdir(path.dirname(appPath), { recursive: true });
+  await fs.rm(path.join(ROOT, "src/emp-orio/EmporioAdminApp.tsx"), { force: true });
   await fs.writeFile(appPath, appCode, "utf8");
+  await fs.writeFile(declarationPath, 'import type { ComponentType } from "react";\ndeclare const EmporioAdminApp: ComponentType;\nexport default EmporioAdminApp;\n', "utf8");
   return { adminRoutes: (routes.match(/<Route path=/g) || []).length, adminPageImports: [...new Set(adminPageImports)].length };
+}
+
+
+async function writeTypeScriptCompatibility() {
+  const tsconfigPath = path.join(ROOT, "tsconfig.json");
+  const tsconfig = JSON.parse(await fs.readFile(tsconfigPath, "utf8"));
+  tsconfig.exclude = [...new Set([...(tsconfig.exclude || []), "src/emp-orio/**"])];
+  await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2) + "\n", "utf8");
+
+  const empOrioConfig = {
+    extends: "./tsconfig.json",
+    compilerOptions: {
+      allowImportingTsExtensions: true,
+      allowJs: false,
+      jsx: "react-jsx",
+      noEmit: true,
+      skipLibCheck: true,
+      strict: false,
+      strictNullChecks: false,
+      noImplicitAny: false,
+      noImplicitOverride: false,
+      noImplicitReturns: false,
+      noPropertyAccessFromIndexSignature: false,
+      noUncheckedIndexedAccess: false,
+      exactOptionalPropertyTypes: false,
+      noUncheckedSideEffectImports: false,
+      noUnusedLocals: false,
+      noUnusedParameters: false,
+      types: ["vite/client", "node"]
+    },
+    include: ["src/emp-orio/**/*.ts", "src/emp-orio/**/*.tsx", "src/emp-orio/**/*.d.ts"],
+    exclude: [
+      "src/emp-orio/**/*.test.ts",
+      "src/emp-orio/**/*.test.tsx",
+      "src/emp-orio/**/*.spec.ts",
+      "src/emp-orio/**/*.spec.tsx"
+    ]
+  };
+  await fs.writeFile(path.join(ROOT, "tsconfig.emp-orio.json"), JSON.stringify(empOrioConfig, null, 2) + "\n", "utf8");
+
+  const compatDir = path.join(ROOT, "src/emp-orio/compat");
+  await fs.mkdir(compatDir, { recursive: true });
+  await fs.writeFile(path.join(compatDir, "react-jsx.d.ts"), [
+    'import type * as React from "react";',
+    "declare global {",
+    "  namespace JSX {",
+    "    interface Element extends React.JSX.Element {}",
+    "    interface ElementClass extends React.JSX.ElementClass {}",
+    "    interface ElementAttributesProperty extends React.JSX.ElementAttributesProperty {}",
+    "    interface ElementChildrenAttribute extends React.JSX.ElementChildrenAttribute {}",
+    "    interface IntrinsicAttributes extends React.JSX.IntrinsicAttributes {}",
+    "    interface IntrinsicElements extends React.JSX.IntrinsicElements {}",
+    "  }",
+    "}",
+    "export {};"
+  ].join("\n") + "\n", "utf8");
 }
 
 async function writeDestinationFiles() {
@@ -263,10 +323,12 @@ async function writeDestinationFiles() {
   Object.assign(targetPackage.dependencies, {
     "date-fns-v3": "npm:date-fns@^3.6.0",
     "react-day-picker-v8": "npm:react-day-picker@^8.10.1",
-    "react-resizable-panels-v2": "npm:react-resizable-panels@^2.1.9"
+    "react-resizable-panels-v2": "npm:react-resizable-panels@^2.1.9",
+    "lucide-react-v462": "npm:lucide-react@^0.462.0"
   });
   targetPackage.devDependencies["@tailwindcss/typography"] ||= "^0.5.16";
   targetPackage.devDependencies["@playwright/test"] ||= "1.59.0";
+  targetPackage.dependencies["lucide-react-v462"] ||= "npm:lucide-react@^0.462.0";
   await fs.writeFile(packagePath, JSON.stringify(targetPackage, null, 2) + "\n", "utf8");
 
   const stylesPath = path.join(ROOT, "src/styles.css");
@@ -330,6 +392,7 @@ async function writeDestinationFiles() {
     "});"
   ].join("\n");
   await fs.writeFile(path.join(ROOT, "src/routes/admin.$.tsx"), splatRoute, "utf8");
+  await writeTypeScriptCompatibility();
 }
 
 async function writeBrandAndLocalProject() {
