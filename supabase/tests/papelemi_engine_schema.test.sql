@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(24);
+SELECT plan(25);
 SELECT ok(to_regnamespace('papelemi_engine') IS NOT NULL, 'isolated Emporio engine schema exists');
 SELECT is((SELECT count(*)::int FROM pg_tables WHERE schemaname='papelemi_engine'), 144, 'all 144 source tables are present');
 SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine' AND p.prokind='f'), 84, 'all 84 source functions are present');
@@ -31,5 +31,14 @@ SELECT ok(NOT EXISTS (SELECT 1 FROM information_schema.role_routine_grants WHERE
 SELECT has_table('public','products','existing PapeLemi public products table remains intact');
 SELECT has_table('public','categories','existing PapeLemi public categories table remains intact');
 SELECT ok(EXISTS (SELECT 1 FROM storage.buckets WHERE id='product-images' AND public IS TRUE), 'PapeLemi product image bucket exists');
+SELECT ok(NOT EXISTS (
+  SELECT 1
+  FROM pg_default_acl d
+  JOIN pg_namespace n ON n.oid = d.defaclnamespace
+  CROSS JOIN LATERAL aclexplode(d.defaclacl) acl
+  JOIN pg_roles grantee ON grantee.oid = acl.grantee
+  WHERE n.nspname = 'papelemi_engine'
+    AND grantee.rolname = 'anon'
+), 'anonymous role has no default privileges on future engine objects');
 SELECT * FROM finish();
 ROLLBACK;

@@ -12222,3 +12222,11 @@ REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA papelemi_engine FROM PUBLIC, anon;
 REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA papelemi_engine FROM PUBLIC, anon;
 REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA papelemi_engine FROM PUBLIC, anon;
 REVOKE TRUNCATE, TRIGGER, REFERENCES ON ALL TABLES IN SCHEMA papelemi_engine FROM authenticated;
+-- The source dump grants anon default privileges. Remove those defaults as well
+-- as the existing object grants so future engine objects stay admin-only.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA papelemi_engine
+  REVOKE ALL ON TABLES FROM anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA papelemi_engine
+  REVOKE ALL ON SEQUENCES FROM anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA papelemi_engine
+  REVOKE ALL ON FUNCTIONS FROM anon;
