@@ -55,7 +55,8 @@ export const validateCoupon = createServerFn({ method: "GET" })
   .validator(z.object({ code: z.string().trim().min(2).max(40) }))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const { data: row } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
+    const { data: row, error } = await sb.from("coupons").select("code,percent").eq("code", data.code.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
+    if (error) throw new Error("Não foi possível validar o cupom.");
     return row ? { code: row.code, percent: row.percent } : null;
   });
 
@@ -114,8 +115,11 @@ export const createOrder = createServerFn({ method: "POST" })
     let discount = 0;
     let couponCode: string | null = null;
     if (input.couponCode) {
-      const { data: c } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
-      if (c) { couponCode = c.code; discount = Math.round(subtotal * c.percent) / 100; }
+      const { data: c, error: couponError } = await supabaseAdmin.from("coupons").select("code,percent").eq("code", input.couponCode.toUpperCase()).eq("active", true).filter("store_key", "eq", "papelemi").maybeSingle();
+      if (couponError) throw new Error("Não foi possível validar o cupom. Tente novamente.");
+      if (!c || c.percent < 1 || c.percent > 90) throw new Error("Cupom inválido ou inativo.");
+      couponCode = c.code;
+      discount = Math.round(subtotal * c.percent) / 100;
     }
     const total = Math.round((subtotal - discount + shipping) * 100) / 100;
 
