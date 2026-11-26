@@ -47,6 +47,7 @@ async function confirmApprovedPayment(orderId: string, payment: MpPayment) {
     .from("orders")
     .select("id,total,status")
     .eq("id", orderId)
+    .filter("store_key", "eq", "papelemi")
     .single();
   if (!order) return { status: "unknown" as const };
   if (Math.abs(Number(payment.transaction_amount) - Number(order.total)) > 0.01) {
@@ -57,6 +58,7 @@ async function confirmApprovedPayment(orderId: string, payment: MpPayment) {
     .from("orders")
     .update({ status: "paid", mp_payment_id: String(payment.id) })
     .eq("id", orderId)
+    .filter("store_key", "eq", "papelemi")
     .eq("status", "pending")
     .select("id");
   return { status: updated?.length ? ("paid" as const) : order.status };
