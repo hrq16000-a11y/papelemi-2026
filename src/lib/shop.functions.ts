@@ -576,24 +576,59 @@ export const getOrderDetails = createServerFn({ method: "GET" })
       .eq("store_key", "papelemi")
       .order("line_number", { ascending: true });
     if (itemsError) throw new Error(itemsError.message);
-    return { order, items: items ?? [] };
+    const engineAdmin = admin as unknown as SupabaseClient<any>;
+    const { data: history, error: historyError } = await engineAdmin.from("order_status_history")
+      .select("id,from_status,to_status,note,changed_by,created_at")
+      .eq("store_key", "papelemi")
+      .eq("order_id", data.id)
+      .order("created_at", { ascending: true });
+    if (historyError) throw new Error(historyError.message);
+    return { order, items: items ?? [], history: history ?? [] };
   });
+
+const orderStatusUpdateInput = z.object({
+  id: z.string().uuid(),
+  status: z.enum(["pending", "paid", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
+  trackingCode: z.string().trim().min(4).max(120).optional(),
+  trackingCarrier: z.string().trim().max(120).optional(),
+  trackingUrl: z.string().trim().url().max(500).optional(),
+  note: z.string().trim().max(1000).optional(),
+});
 
 export const setOrderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(z.object({ id: z.string().uuid(), status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]) }))
+  .validator(orderStatusUpdateInput)
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    // Atualizações usam service_role somente após validar o papel do usuário.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
-    const { error } = await admin
-      .from("orders")
-      .update({ status: data.status })
+    const { data: current, error: currentError } = await admin.from("orders")
+      .select("*")
       .eq("id", data.id)
-      .eq("store_key", "papelemi");
+      .eq("store_key", "papelemi")
+      .maybeSingle();
+    if (currentError) throw new Error(currentError.message);
+    if (!current) throw new Error("Pedido não encontrado nesta loja.");
+    const trackingCode = data.trackingCode ?? current.tracking_code ?? null;
+    if (data.status === "shipped" && !trackingCode) {
+      throw new Error("Informe o código de rastreio antes de marcar o pedido como enviado.");
+    }
+    const rpcClient = admin as unknown as SupabaseClient<any>;
+    const { error } = await rpcClient.rpc("admin_update_order", {
+      _actor_id: context.userId,
+      _order_id: data.id,
+      _status: data.status,
+      _shipping_method: current.shipping_method ?? "A combinar",
+      _shipping_company: current.shipping_company ?? null,
+      _shipping_days: current.shipping_days ?? null,
+      _shipping_price: Number(current.shipping ?? current.shipping_price ?? 0),
+      _tracking_code: trackingCode,
+      _tracking_carrier: data.trackingCarrier ?? current.tracking_carrier ?? null,
+      _tracking_url: data.trackingUrl ?? current.tracking_url ?? null,
+      _notes: data.note ?? current.notes ?? null,
+    });
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, orderCode: current.order_code };
   });
 
 const productInput = productAdminSchema;
