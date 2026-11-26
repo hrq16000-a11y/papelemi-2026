@@ -17,3 +17,18 @@ file_size_limit = "50MiB"
 public = true
 file_size_limit = "10MiB"
 allowed_mime_types = ["image/png", "image/jpeg", "image/webp", "image/avif", "image/svg+xml"]
+
+[inbucket]
+enabled = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+[functions.track-visit]
+verify_jwt = false
+
+[functions.order-stream]
+verify_jwt = false
+
+[functions.notify-order-status]
+verify_jwt = false

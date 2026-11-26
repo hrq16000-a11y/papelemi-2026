@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "npm:@supabase/supabase-js@2": "./_shared/engine-supabase.ts",
+    "npm:@supabase/supabase-js@2.45.0": "./_shared/engine-supabase.ts",
+    "https://esm.sh/@supabase/supabase-js@2": "./_shared/engine-supabase.ts",
+    "https://esm.sh/@supabase/supabase-js@2.45.0": "./_shared/engine-supabase.ts"
+  }
+}
