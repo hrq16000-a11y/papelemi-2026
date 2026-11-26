@@ -44,12 +44,13 @@ jobs:
           src/lib/catalog-lifecycle.types.ts
           src/lib/catalog-validation.ts
           src/lib/order-admin-validation.ts
+          src/lib/payment-normalization.ts
           src/lib/shop.functions.ts
           src/lib/mp.ts
           src/routes/admin.tsx
           src/routes/checkout.tsx
           'src/routes/produto.$slug.tsx'
-          src/test/catalog-admin.test.ts src/test/catalog-repository.test.ts src/test/order-admin.test.ts
+          src/test/catalog-admin.test.ts src/test/catalog-repository.test.ts src/test/order-admin.test.ts src/test/payment-normalization.test.ts
           src/test/cart-storage.test.ts
           src/test/order-integrity.test.ts
           src/test/customer-summary.test.ts src/lib/shipping-quote.ts src/lib/shipping-quote.server.ts src/test/shipping-quote.test.ts

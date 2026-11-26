@@ -1,5 +1,6 @@
 // Mercado Pago via conector Lovable — somente código de servidor pode importar este módulo.
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { buildPaymentEventRecord, normalizeMpPaymentStatus, parseMpPayment, paymentAmountMatches, type MpPayment, type NormalizedPaymentStatus } from "@/lib/payment-normalization";
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/mercadopago";
 
 export function mpConfigured() {
@@ -33,54 +34,117 @@ export async function mpRequest(
   return response.json();
 }
 
-type MpPayment = {
-  id: number;
+async function recordPaymentEvent(
+  admin: SupabaseClient,
+  payment: MpPayment,
+  order: { id: string; order_code: string | null } | null,
+  appliedStatus: NormalizedPaymentStatus,
+  result: string,
+  errorMessage?: string,
+) {
+  const { error } = await admin.from("payment_events").upsert(
+    buildPaymentEventRecord({
+      payment,
+      orderId: order?.id ?? null,
+      orderCode: order?.order_code ?? null,
+      appliedStatus,
+      result,
+      errorMessage,
+    }),
+    { onConflict: "store_key,provider,event_id", ignoreDuplicates: true },
+  );
+  if (error) throw new Error("Não foi possível registrar evento do pagamento: " + error.message);
+}
+
+type PaymentOrderRow = {
+  id: string;
+  order_code: string | null;
+  total: number;
   status: string;
-  external_reference?: string;
-  transaction_amount?: number;
+  payment_status: NormalizedPaymentStatus;
+  payment_id: string | null;
+  paid_at: string | null;
 };
 
-// Confirmação única: só marca pago quando aprovado e o valor bate com o pedido;
-// a atualização é protegida (status pending) para rodar várias vezes sem duplicar efeitos.
-async function confirmApprovedPayment(orderId: string, payment: MpPayment) {
+async function applyPaymentState(payment: MpPayment) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin as unknown as SupabaseClient;
-  const { data: order } = await admin
-    .from("orders")
-    .select("id,total,status")
+  const normalizedStatus = normalizeMpPaymentStatus(payment.status);
+  const orderId = payment.external_reference;
+
+  if (!orderId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId)) {
+    await recordPaymentEvent(admin, payment, null, "pending", "missing_or_invalid_reference");
+    return { status: "ignored" as const };
+  }
+
+  const { data, error } = await admin.from("orders")
+    .select("id,order_code,total,status,payment_status,payment_id,paid_at")
     .eq("id", orderId)
     .eq("store_key", "papelemi")
     .maybeSingle();
-  if (!order) return { status: "unknown" as const };
-  if (Math.abs(Number(payment.transaction_amount) - Number(order.total)) > 0.01) {
-    console.error(`Pagamento ${payment.id} com valor divergente para o pedido ${orderId}`);
-    return { status: order.status };
+  if (error) throw new Error(error.message);
+  if (!data) {
+    await recordPaymentEvent(admin, payment, null, normalizedStatus, "unmatched_order");
+    return { status: "unknown" as const };
   }
-  const { data: updated } = await admin
-    .from("orders")
-    .update({ status: "paid", mp_payment_id: String(payment.id) })
-    .eq("id", orderId)
-    .eq("store_key", "papelemi")
-    .eq("status", "pending")
-    .select("id");
-  return { status: updated?.length ? ("paid" as const) : order.status };
+
+  const order = data as PaymentOrderRow;
+  if (normalizedStatus === "approved" && !paymentAmountMatches(Number(order.total), payment)) {
+    await recordPaymentEvent(
+      admin,
+      payment,
+      order,
+      order.payment_status,
+      "amount_mismatch",
+      "Valor ou moeda do pagamento não corresponde ao total do pedido.",
+    );
+    console.error("Pagamento " + payment.id + " com valor/moeda divergente para o pedido " + orderId);
+    return { status: order.status, paymentStatus: order.payment_status };
+  }
+
+  let appliedStatus = normalizedStatus;
+  let result = "applied";
+  const staleUpdate =
+    (order.payment_status === "approved" && normalizedStatus !== "approved" && normalizedStatus !== "refunded")
+    || (order.payment_status === "refunded" && normalizedStatus !== "refunded")
+    || (order.payment_status === "cancelled" && normalizedStatus === "pending");
+
+  if (staleUpdate) {
+    appliedStatus = order.payment_status;
+    result = "stale_status_ignored";
+  } else {
+    const patch: Record<string, unknown> = {
+      payment_status: appliedStatus,
+      payment_id: String(payment.id),
+      payment_method: payment.payment_method_id ?? payment.payment_type_id ?? null,
+      mp_payment_id: String(payment.id),
+    };
+    if (appliedStatus === "approved") {
+      patch["paid_at"] = order.paid_at ?? payment.date_approved ?? new Date().toISOString();
+      if (order.status === "pending" || order.status === "confirmed") patch["status"] = "paid";
+    }
+    const { error: updateError } = await admin.from("orders").update(patch)
+      .eq("id", order.id).eq("store_key", "papelemi");
+    if (updateError) throw new Error(updateError.message);
+  }
+
+  await recordPaymentEvent(admin, payment, order, appliedStatus, result);
+  return { status: appliedStatus, result };
 }
 
-// Caminho da notificação (webhook): recebe o id do pagamento.
+// Webhook: consulta o estado diretamente no Mercado Pago e registra o evento de forma idempotente.
 export async function confirmPaymentById(paymentId: string) {
-  const payment = (await mpRequest(`v1/payments/${paymentId}`)) as MpPayment;
-  const orderId = payment.external_reference;
-  if (!orderId) return { status: "ignored" as const };
-  if (payment.status !== "approved") return { status: payment.status };
-  return confirmApprovedPayment(orderId, payment);
+  const payment = parseMpPayment(await mpRequest("v1/payments/" + paymentId));
+  return applyPaymentState(payment);
 }
 
-// Caminho do retorno da compra: busca pelo pedido (external_reference).
+// Retorno da compra: prefere qualquer pagamento aprovado; caso não exista, registra o estado mais recente.
 export async function confirmOrderByReference(orderId: string) {
-  const res = (await mpRequest(
-    `v1/payments/search?external_reference=${orderId}&sort=date_created&criteria=desc`,
-  )) as { results?: MpPayment[] };
-  const approved = (res.results ?? []).find((p) => p.status === "approved");
-  if (!approved) return { status: "pending" as const };
-  return confirmApprovedPayment(orderId, approved);
+  const response = await mpRequest(
+    "v1/payments/search?external_reference=" + encodeURIComponent(orderId) + "&sort=date_created&criteria=desc",
+  ) as { results?: unknown[] };
+  const payments = (Array.isArray(response.results) ? response.results : []).map(parseMpPayment);
+  const payment = payments.find((candidate) => candidate.status === "approved") ?? payments[0];
+  if (!payment) return { status: "pending" as const };
+  return applyPaymentState(payment);
 }

@@ -479,3 +479,18 @@ A migration `20261125220000_add_order_360_operations.sql` continua fora da lista
 ### Próxima etapa
 
 Configurar, mediante autorização, as variáveis Supabase do ambiente Preview para permitir homologação autenticada e do catálogo. Em seguida, avançar para estoque transacional e integração completa de pedidos/pagamentos/fretes, sem assumir que o campo de estoque atual representa reserva automática.
+
+
+## 2026-11-25 — Integração de eventos de pagamento
+
+A etapa de pagamentos conecta o retorno e o webhook do Mercado Pago ao estado normalizado dos pedidos:
+
+- Mapeamento dos estados do provedor para pending, approved, refunded e cancelled.
+- Validação obrigatória de valor e moeda BRL antes de aprovar.
+- Atualização de payment_status, payment_id, payment_method e paid_at; compatibilidade com mp_payment_id e status legado.
+- Proteção contra regressão de status por notificações antigas.
+- Registro idempotente em payment_events, com event_id por pagamento/estado.
+- Payload de auditoria minimizado, sem dados de cartão ou pagador.
+- Testes unitários de normalização, valor, moeda e minimização de dados.
+
+A homologação não chama o gateway, não gera cobranças e não altera credenciais. A integração depende da migration de Order 360, que permanece pendente em Production.

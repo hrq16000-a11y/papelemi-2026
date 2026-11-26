@@ -557,7 +557,7 @@ function OrdersTab() {
                       <p className="flex justify-between border-t border-border pt-2 font-semibold text-foreground"><span>Total</span><span>{brl(Number(detail.order.total))}</span></p>
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">Cupom: {detail.order.coupon_code || "Não utilizado"}</p>
-                    <p className="text-xs text-muted-foreground">Situação do pagamento: {detail.order.payment_status === "approved" ? "Aprovado" : detail.order.payment_status === "refunded" ? "Estornado" : detail.order.payment_status === "cancelled" ? "Cancelado" : "Pendente"}</p>
+                    <p className="text-xs text-muted-foreground">Situação do pagamento: {detail.order.payment_status === "approved" ? "Aprovado" : detail.order.payment_status === "refunded" ? "Estornado" : detail.order.payment_status === "cancelled" ? "Cancelado" : detail.order.status === "paid" ? "Pago — aguardando conciliação" : "Pendente"}</p>
                     <p className="text-xs text-muted-foreground">Forma: {detail.order.payment_method || "Não informada"} · ID: {detail.order.payment_id || detail.order.mp_payment_id || "Aguardando"}</p>
                     {detail.order.paid_at ? <p className="text-xs text-muted-foreground">Pago em {formatOrderDate(detail.order.paid_at)}</p> : null}
                     <p className="text-xs text-muted-foreground">Pagamento Mercado Pago: {detail.order.mp_payment_id || "Ainda sem identificador"}</p>

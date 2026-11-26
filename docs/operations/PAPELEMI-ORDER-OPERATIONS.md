@@ -37,4 +37,4 @@ A PR #15 conecta esses dados ao painel: consulta do histórico e dos eventos, ed
 
 **Implantação:** a migration e o código estão em branches de homologação e são reproduzidos no Supabase local do GitHub Actions. Não aplicar em Production antes da homologação autenticada e da autorização de implantação.
 
-**Limite:** a visualização de `payment_events` está preparada; a gravação idempotente desses eventos no webhook do provedor fica para uma etapa separada. Nenhuma cobrança, estorno ou mensagem real é executada nesta rodada.
+O retorno da compra e o webhook consultam o estado diretamente no Mercado Pago, validam valor e moeda BRL antes de aprovar, atualizam o estado normalizado do pagamento e registram eventos idempotentes em `payment_events`. O formulário operacional não permite marcar pagamento como aprovado manualmente. O payload armazenado é minimizado e não inclui dados de cartão ou pagador. Nenhuma cobrança real ou estorno é executado nesta rodada.
