@@ -1,0 +1,8 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import AdminOnlyApp from "./AdminOnlyApp";
+import "./styles.css";
+
+const root = document.getElementById("root");
+if (!root) throw new Error("Elemento raiz do painel não encontrado.");
+createRoot(root).render(<StrictMode><AdminOnlyApp /></StrictMode>);

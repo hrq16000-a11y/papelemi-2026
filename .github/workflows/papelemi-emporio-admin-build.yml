@@ -1,0 +1,33 @@
+name: PapeLemi — build do painel original Empório
+
+on:
+  push:
+    branches:
+      - feat/emporio-admin-replica-01-20261126
+    paths:
+      - apps/emporio-admin/adapter/**
+      - apps/emporio-admin/source/src/pages/admin/**
+      - apps/emporio-admin/source/src/components/**
+      - apps/emporio-admin/source/src/hooks/**
+      - apps/emporio-admin/source/src/lib/**
+      - apps/emporio-admin/source/src/integrations/**
+      - src/routes/admin-original.tsx
+
+permissions:
+  contents: read
+
+jobs:
+  build-admin:
+    name: Build isolated original admin SPA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install isolated Empório admin dependencies
+        working-directory: apps/emporio-admin/adapter
+        run: bun install --frozen-lockfile
+      - name: Build PapeLemi-branded admin bundle
+        working-directory: apps/emporio-admin/adapter
+        run: bun run build
