@@ -494,3 +494,12 @@ A etapa de pagamentos conecta o retorno e o webhook do Mercado Pago ao estado no
 - Testes unitários de normalização, valor, moeda e minimização de dados.
 
 A homologação não chama o gateway, não gera cobranças e não altera credenciais. A integração depende da migration de Order 360, que permanece pendente em Production.
+
+
+## 2026-11-26 — Mudança estratégica: réplica do sistema original Empório
+
+A estratégia passa de reconstrução funcional pontual para transferência em lote do sistema original Empório Lele Cute. A auditoria de paridade, o estado das PRs e os limites de banco estão registrados em docs/operations/PAPELEMI_EMPÓRIO_REPLICATION_AUDIT_2026-11-26.md.
+
+A fonte de código está fixada no repositório hrq16000-a11y/emporiolelecute-2026, branch main, commit d01d843c266b5a32d03af22eeaac6eda4a7fcf0f. A primeira transferência vendorizada inclui páginas administrativas, componentes, hooks, bibliotecas, migrations Supabase/Drizzle e Edge Functions, sem dados, mídia, seeds, configurações de projeto ou segredos da Empório. O manifesto registra SHA-256 por arquivo.
+
+A integração será feita em aplicação administrativa isolada, preservando o storefront SSR da PapeLemi. A base Supabase PapeLemi continua como destino exclusivo; as 199 migrations históricas não serão reproduzidas cegamente. Toda mudança de schema será aditiva, reconciliada e homologada antes de aplicação hospedada.
