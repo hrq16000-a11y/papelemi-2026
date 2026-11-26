@@ -1,0 +1,419 @@
+// Edge Function: calculate-shipping
+// Lê configurações, provedores e regras 100% do banco (shipping_settings,
+// shipping_providers, shipping_rules). Loga falhas em shipping_audit_logs.
+
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { z } from 'npm:zod@4.6.7';
+import { packCart, buildMelhorEnvioPayload, quoteCorreiosEstimate, round2 } from './lib.ts';
+
+// Timeout rígido para qualquer chamada a provedor externo (ex.: Melhor Envio).
+// Acima disso, devolvemos o fallback estimado para não travar o checkout.
+const PROVIDER_TIMEOUT_MS = 2500;
+// TTL do cache de cotações em ms (5 min) — alinha com a volatilidade típica das tarifas.
+const QUOTE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+class ProviderTimeoutError extends Error {
+  constructor(public ms: number) {
+    super(`Timeout do provedor após ${ms}ms`);
+    this.name = 'ProviderTimeoutError';
+  }
+}
+
+/**
+ * fetch com AbortController + timeout rígido. Garante que o request seja realmente
+ * cancelado no socket e que a Edge nunca fique pendurada além de `timeout` ms.
+ */
+async function fetchWithTimeout(
+  resource: string,
+  options: RequestInit & { timeout?: number } = {},
+): Promise<Response> {
+  const { timeout = PROVIDER_TIMEOUT_MS, signal: externalSignal, ...rest } = options;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  // Propaga abort externo caso fornecido
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  try {
+    return await fetch(resource, { ...rest, signal: controller.signal });
+  } catch (err: any) {
+    if (err?.name === 'AbortError') throw new ProviderTimeoutError(timeout);
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/** Gera uma chave estável para cache de cotação. */
+function buildQuoteCacheKey(provider: string, origin: string, destino: string, weightKg: number): string {
+  // Arredonda peso a 2 casas (10g) para maximizar hits sem perder precisão relevante.
+  const w = Math.round(weightKg * 100) / 100;
+  return `${provider}:${origin}:${destino}:${w}`;
+}
+
+async function readQuoteCache(sb: any, key: string): Promise<ShippingOption[] | null> {
+  try {
+    const { data, error } = await sb
+      .from('shipping_quote_cache')
+      .select('options, created_at')
+      .eq('cache_key', key)
+      .maybeSingle();
+    if (error || !data) return null;
+    const age = Date.now() - new Date(data.created_at).getTime();
+    if (age > QUOTE_CACHE_TTL_MS) return null;
+    return Array.isArray(data.options) ? (data.options as ShippingOption[]) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function writeQuoteCache(sb: any, key: string, options: ShippingOption[]): Promise<void> {
+  try {
+    await sb
+      .from('shipping_quote_cache')
+      .upsert(
+        { cache_key: key, options, created_at: new Date().toISOString() },
+        { onConflict: 'cache_key' },
+      );
+  } catch (_) {
+    // Cache é best-effort — falhas nunca devem propagar.
+  }
+}
+
+
+const ItemSchema = z.object({
+  product_id: z.string().optional(),
+  name: z.string().min(1).max(200),
+  quantity: z.number().int().positive().max(500),
+  weight_kg: z.number().nonnegative().max(30).optional(),
+  width: z.number().positive().max(200).optional(),
+  height: z.number().positive().max(200).optional(),
+  length: z.number().positive().max(200).optional(),
+  unit_price: z.number().nonnegative().optional(),
+  requires_shipping: z.boolean().optional(),
+});
+
+const BodySchema = z.object({
+  cep_destino: z.string().regex(/^\d{5}-?\d{3}$/, 'CEP de destino inválido'),
+  state: z.string().trim().length(2).optional().or(z.literal('')).transform((v) => (v ? v.toUpperCase() : undefined)),
+  items: z.array(ItemSchema).min(1).max(100),
+});
+
+type ShippingOption = {
+  provider: string;
+  service_name: string;
+  price: number;
+  estimated_delivery_days: string;
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return json({ error: 'Método não permitido' }, 405);
+
+  const sb = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  );
+
+  try {
+    // Authenticate before reading provider credentials, cache or writing audits.
+    const token = req.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+    const loginRequired = () => json({ error: 'Entre na sua conta para cotar com a transportadora ou combine o frete pelo WhatsApp.', login_required: true }, 401);
+    if (!token) return loginRequired();
+    try {
+      const { data, error } = await sb.auth.getUser(token);
+      if (error || !data?.user?.id || data.user.is_anonymous) return loginRequired();
+    } catch { return loginRequired(); }
+    const parsed = BodySchema.safeParse(await req.json());
+    if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
+    const { cep_destino, items, state } = parsed.data;
+    const destino = cep_destino.replace(/\D/g, '');
+
+    // Carrega configurações do banco
+    const [{ data: settings }, { data: providers }, { data: rules }] = await Promise.all([
+      sb.from('shipping_settings').select('*').limit(1).maybeSingle(),
+      sb.from('shipping_providers').select('*').eq('is_active', true),
+      sb.from('shipping_rules').select('*').eq('is_active', true).order('priority', { ascending: false }),
+    ]);
+
+    if (!settings || !settings.origin_zip_code) {
+      return json({ error: 'CEP de origem não configurado' }, 422);
+    }
+    if (settings.is_enabled === false) {
+      return json({ error: 'Cálculo de frete temporariamente desabilitado', disabled: true }, 503);
+    }
+    const ORIGIN_CEP = String(settings.origin_zip_code).replace(/\D/g, '');
+    if (ORIGIN_CEP.length !== 8) return json({ error: 'CEP de origem inválido' }, 422);
+
+    // Quotes are only for real catalog items: weight/dimensions/price come from
+    // the catalog, never from the request, so the courier account only sees
+    // store-defined packages.
+    const ids = [...new Set(items.map((i) => i.product_id).filter((v): v is string => !!v && /^[0-9a-f-]{36}$/i.test(v)))];
+    if (ids.length === 0) return json({ error: 'Itens inválidos para cotação' }, 400);
+    const { data: catalog } = await sb
+      .from('products')
+      .select('id, price, weight_kg, length_cm, width_cm, height_cm, requires_shipping')
+      .eq('is_active', true)
+      .in('id', ids);
+    if (items.some(item => !item.product_id || !(catalog ?? []).some(product => product.id === item.product_id))) {
+      return json({ error: 'Itens inválidos para cotação' }, 400);
+    }
+    const byId = new Map((catalog ?? []).map((p: any) => [p.id, p]));
+    const catalogItems = items.flatMap((i) => {
+      const p: any = i.product_id ? byId.get(i.product_id) : null;
+      if (!p) return [];
+      return [{
+        product_id: p.id,
+        name: i.name,
+        quantity: i.quantity,
+        unit_price: Number(p.price) || 0,
+        weight_kg: p.weight_kg != null ? Number(p.weight_kg) : undefined,
+        length: p.length_cm != null ? Number(p.length_cm) : undefined,
+        width: p.width_cm != null ? Number(p.width_cm) : undefined,
+        height: p.height_cm != null ? Number(p.height_cm) : undefined,
+        requires_shipping: p.requires_shipping !== false,
+      }];
+    });
+    if (catalogItems.length === 0) return json({ error: 'Itens inválidos para cotação' }, 400);
+
+    // Empacotamento (lib) + filtro de itens que exigem frete
+    const defaultItemWeight = Number(settings.default_box_weight_kg) || 0.3;
+    const { shippable, totalWeight, subtotal } = packCart(catalogItems as any, defaultItemWeight);
+    if (shippable.length === 0) {
+      return json({ options: [{ provider: 'Digital', service_name: 'Sem envio', price: 0, estimated_delivery_days: '0' }] });
+    }
+
+    // Diagnóstico: token Melhor Envio configurado?
+    const meProvider = (providers ?? []).find((p: any) => p.provider_code === 'melhor_envio');
+    const meHasKey = !!meProvider?.api_key && !!meProvider?.endpoint_url;
+    console.log('[calculate-shipping]', {
+      totalWeight, subtotal, items_count: shippable.length,
+      melhor_envio_active: !!meProvider,
+      melhor_envio_has_key: meHasKey,
+    });
+
+    // Alerta de credenciais ausentes (provedor ativo, mas sem token)
+    if (meProvider && !meHasKey) {
+      await sb.from('shipping_audit_logs').insert({
+        event_type: 'missing_credentials',
+        provider_name: meProvider.provider_name,
+        error_message: 'Provedor ativo sem api_key/endpoint_url configurados',
+        total_weight_kg: totalWeight,
+        melhor_envio_has_key: false,
+      });
+    }
+
+    // Entrega local: mesmo CEP
+    if (destino === ORIGIN_CEP) {
+      return json({
+        local_delivery: true,
+        options: applyRules([
+          { provider: 'PapeLemi', service_name: 'Retirada / Entrega local', price: 0, estimated_delivery_days: '1-2' },
+        ], { subtotal, state, destino }, rules ?? []),
+      });
+    }
+
+    // Coleta cotações de todos os provedores ativos em paralelo
+    const quotes = await Promise.all(
+      (providers ?? []).map((p) => quoteProvider(p, { origin: ORIGIN_CEP, destino, items: shippable, totalWeight, subtotal, settings, sb })),
+    );
+    let options: ShippingOption[] = quotes.flat();
+    let estimated = false;
+
+    // Fallback: se nenhum provedor real retornou, usa estimativa por região
+    if (options.length === 0) {
+      estimated = true;
+      options = quoteCorreiosEstimate({ totalWeight, destino, origin: ORIGIN_CEP });
+      await sb.from('shipping_audit_logs').insert({
+        event_type: 'estimate_fallback',
+        cart_snapshot: { items: shippable, subtotal },
+        provider_name: meProvider?.provider_name ?? null,
+        error_message: meHasKey
+          ? 'Provedores ativos não retornaram cotação — usando estimativa'
+          : 'Token Melhor Envio ausente — usando estimativa',
+        total_weight_kg: totalWeight,
+        melhor_envio_has_key: meHasKey,
+        estimated: true,
+      });
+    }
+
+    // Markup + handling (não aplicar em frete grátis)
+    const markup = Number(settings.shipping_markup_percentage) || 0;
+    const fee = Number(settings.handling_fee) || 0;
+    options = options.map((o) => ({
+      ...o,
+      price: o.price === 0 ? 0 : round2(o.price * (1 + markup / 100) + fee),
+    }));
+
+    // Aplica regras
+    options = applyRules(options, { subtotal, state, destino }, rules ?? []);
+
+    // Retirada no local (se habilitada no admin) — aparece como opção adicional, sempre R$ 0
+    if (settings.pickup_enabled) {
+      options.push({
+        provider: 'PapeLemi',
+        service_name: settings.pickup_label || 'Retirada no ateliê',
+        price: 0,
+        estimated_delivery_days: '0',
+      });
+    }
+
+    options.sort((a, b) => a.price - b.price);
+
+    if (options.length === 0) {
+      return json({ error: 'Não foi possível calcular o frete para este CEP.' }, 422);
+    }
+    // is_fallback: true sempre que estamos servindo estimativa em vez de cotação real do provedor.
+    return json({
+      options,
+      estimated,
+      is_fallback: estimated,
+      melhor_envio_has_key: meHasKey,
+      pickup: settings.pickup_enabled ? {
+        label: settings.pickup_label,
+        address: settings.pickup_address,
+        instructions: settings.pickup_instructions,
+      } : null,
+    });
+  } catch {
+    console.error('[calculate-shipping] unexpected failure');
+    return json({ error: 'Erro interno' }, 500);
+  }
+});
+
+// --- Provedores ---
+async function quoteProvider(p: any, ctx: any): Promise<ShippingOption[]> {
+  try {
+    if (p.provider_code !== 'melhor_envio') return [];
+
+    // 1) Cache layer — evita bater no provedor para combinações recentes.
+    const cacheKey = buildQuoteCacheKey('melhor_envio', ctx.origin, ctx.destino, ctx.totalWeight);
+    const cached = await readQuoteCache(ctx.sb, cacheKey);
+    if (cached && cached.length > 0) {
+      console.log('[calculate-shipping] cache hit', { count: cached.length });
+      return cached;
+    }
+
+    // 2) Chamada real ao provedor com timeout rígido.
+    const options = await quoteMelhorEnvio(p, ctx);
+
+    // 3) Salva no cache de forma best-effort (não bloqueia retorno).
+    if (options.length > 0) {
+      writeQuoteCache(ctx.sb, cacheKey, options).catch(() => {});
+    }
+    return options;
+  } catch (err: any) {
+    // Classifica motivo do fallback para a auditoria
+    const status = err?.status as number | undefined;
+    const isTimeout = err instanceof ProviderTimeoutError || err?.name === 'AbortError';
+    const is5xx = typeof status === 'number' && status >= 500 && status < 600;
+    const reason = isTimeout ? 'provider_timeout' : is5xx ? 'provider_error' : 'provider_error';
+
+    console.error('[calculate-shipping] provider fallback', {
+      provider: p.provider_name, reason, status,
+    });
+
+    await ctx.sb.from('shipping_audit_logs').insert({
+      event_type: reason,
+      cart_snapshot: { items: ctx.items, subtotal: ctx.subtotal, reason },
+      provider_name: p.provider_name,
+      error_message: reason,
+      http_status: status ?? null,
+      total_weight_kg: ctx.totalWeight,
+      melhor_envio_has_key: !!p.api_key,
+    });
+    return [];
+  }
+}
+
+async function quoteMelhorEnvio(p: any, ctx: any): Promise<ShippingOption[]> {
+  if (!p.api_key || !p.endpoint_url) throw new Error('Credenciais Melhor Envio ausentes');
+
+  // EMPACOTAMENTO consolidado em 1 caixa (lib).
+  const payload = buildMelhorEnvioPayload({
+    origin: ctx.origin,
+    destino: ctx.destino,
+    totalWeight: ctx.totalWeight,
+    subtotal: ctx.subtotal,
+    boxW: Number(ctx.settings.default_box_width_cm) || 16,
+    boxH: Number(ctx.settings.default_box_height_cm) || 11,
+    boxL: Number(ctx.settings.default_box_length_cm) || 20,
+  });
+
+  const res = await fetchWithTimeout(p.endpoint_url, {
+    method: 'POST',
+    timeout: PROVIDER_TIMEOUT_MS,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${p.api_key}`,
+      'User-Agent': 'PapeLemi (contato@papelemi.com.br)',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    const e: any = new Error(text.slice(0, 400)); e.status = res.status; throw e;
+  }
+  const data = await res.json();
+  return (Array.isArray(data) ? data : [])
+    .filter((o: any) => !o.error && o.price)
+    .map((o: any) => ({
+      provider: o.company?.name ?? 'Melhor Envio',
+      service_name: o.name,
+      price: Number(o.price),
+      estimated_delivery_days: `${o.delivery_range?.min ?? '?'}-${o.delivery_range?.max ?? '?'}`,
+    }));
+}
+
+
+// (quoteCorreiosEstimate movido para ./lib.ts)
+
+
+
+// --- Regras ---
+function applyRules(opts: ShippingOption[], ctx: { subtotal: number; state?: string; destino: string }, rules: any[]): ShippingOption[] {
+  let result = [...opts];
+  for (const r of rules) {
+    if (!matchesCondition(r, ctx)) continue;
+    if (r.discount_type === 'free_shipping') {
+      result.sort((a, b) => a.price - b.price);
+      if (result[0]) result[0] = { ...result[0], price: 0, service_name: result[0].service_name + ' (Frete Grátis)' };
+    } else if (r.discount_type === 'fixed_discount') {
+      const v = Number(r.discount_value) || 0;
+      result = result.map((o) => ({ ...o, price: Math.max(0, round2(o.price - v)) }));
+    } else if (r.discount_type === 'percentage_discount') {
+      const v = Number(r.discount_value) || 0;
+      result = result.map((o) => ({ ...o, price: round2(o.price * (1 - v / 100)) }));
+    }
+  }
+  return result;
+}
+
+function matchesCondition(r: any, ctx: { subtotal: number; state?: string; destino: string }): boolean {
+  const cv = r.condition_value ?? {};
+  if (r.condition_type === 'min_cart_value') {
+    return ctx.subtotal >= Number(cv.value ?? 0);
+  }
+  if (r.condition_type === 'specific_state') {
+    const states: string[] = Array.isArray(cv.states) ? cv.states : (cv.state ? [cv.state] : []);
+    return !!ctx.state && states.map((s) => s.toUpperCase()).includes(ctx.state.toUpperCase());
+  }
+  if (r.condition_type === 'zip_code_range') {
+    const from = String(cv.from ?? '').replace(/\D/g, '');
+    const to = String(cv.to ?? '').replace(/\D/g, '');
+    if (!from || !to) return false;
+    return ctx.destino >= from && ctx.destino <= to;
+  }
+  return false;
+}
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+

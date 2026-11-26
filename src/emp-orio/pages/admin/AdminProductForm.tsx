@@ -1,0 +1,1527 @@
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Plus, X, Save, Loader2, Tag, Check, AlertCircle, Truck } from 'lucide-react-v462';
+import { Button } from '@/emp-orio/components/ui/button';
+import ImageUploader from '@/emp-orio/components/admin/ImageUploader';
+import PersonalizationOptionsEditor from '@/emp-orio/components/admin/PersonalizationOptionsEditor';
+import ProductLivePreview from '@/emp-orio/components/admin/ProductLivePreview';
+import {
+  parsePersonalizationOptions,
+  serializePersonalizationOptions,
+  type PersonalizationOption,
+} from '@/emp-orio/lib/personalizationOptions';
+import { Input } from '@/emp-orio/components/ui/input';
+import { Label } from '@/emp-orio/components/ui/label';
+import { Textarea } from '@/emp-orio/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/emp-orio/components/ui/card';
+import { Switch } from '@/emp-orio/components/ui/switch';
+import { Checkbox } from '@/emp-orio/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/emp-orio/components/ui/select';
+import { useToast } from '@/emp-orio/hooks/use-toast';
+import {
+  useDbProductByIdOrSlug,
+  useDbCategories,
+  useDbOccasions,
+  useSaveProductFull,
+  type SaveProductError,
+} from '@/emp-orio/hooks/useProducts';
+
+
+import { useTags } from '@/emp-orio/hooks/useTags';
+import { useSlugAvailability } from '@/emp-orio/hooks/useSlugAvailability';
+import { generateSafeSlug, assessSlugQuality } from '@/emp-orio/lib/slugHardening';
+import { useSegments } from '@/emp-orio/hooks/useSegments';
+import { supabase } from '@/emp-orio/integrations/supabase/client';
+
+import { evaluateProductSeo } from '@/emp-orio/lib/productSeo';
+import { buildProductChecklist } from '@/emp-orio/lib/thinContent';
+import ProductSeoScoreBadge from '@/emp-orio/components/admin/ProductSeoScoreBadge';
+import ProductVersionHistory from '@/emp-orio/components/admin/ProductVersionHistory';
+import ProductSeoChecklist from '@/emp-orio/components/admin/ProductSeoChecklist';
+import SocialSeoPreviews from '@/emp-orio/components/admin/SocialSeoPreviews';
+import EditorialTemplatesPicker from '@/emp-orio/components/admin/EditorialTemplatesPicker';
+import TaxonomySuggestionsHints from '@/emp-orio/components/admin/TaxonomySuggestionsHints';
+import { Link } from 'react-router-dom';
+import { FileText, ExternalLink } from 'lucide-react-v462';
+import { useFormUsageTracking } from '@/emp-orio/hooks/useFormUsageTracking';
+import { trackAdminEvent } from '@/emp-orio/lib/adminUsage';
+import { PdpBadge } from '@/emp-orio/components/PdpBadge';
+import type { PdpBadgeConfig } from '@/emp-orio/hooks/useConversionCtaConfig';
+import ProductFaqEditor from '@/emp-orio/components/admin/ProductFaqEditor';
+import { useFormDraft } from '@/emp-orio/hooks/useFormDraft';
+import DraftStatusBadge from '@/emp-orio/components/admin/DraftStatusBadge';
+import AfterSalesRuleFields from '@/emp-orio/components/admin/AfterSalesRuleFields';
+import { defaultAfterSalesRule, followupDueAt, type AfterSalesRule } from '@/emp-orio/lib/after-sales';
+
+const DEFAULT_BADGE_OVERRIDE: PdpBadgeConfig = {
+  enabled: true,
+  label: 'Promoção',
+  showIcon: false,
+  tone: 'coral',
+  position: 'top-left',
+  offsetX: 12,
+  offsetY: 12,
+};
+
+const AdminProductForm = () => {
+  // Aceita UUID (legado) ou slug (URL amigável) — ambos resolvem o mesmo produto.
+  const { id: routeParam } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { data: existingProduct, isLoading: loadingProduct } = useDbProductByIdOrSlug(routeParam);
+  // ID interno (UUID) usado em mutations — vem do produto resolvido.
+  const id = existingProduct?.id;
+  const isEditing = !!routeParam;
+
+  const { data: categories } = useDbCategories();
+  const { data: occasions } = useDbOccasions();
+  const { data: tags } = useTags();
+  const { data: segments } = useSegments();
+  const saveProduct = useSaveProductFull();
+  const [afterSalesRule, setAfterSalesRule] = useState<AfterSalesRule>(defaultAfterSalesRule);
+  const [useCustomAfterSales, setUseCustomAfterSales] = useState(false);
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    void supabase.from('after_sales_rules').select('*').eq('scope_key', id).maybeSingle().then(({ data, error }) => {
+      if (!active) return;
+      if (error) { toast({ title: 'Não foi possível carregar o pós-venda', variant: 'destructive' }); return; }
+      setUseCustomAfterSales(!!data);
+      setAfterSalesRule(data ? data as AfterSalesRule : defaultAfterSalesRule);
+    });
+    return () => { active = false; };
+  }, [id]);
+
+
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    long_description: '',
+    price: '',
+    promotional_price: '',
+    min_quantity: '1',
+    pix_discount: '7',
+    production_days: '7',
+    weight: '',
+    length_cm: '',
+    width_cm: '',
+    height_cm: '',
+    requires_shipping: true,
+    category_id: '',
+    badge: '',
+    rating: '5.0',
+    images: [''],
+    features: [''],
+    keywords: [] as string[],
+    
+    is_active: true,
+    // Personalization fields
+    personalization_enabled: true,
+    personalization_label: 'Personalização',
+    personalization_placeholder: 'Digite o nome, data ou mensagem para personalização...',
+    google_product_category: '',
+    editorial_content: '',
+    featured_weight: '0',
+    production_speed: '' as '' | 'rapido' | 'normal' | 'longo',
+  });
+  const [personalizationOptions, setPersonalizationOptions] = useState<PersonalizationOption[]>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [keywordsInput, setKeywordsInput] = useState('');
+  const [badgeOverride, setBadgeOverride] = useState<PdpBadgeConfig | null>(null);
+ const [showQuickSummary, setShowQuickSummary] = useState<boolean>(false);
+ const [showMinQuantity, setShowMinQuantity] = useState<boolean>(false);
+  // Lock otimista local — começa nulo (create) e é atualizado na hidratação
+  // e após cada save bem-sucedido. Evita falso 40001 em saves sequenciais
+  // enquanto o refetch do React Query ainda não concluiu.
+  const [expectedUpdatedAt, setExpectedUpdatedAt] = useState<string | null>(null);
+
+  const slugCheck = useSlugAvailability('products', formData.slug, id ?? null);
+  const usage = useFormUsageTracking(isEditing ? 'product_form_edit' : 'product_form_create');
+
+  // Canonicaliza a URL do admin: se chegou via UUID, troca para o slug do produto.
+  useEffect(() => {
+    if (existingProduct?.slug && routeParam && routeParam !== existingProduct.slug) {
+      navigate(`/admin/produtos/${existingProduct.slug}`, { replace: true });
+    }
+  }, [existingProduct?.slug, routeParam, navigate]);
+
+
+  // ===========================================================================
+  // Hidratação do form a partir do produto carregado.
+  // BUG P0 corrigido: hidrata APENAS UMA VEZ por id.
+  // Antes: useEffect rehidratava em todo refetch (após save / invalidate),
+  // sobrescrevendo edições locais em andamento silenciosamente.
+  // Agora: hydratedForIdRef guarda o id já hidratado. Refetch não pisa no form.
+  // Quando o usuário navega para outro produto, o id muda e re-hidrata.
+  // ===========================================================================
+  const hydratedForIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    if (!existingProduct) return;
+    if (hydratedForIdRef.current === existingProduct.id) return; // já hidratou esse produto
+    hydratedForIdRef.current = existingProduct.id;
+    setExpectedUpdatedAt(existingProduct.updated_at ?? null);
+
+
+    const keywords = existingProduct.keywords || [];
+    setFormData({
+      name: existingProduct.name,
+      slug: existingProduct.slug,
+      description: existingProduct.description || '',
+      long_description: existingProduct.long_description || '',
+      // Inverte semântica para o admin: campo "Preço" = valor normal (de),
+      // campo "Preço promocional" = novo valor cobrado (por). No DB continuamos
+      // gravando price = cobrado e original_price = riscado.
+      price: (existingProduct.original_price ?? existingProduct.price).toString(),
+      promotional_price: existingProduct.original_price ? existingProduct.price.toString() : '',
+      min_quantity: existingProduct.min_quantity.toString(),
+      pix_discount: existingProduct.pix_discount.toString(),
+      production_days: existingProduct.production_days.toString(),
+      weight: existingProduct.weight?.toString() || '',
+      length_cm: (existingProduct as any).length_cm?.toString() || '',
+      width_cm: (existingProduct as any).width_cm?.toString() || '',
+      height_cm: (existingProduct as any).height_cm?.toString() || '',
+      requires_shipping: (existingProduct as any).requires_shipping ?? true,
+      category_id: existingProduct.category_id || '',
+      badge: existingProduct.badge || '',
+      rating: existingProduct.rating.toString(),
+      images: existingProduct.images.length > 0 ? existingProduct.images : [''],
+      features: existingProduct.features.length > 0 ? existingProduct.features : [''],
+      keywords: keywords,
+      is_active: existingProduct.is_active,
+      personalization_enabled: existingProduct.personalization_enabled ?? true,
+      personalization_label: existingProduct.personalization_label || 'Personalização',
+      personalization_placeholder: existingProduct.personalization_placeholder || 'Digite o nome, data ou mensagem para personalização...',
+      google_product_category: (existingProduct as any).google_product_category || '',
+      editorial_content: (existingProduct as any).editorial_content || '',
+      featured_weight: String((existingProduct as any).featured_weight ?? 0),
+      production_speed: ((existingProduct as any).production_speed || '') as '' | 'rapido' | 'normal' | 'longo',
+    });
+    setPersonalizationOptions(parsePersonalizationOptions((existingProduct as any).personalization_options));
+    setKeywordsInput(keywords.join(', '));
+
+    // Pivôs — só carregam na hidratação inicial.
+    supabase
+      .from('product_occasions')
+      .select('occasion_id')
+      .eq('product_id', existingProduct.id)
+      .then(({ data }) => {
+        if (data) setSelectedOccasions(data.map((o) => o.occasion_id));
+      });
+
+    supabase
+      .from('product_tags')
+      .select('tag_id')
+      .eq('product_id', existingProduct.id)
+      .then(({ data }) => {
+        if (data) setSelectedTags(data.map((t) => t.tag_id));
+      });
+
+    supabase
+      .from('product_segments')
+      .select('segment_id')
+      .eq('product_id', existingProduct.id)
+      .then(({ data }) => {
+        if (data) setSelectedSegments(data.map((s) => s.segment_id));
+      });
+
+    const ov = (existingProduct as any).pdp_badge_override;
+    if (ov && typeof ov === 'object') {
+      setBadgeOverride({ ...DEFAULT_BADGE_OVERRIDE, ...ov });
+    } else {
+      setBadgeOverride(null);
+    }
+    setShowQuickSummary((existingProduct as any).show_quick_summary === true);
+    setShowMinQuantity((existingProduct as any).show_min_quantity === true);
+  }, [existingProduct, isEditing]);
+
+  // ===========================================================================
+  // Rascunho global: persiste formData no useDraftStore (debounce 1s) e reidrata
+  // automaticamente caso o admin volte à mesma rota sem ter salvo.
+  // Só ativa após a hidratação inicial (evita salvar valores em branco).
+  // ===========================================================================
+  const isHydrated = !isEditing || (!!existingProduct && hydratedForIdRef.current === existingProduct.id);
+  const draft = useFormDraft(formData, isHydrated);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    const saved = draft.hydrate<typeof formData>();
+    if (saved) setFormData(saved);
+    // Roda apenas após hidratar do banco; subsequentes alterações são responsabilidade do user
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrated]);
+
+
+
+
+
+
+  // Fase 4.1: gerador token-aware. Nunca corta no meio de palavra,
+  // remove stopwords antes de cortar tokens semânticos, jamais emite hash.
+  const generateSlug = (name: string) => generateSafeSlug(name);
+
+  const handleNameChange = (name: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      name,
+      slug: !isEditing || prev.slug === generateSlug(prev.name) ? generateSlug(name) : prev.slug,
+    }));
+  };
+
+  const handleArrayChange = (field: 'images' | 'features', index: number, value: string) => {
+    setFormData((prev) => {
+      const arr = [...prev[field]];
+      arr[index] = value;
+      return { ...prev, [field]: arr };
+    });
+  };
+
+  const addArrayItem = (field: 'images' | 'features') => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: [...prev[field], ''],
+    }));
+  };
+
+  const removeArrayItem = (field: 'images' | 'features', index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: prev[field].filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleKeywordsChange = (value: string) => {
+    setKeywordsInput(value);
+    // Parse keywords from comma-separated input
+    const keywords = value
+      .split(',')
+      .map(k => k.trim())
+      .filter(k => k.length > 0);
+    setFormData(prev => ({ ...prev, keywords }));
+  };
+
+  const removeKeyword = (keywordToRemove: string) => {
+    const newKeywords = formData.keywords.filter(k => k !== keywordToRemove);
+    setFormData(prev => ({ ...prev, keywords: newKeywords }));
+    setKeywordsInput(newKeywords.join(', '));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.slug || !formData.price) {
+      toast({ title: 'Preencha os campos obrigatórios', variant: 'destructive' });
+      return;
+    }
+
+    if (slugCheck.status === 'taken' || slugCheck.status === 'invalid') {
+      trackAdminEvent('slug_invalid_attempt', 'products');
+      toast({ title: 'Corrija o slug antes de salvar', variant: 'destructive' });
+      return;
+    }
+
+    // Fase 4.1: bloqueia hash residual / slug gigante.
+    const quality = assessSlugQuality(formData.slug);
+    if (quality.severity === 'error') {
+      trackAdminEvent('slug_generation_blocked', 'products');
+      toast({
+        title: 'Slug com problema',
+        description: quality.issues[0] ?? 'Corrija o slug antes de salvar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validação condicional: produtos com entrega física exigem peso + 3 dimensões.
+    if (formData.requires_shipping) {
+      const w = parseFloat(formData.weight);
+      const l = parseFloat(formData.length_cm);
+      const wd = parseFloat(formData.width_cm);
+      const h = parseFloat(formData.height_cm);
+      const invalid =
+        !Number.isFinite(w) || w <= 0 ||
+        !Number.isFinite(l) || l <= 0 ||
+        !Number.isFinite(wd) || wd <= 0 ||
+        !Number.isFinite(h) || h <= 0;
+      if (invalid) {
+        toast({
+          title: 'Peso e dimensões obrigatórios',
+          description: 'Obrigatório para produtos com entrega física (Melhor Envio). Preencha peso e as 3 dimensões com valores maiores que zero.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    setIsSaving(true);
+
+    try {
+      if (useCustomAfterSales) followupDueAt(new Date().toISOString(), afterSalesRule.delay_days);
+      // Payload único — todos os campos de products + flags + badge + pivôs.
+      // Substitui: 1 update products + 2 round-trips de occasions + 2 hooks de tag/segment + 1 update redundante.
+      const productPayload: Record<string, unknown> = {
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description || null,
+        long_description: formData.long_description || null,
+        // Mapeamento DB ⇄ UI:
+        // - UI "Preço" (de/normal) ⇒ se houver promocional válido, vai p/ original_price; senão vai p/ price.
+        // - UI "Preço promocional" (por/cobrado) ⇒ vira o price quando preenchido e menor que o normal.
+        price: (() => {
+          const normal = parseFloat(formData.price);
+          const promo = formData.promotional_price ? parseFloat(formData.promotional_price) : NaN;
+          return Number.isFinite(promo) && promo > 0 && promo < normal ? promo : normal;
+        })(),
+        original_price: (() => {
+          const normal = parseFloat(formData.price);
+          const promo = formData.promotional_price ? parseFloat(formData.promotional_price) : NaN;
+          return Number.isFinite(promo) && promo > 0 && promo < normal ? normal : null;
+        })(),
+        min_quantity: parseInt(formData.min_quantity) || 1,
+        pix_discount: parseInt(formData.pix_discount) || 7,
+        production_days: parseInt(formData.production_days) || 7,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        length_cm: formData.length_cm ? parseFloat(formData.length_cm) : null,
+        width_cm: formData.width_cm ? parseFloat(formData.width_cm) : null,
+        height_cm: formData.height_cm ? parseFloat(formData.height_cm) : null,
+        requires_shipping: formData.requires_shipping,
+        category_id: formData.category_id || null,
+        badge: formData.badge || null,
+        rating: parseFloat(formData.rating) || 5.0,
+        images: formData.images.filter(Boolean),
+        features: formData.features.filter(Boolean),
+        keywords: formData.keywords,
+        is_active: formData.is_active,
+        personalization_enabled: formData.personalization_enabled,
+        personalization_label: formData.personalization_label || null,
+        personalization_placeholder: formData.personalization_placeholder || null,
+        personalization_options: serializePersonalizationOptions(personalizationOptions),
+        google_product_category: formData.google_product_category || null,
+        editorial_content: formData.editorial_content || null,
+        featured_weight: parseInt(formData.featured_weight) || 0,
+        production_speed: formData.production_speed || null,
+        // Funde os campos antes "atualizados em segundo UPDATE" no payload principal.
+        pdp_badge_override: badgeOverride ?? null,
+        show_quick_summary: showQuickSummary,
+        show_min_quantity: showMinQuantity,
+      };
+
+      const result = await saveProduct.mutateAsync({
+        id: isEditing && id ? id : null,
+        expected_updated_at: isEditing ? expectedUpdatedAt : null,
+        product: productPayload,
+        occasion_ids: selectedOccasions,
+        tag_ids: selectedTags,
+        segment_ids: selectedSegments,
+      });
+
+      // Sincroniza lock otimista local imediatamente — não depende do refetch
+      // assíncrono do React Query. Cobre o cenário "salvar duas vezes rápido".
+      setExpectedUpdatedAt(result.updated_at);
+      const ruleResult = useCustomAfterSales
+        ? await supabase.from('after_sales_rules').upsert({ ...afterSalesRule, scope_key: result.id })
+        : await supabase.from('after_sales_rules').delete().eq('scope_key', result.id);
+      if (ruleResult.error) {
+        toast({ title: 'Produto salvo; regra de pós-venda não foi salva', description: 'Tente salvar novamente antes de agendar acompanhamento.', variant: 'destructive' });
+        return;
+      }
+
+      toast({ title: isEditing ? 'Produto atualizado!' : 'Produto criado!' });
+      usage.markSubmitted();
+      // Salvou: limpa rascunho da rota atual para não bloquear navegação.
+      draft.clear();
+      if (!isEditing) {
+        navigate('/admin/produtos');
+      } else if (result.slug !== routeParam) {
+        // Slug foi renomeado — atualiza a URL para o slug novo (replace para
+        // não poluir histórico). Evita que o próximo refetch resolva pelo
+        // alias antigo em product_slugs e perca o vínculo com o produto.
+        navigate(`/admin/produtos/${result.slug}`, { replace: true });
+      }
+    } catch (error) {
+      const err = error as SaveProductError;
+      console.error('Error saving product:', err);
+      switch (err?.kind) {
+        case 'stale_version':
+          toast({
+            title: 'Edição desatualizada',
+            description: 'Outro admin editou este produto. Recarregue a página para ver a versão atual.',
+            variant: 'destructive',
+          });
+          break;
+        case 'slug_taken':
+          toast({
+            title: 'Slug já em uso',
+            description: 'Escolha um slug diferente — outro produto já usa esse.',
+            variant: 'destructive',
+          });
+          break;
+        case 'fk_missing':
+          toast({
+            title: 'Referência inválida',
+            description: 'Uma categoria, tag, ocasião ou segmento foi removida. Atualize as seleções e tente novamente.',
+            variant: 'destructive',
+          });
+          break;
+        case 'forbidden':
+          toast({
+            title: 'Sem permissão',
+            description: 'Sua conta não tem permissão para salvar produtos.',
+            variant: 'destructive',
+          });
+          break;
+        case 'invalid':
+          toast({
+            title: 'Dados inválidos',
+            description: err.message || 'Verifique os campos e tente novamente.',
+            variant: 'destructive',
+          });
+          break;
+        default:
+          toast({ title: 'Erro ao salvar produto', variant: 'destructive' });
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
+
+  if (isEditing && loadingProduct) {
+    return (
+      <div
+        className="p-4 sm:p-6 lg:p-8 flex flex-col items-center justify-center gap-3 min-h-[40vh]"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden />
+        <p className="text-sm text-muted-foreground">Carregando produto…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 sm:p-6 lg:p-8 max-sm:[&_.p-6]:p-3 max-sm:[&_.space-y-6]:space-y-3 max-sm:[&_.space-y-4]:space-y-3 max-sm:[&_.gap-6]:gap-3 max-sm:[&_.gap-4]:gap-3 max-sm:[&_.text-lg]:text-base max-sm:[&_label]:text-sm">
+      <div className="mb-3 sm:mb-6">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/admin/produtos')} className="mb-2 sm:mb-4 h-8 px-2">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Voltar
+        </Button>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h1 className="text-xl sm:text-2xl sm:text-3xl font-display font-semibold text-foreground">
+            {isEditing ? 'Editar Produto' : 'Novo Produto'}
+          </h1>
+          {isEditing && (() => {
+            const seo = evaluateProductSeo({
+              ...formData,
+              price: parseFloat(formData.price) || 0,
+              images: formData.images.filter(Boolean),
+              occasionsCount: selectedOccasions.length,
+              segmentsCount: selectedSegments.length,
+              tagsCount: selectedTags.length,
+            });
+            return (
+              <div className="flex items-center gap-2 flex-wrap">
+                {id && <ProductVersionHistory productId={id} />}
+                <ProductSeoScoreBadge evaluation={seo} />
+                {seo.issues.filter((i) => i.level === 'error').length > 0 && (
+                  <span className="text-xs text-rose-700">
+                    {seo.issues.filter((i) => i.level === 'error').length} crítico(s)
+                  </span>
+                )}
+                <Link to="/admin/produtos/health" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                  Auditoria <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Main Info */}
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <Card className="shadow-card">
+
+            <CardHeader>
+              <CardTitle className="text-lg font-display">Informações Básicas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder="Nome do produto"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Slug *</Label>
+                  <Input
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
+                    placeholder="slug-do-produto"
+                    required
+                    aria-describedby="slug-status"
+                    aria-invalid={slugCheck.status === 'taken' || slugCheck.status === 'invalid'}
+                  />
+                  <p
+                    id="slug-status"
+                    aria-live="polite"
+                    className={`text-xs flex items-center gap-1 min-h-[1rem] ${
+                      slugCheck.status === 'available'
+                        ? 'text-emerald-600'
+                        : slugCheck.status === 'taken' || slugCheck.status === 'invalid'
+                        ? 'text-destructive'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    {slugCheck.status === 'checking' && <Loader2 className="h-3 w-3 animate-spin" aria-hidden />}
+                    {slugCheck.status === 'available' && <Check className="h-3 w-3" aria-hidden />}
+                    {(slugCheck.status === 'taken' || slugCheck.status === 'invalid') && (
+                      <AlertCircle className="h-3 w-3" aria-hidden />
+                    )}
+                    <span>{slugCheck.message}</span>
+                  </p>
+                  {(() => {
+                    const q = assessSlugQuality(formData.slug);
+                    if (q.severity === 'ok' || q.issues.length === 0) return null;
+                    const tone =
+                      q.severity === 'error' ? 'text-destructive' : 'text-amber-600';
+                    return (
+                      <ul className={`text-xs space-y-0.5 ${tone}`} aria-live="polite">
+                        {q.issues.map((issue, i) => (
+                          <li key={i} className="flex items-start gap-1">
+                            <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" aria-hidden />
+                            <span>{issue}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
+                </div>
+              </div>
+
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição curta</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Descrição breve do produto"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="long_description">Descrição detalhada</Label>
+                <Textarea
+                  id="long_description"
+                  value={formData.long_description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, long_description: e.target.value }))}
+                  placeholder="Descrição completa com detalhes do produto"
+                  rows={14}
+                  className="min-h-[280px] resize-y"
+                />
+
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tags + Segmentos (desktop: abaixo da descrição detalhada) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-display flex items-center gap-2">
+                  <Tag className="w-4 h-4" />
+                  Tags
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 max-h-56 overflow-y-auto">
+                  {tags?.map((tag) => (
+                    <label key={tag.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded-md transition-colors">
+                      <Checkbox
+                        checked={selectedTags.includes(tag.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedTags((prev) => [...prev, tag.id]);
+                          } else {
+                            setSelectedTags((prev) => prev.filter((id) => id !== tag.id));
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{tag.name}</span>
+                    </label>
+                  ))}
+                  {!tags?.length && (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma tag cadastrada.{' '}
+                      <a href="/admin/tags" className="underline text-primary">Criar agora</a>
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-display">Segmentos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 max-h-56 overflow-y-auto">
+                  {segments?.map((seg) => (
+                    <label key={seg.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded-md transition-colors">
+                      <Checkbox
+                        checked={selectedSegments.includes(seg.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedSegments((prev) => [...prev, seg.id]);
+                          } else {
+                            setSelectedSegments((prev) => prev.filter((id) => id !== seg.id));
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{seg.name}</span>
+                    </label>
+                  ))}
+                  {!segments?.length && (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum segmento cadastrado.{' '}
+                      <a href="/admin/segmentos" className="underline text-primary">Criar agora</a>
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-display">Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="is_active">Produto ativo</Label>
+                  <Switch
+                    id="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-display">Personalização</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="personalization_enabled">Habilitar campo de personalização</Label>
+                  <Switch
+                    id="personalization_enabled"
+                    checked={formData.personalization_enabled}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, personalization_enabled: checked }))}
+                  />
+                </div>
+                {formData.personalization_enabled && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="personalization_label">Título do campo</Label>
+                      <Input
+                        id="personalization_label"
+                        value={formData.personalization_label}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, personalization_label: e.target.value }))}
+                        placeholder="Ex: Qual a letra para a lembrancinha?"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="personalization_placeholder">Placeholder do campo</Label>
+                      <Input
+                        id="personalization_placeholder"
+                        value={formData.personalization_placeholder}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, personalization_placeholder: e.target.value }))}
+                        placeholder="Ex: Escreva o nome ou letra inicial..."
+                      />
+                    </div>
+                    <div className="space-y-2 border-t pt-4">
+                      <Label>Condições e variações do produto</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Campos extras que o cliente escolhe na página: textos, cores, imagens e variações.
+                      </p>
+                      <PersonalizationOptionsEditor
+                        value={personalizationOptions}
+                        onChange={setPersonalizationOptions}
+                      />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <ProductLivePreview
+              name={formData.name}
+              description={formData.description}
+              price={formData.promotional_price || formData.price}
+              originalPrice={formData.promotional_price ? formData.price : undefined}
+              images={formData.images}
+              badge={formData.badge}
+              rating={formData.rating}
+              personalizationEnabled={formData.personalization_enabled}
+              personalizationLabel={formData.personalization_label}
+              personalizationPlaceholder={formData.personalization_placeholder}
+              options={personalizationOptions}
+            />
+
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-display">Categoria</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select
+                  value={formData.category_id}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, category_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-display">Ocasiões</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {occasions?.map((occ) => (
+                    <label key={occ.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded-md transition-colors">
+                      <Checkbox
+                        checked={selectedOccasions.includes(occ.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedOccasions((prev) => [...prev, occ.id]);
+                          } else {
+                            setSelectedOccasions((prev) => prev.filter((id) => id !== occ.id));
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{occ.name}</span>
+                    </label>
+                  ))}
+                  {!occasions?.length && (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma ocasião cadastrada.{' '}
+                      <a href="/admin/ocasioes" className="underline text-primary">Criar agora</a>
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+
+          </div>
+        </div>
+
+        {/* Pricing */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-lg font-display">Preços e Quantidades</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price">Preço * <span className="text-xs text-muted-foreground font-normal">(de / normal)</span></Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+                  placeholder="0,00"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="promotional_price">Preço promocional <span className="text-xs text-muted-foreground font-normal">(por)</span></Label>
+                <Input
+                  id="promotional_price"
+                  type="number"
+                  step="0.01"
+                  value={formData.promotional_price}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, promotional_price: e.target.value }))}
+                  placeholder="Opcional"
+                />
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  Preencha para mostrar o "de/por": este passa a ser o valor cobrado e o normal aparece riscado.
+                </p>
+                {formData.promotional_price && parseFloat(formData.promotional_price) > 0 && parseFloat(formData.price) > 0 && parseFloat(formData.promotional_price) >= parseFloat(formData.price) && (
+                  <p className="text-[11px] text-destructive">O "por" precisa ser menor que o "de".</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="min_quantity">Qtd. mínima</Label>
+                <Input
+                  id="min_quantity"
+                  type="number"
+                  value={formData.min_quantity}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, min_quantity: e.target.value }))}
+                  placeholder="1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pix_discount">Desconto PIX (%)</Label>
+                <Input
+                  id="pix_discount"
+                  type="number"
+                  value={formData.pix_discount}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, pix_discount: e.target.value }))}
+                  placeholder="7"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="production_days">Prazo (dias)</Label>
+                <Input
+                  id="production_days"
+                  type="number"
+                  value={formData.production_days}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, production_days: e.target.value }))}
+                  placeholder="7"
+                />
+              </div>
+            </div>
+
+            {/* Agrupamento: Peso e Dimensões para Frete */}
+            {(() => {
+              const req = formData.requires_shipping;
+              const wNum = parseFloat(formData.weight);
+              const lNum = parseFloat(formData.length_cm);
+              const wdNum = parseFloat(formData.width_cm);
+              const hNum = parseFloat(formData.height_cm);
+              const invalidNum = (n: number) => !Number.isFinite(n) || n <= 0;
+              const wBad = req && invalidNum(wNum);
+              const lBad = req && invalidNum(lNum);
+              const wdBad = req && invalidNum(wdNum);
+              const hBad = req && invalidNum(hNum);
+              const anyBad = wBad || lBad || wdBad || hBad;
+              const fieldCls = (bad: boolean) =>
+                `space-y-1.5 rounded-md p-2 transition-colors ${
+                  bad
+                    ? 'bg-destructive/5 ring-1 ring-destructive/40'
+                    : req
+                    ? 'bg-emerald-500/5 ring-1 ring-emerald-500/30'
+                    : 'bg-muted/30'
+                }`;
+              return (
+                <div className="mt-6 rounded-lg border border-border/60 bg-muted/20 p-4">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Peso e Dimensões para Frete</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Usados pelas transportadoras (ex: Melhor Envio) para cotação em tempo real.
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-2 rounded-md border border-border/60 bg-background px-3 py-2">
+                      <Switch
+                        id="requires_shipping"
+                        checked={formData.requires_shipping}
+                        onCheckedChange={(v) =>
+                          setFormData((prev) => ({ ...prev, requires_shipping: v }))
+                        }
+                      />
+                      <span className="text-xs font-medium">
+                        Requer entrega física
+                      </span>
+                    </label>
+                  </div>
+
+                  {req && anyBad && (
+                    <div
+                      role="alert"
+                      className="mb-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive"
+                    >
+                      <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden />
+                      <span>
+                        <strong>Obrigatório para produtos com entrega física (Melhor Envio).</strong>{' '}
+                        Preencha peso e as 3 dimensões com valores maiores que zero.
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className={fieldCls(wBad)}>
+                      <Label htmlFor="weight" className="flex items-center gap-1 text-xs">
+                        Peso (kg) {req && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Input
+                        id="weight"
+                        type="number"
+                        step="0.001"
+                        min="0.001"
+                        required={req}
+                        value={formData.weight}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, weight: e.target.value }))}
+                        placeholder="0.100"
+                        aria-invalid={wBad}
+                      />
+                    </div>
+                    <div className={fieldCls(lBad)}>
+                      <Label htmlFor="length_cm" className="flex items-center gap-1 text-xs">
+                        Comprimento (cm) {req && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Input
+                        id="length_cm"
+                        type="number"
+                        step="0.1"
+                        min={req ? '0.1' : '0'}
+                        required={req}
+                        value={formData.length_cm}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, length_cm: e.target.value }))}
+                        placeholder="16"
+                        aria-invalid={lBad}
+                      />
+                    </div>
+                    <div className={fieldCls(wdBad)}>
+                      <Label htmlFor="width_cm" className="flex items-center gap-1 text-xs">
+                        Largura (cm) {req && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Input
+                        id="width_cm"
+                        type="number"
+                        step="0.1"
+                        min={req ? '0.1' : '0'}
+                        required={req}
+                        value={formData.width_cm}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, width_cm: e.target.value }))}
+                        placeholder="11"
+                        aria-invalid={wdBad}
+                      />
+                    </div>
+                    <div className={fieldCls(hBad)}>
+                      <Label htmlFor="height_cm" className="flex items-center gap-1 text-xs">
+                        Altura (cm) {req && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Input
+                        id="height_cm"
+                        type="number"
+                        step="0.1"
+                        min={req ? '0.1' : '0'}
+                        required={req}
+                        value={formData.height_cm}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, height_cm: e.target.value }))}
+                        placeholder="6"
+                        aria-invalid={hBad}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-3">
+                    {req
+                      ? 'Obrigatório para o cálculo de frete (Melhor Envio) e validação do Google Merchant Center.'
+                      : 'Produto digital/sem entrega física — campos opcionais.'}
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <Link
+                      to="/admin/fretes"
+                      className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
+                      aria-label="Ir para gestão de frete"
+                    >
+                      <Truck className="h-3.5 w-3.5" />
+                      Gerenciar configurações de frete
+                    </Link>
+                  </div>
+                </div>
+              );
+            })()}
+
+
+
+
+            {/* Sprint 2 — Discovery editorial */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="featured_weight">Peso editorial (destaque)</Label>
+                <Input
+                  id="featured_weight"
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={formData.featured_weight}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, featured_weight: e.target.value }))}
+                  placeholder="0"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Quanto maior, mais alto aparece no catálogo, busca e relacionados. Padrão 0.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="production_speed">Override prazo</Label>
+                <select
+                  id="production_speed"
+                  value={formData.production_speed}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, production_speed: e.target.value as '' | 'rapido' | 'normal' | 'longo' }))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Automático (pelo prazo em dias)</option>
+                  <option value="rapido">Pronta entrega</option>
+                  <option value="normal">Prazo normal</option>
+                  <option value="longo">Sob encomenda</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Force a faixa exibida no filtro e badge do card, independentemente dos dias.
+                </p>
+                {(() => {
+                  const days = parseInt(formData.production_days) || 0;
+                  const override = formData.production_speed as 'rapido' | 'normal' | 'longo' | '';
+                  const eff = override || (days <= 0 ? null : days <= 3 ? 'rapido' : days <= 7 ? 'normal' : 'longo');
+                  const label = eff === 'rapido' ? 'Pronta entrega' : eff === 'normal' ? 'Prazo normal' : eff === 'longo' ? 'Sob encomenda' : '—';
+                  return (
+                    <div className="text-xs rounded-md bg-muted/50 border px-2 py-1.5">
+                      <span className="text-muted-foreground">Bucket resultante: </span>
+                      <span className="font-medium text-foreground">{label}</span>
+                      {override && <span className="ml-1 text-primary">(override)</span>}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Images */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-lg font-display">Imagens</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ImageUploader 
+              images={formData.images}
+              onImagesChange={(images) => setFormData((prev) => ({ ...prev, images }))}
+              maxImages={8}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Features & Keywords */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="text-lg font-display">Características</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {formData.features.map((feature, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={feature}
+                    onChange={(e) => handleArrayChange('features', index, e.target.value)}
+                    placeholder="Característica do produto"
+                  />
+                  {formData.features.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeArrayItem('features', index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={() => addArrayItem('features')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar característica
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="text-lg font-display">Palavras-chave (SEO)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Textarea
+                  value={keywordsInput}
+                  onChange={(e) => handleKeywordsChange(e.target.value)}
+                  placeholder="Digite palavras-chave separadas por vírgula: lembrancinha, maternidade, bebê, chá de bebê"
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Separe as palavras-chave com vírgulas. Ex: lembrancinha, casamento, personalizado
+                </p>
+              </div>
+              
+              {/* Display current keywords as tags */}
+              {formData.keywords.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {formData.keywords.map((keyword, index) => (
+                    <span 
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full"
+                    >
+                      {keyword}
+                      <button
+                        type="button"
+                        onClick={() => removeKeyword(keyword)}
+                        className="hover:text-destructive transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Additional */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-lg font-display">Informações Adicionais</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="badge">Badge</Label>
+                <Input
+                  id="badge"
+                  value={formData.badge}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, badge: e.target.value }))}
+                  placeholder="Ex: Mais Vendido"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rating">Avaliação</Label>
+                <Input
+                  id="rating"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="5"
+                  value={formData.rating}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, rating: e.target.value }))}
+                  placeholder="5.0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="google_product_category">Categoria Google (Merchant Center)</Label>
+                <Input
+                  id="google_product_category"
+                  value={formData.google_product_category}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, google_product_category: e.target.value }))}
+                  placeholder="Ex: Arts & Entertainment > Party & Celebration > Party Favors"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Categoria específica do Google para este produto. Se vazio, usa a categoria global do Merchant Feed.{' '}
+                  <a href="https://support.google.com/merchants/answer/6324436" target="_blank" rel="noopener noreferrer" className="underline text-primary">
+                    Ver taxonomia Google
+                  </a>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Editorial Content (Fase 7.1) */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-lg font-display flex items-center gap-2">
+              <FileText className="w-4 h-4" /> Conteúdo Editorial
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="editorial_content">Texto editorial (opcional)</Label>
+            <Textarea
+              id="editorial_content"
+              rows={8}
+              value={formData.editorial_content}
+              onChange={(e) => setFormData((prev) => ({ ...prev, editorial_content: e.target.value }))}
+              placeholder={
+                'Conte a história da peça: inspiração, contexto, dicas de uso, decoração, apresentação, significado emocional...\n\nMarkdown simples (parágrafos) é suportado e enriquece o SEO como Article.'
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Esse conteúdo é renderizado abaixo da descrição no site público como uma seção editorial e gera schema <code>Article</code>.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Fase 8 — Checklist + Previews + Templates + Sugestões */}
+        {(() => {
+          const categorySlug = categories?.find((c) => c.id === formData.category_id)?.slug || null;
+          const occasionSlugs = (occasions || [])
+            .filter((o) => selectedOccasions.includes(o.id))
+            .map((o) => o.slug);
+          const segmentSlugs = (segments || [])
+            .filter((s) => selectedSegments.includes(s.id))
+            .map((s) => s.slug);
+          const tagSlugs = (tags || [])
+            .filter((t) => selectedTags.includes(t.id))
+            .map((t) => t.slug);
+          const checklist = buildProductChecklist({
+            ...formData,
+            occasionsCount: selectedOccasions.length,
+            segmentsCount: selectedSegments.length,
+            tagsCount: selectedTags.length,
+            reviewsCount: 0,
+            images: formData.images.filter(Boolean),
+          });
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ProductSeoChecklist result={checklist} />
+              <SocialSeoPreviews
+                title={formData.name}
+                description={formData.description}
+                slug={formData.slug}
+                imageUrl={formData.images.filter(Boolean)[0]}
+              />
+              <TaxonomySuggestionsHints
+                name={formData.name}
+                description={formData.description}
+                long_description={formData.long_description}
+                editorial_content={formData.editorial_content}
+                keywords={formData.keywords}
+                existingTagSlugs={tagSlugs}
+                existingOccasionSlugs={occasionSlugs}
+                existingSegmentSlugs={segmentSlugs}
+                existingCategorySlug={categorySlug}
+              />
+              <EditorialTemplatesPicker
+                categorySlug={categorySlug}
+                occasionSlugs={occasionSlugs}
+                productName={formData.name}
+                onInsert={(text) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    editorial_content: prev.editorial_content
+                      ? `${prev.editorial_content}\n\n${text}`
+                      : text,
+                  }))
+                }
+              />
+            </div>
+          );
+        })()}
+
+        {/* Resumo rápido + CTA WhatsApp (exibição por produto) */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Resumo rápido + CTA WhatsApp</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Quando ativado, exibe a seção "Você está pedindo X unidades..." com botão de WhatsApp na página deste produto. Aplica-se apenas a produtos cujo CTA primário é o WhatsApp (personalizado ou sem estoque). Padrão: desativado.
+                </p>
+              </div>
+              <Switch
+                checked={showQuickSummary}
+                onCheckedChange={setShowQuickSummary}
+                aria-label="Exibir resumo rápido na PDP"
+              />
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Exibir quantidade mínima na PDP */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Exibir "Mínimo X un." na PDP</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Quando ativado, mostra o selo de quantidade mínima ("Mínimo {formData.min_quantity || 'X'} un.") na linha de informações da página deste produto. Padrão: desativado.
+                </p>
+              </div>
+              <Switch
+                checked={showMinQuantity}
+                onCheckedChange={setShowMinQuantity}
+                aria-label="Exibir quantidade mínima na PDP"
+              />
+            </div>
+          </CardHeader>
+        </Card>
+
+
+        {/* Badge personalizado da PDP (override por produto) */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base">Badge personalizado da PDP</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Quando ativado, sobrescreve o badge global apenas neste produto. Quando desligado, usa a configuração global de <strong>/admin/conversao</strong>.
+                </p>
+              </div>
+              <Switch
+                checked={!!badgeOverride}
+                onCheckedChange={(v) => setBadgeOverride(v ? { ...DEFAULT_BADGE_OVERRIDE } : null)}
+              />
+            </div>
+          </CardHeader>
+          {badgeOverride && (
+            <CardContent className="grid lg:grid-cols-[1fr_280px] gap-6">
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 space-y-1">
+                  <Label>Texto</Label>
+                  <Input
+                    value={badgeOverride.label}
+                    maxLength={40}
+                    onChange={(e) => setBadgeOverride({ ...badgeOverride, label: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Cor</Label>
+                  <select
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={badgeOverride.tone}
+                    onChange={(e) => setBadgeOverride({ ...badgeOverride, tone: e.target.value as any })}
+                  >
+                    <option value="blue">Azul</option>
+                    <option value="coral">Coral</option>
+                    <option value="green">Verde</option>
+                    <option value="amber">Âmbar</option>
+                    <option value="neutral">Neutro</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Posição</Label>
+                  <select
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={badgeOverride.position}
+                    onChange={(e) => setBadgeOverride({ ...badgeOverride, position: e.target.value as any })}
+                  >
+                    <option value="top-left">Sup. esquerda</option>
+                    <option value="top-right">Sup. direita</option>
+                    <option value="bottom-left">Inf. esquerda</option>
+                    <option value="bottom-right">Inf. direita</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Offset X (px)</Label>
+                  <Input
+                    type="number" min={0} max={80}
+                    value={badgeOverride.offsetX}
+                    onChange={(e) => setBadgeOverride({ ...badgeOverride, offsetX: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Offset Y (px)</Label>
+                  <Input
+                    type="number" min={0} max={80}
+                    value={badgeOverride.offsetY}
+                    onChange={(e) => setBadgeOverride({ ...badgeOverride, offsetY: Number(e.target.value) })}
+                  />
+                </div>
+                <label className="flex items-center gap-2 sm:col-span-3">
+                  <Switch
+                    checked={badgeOverride.showIcon}
+                    onCheckedChange={(v) => setBadgeOverride({ ...badgeOverride, showIcon: v })}
+                  />
+                  <span className="text-sm">Mostrar ícone de caminhão</span>
+                </label>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Pré-visualização</Label>
+                <div className="relative w-[280px] h-[280px] rounded-lg overflow-hidden border bg-muted">
+                  <img
+                    src={formData.images.filter(Boolean)[0] || '/placeholder.svg'}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <PdpBadge config={badgeOverride} previewOnly />
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        <section className="border-t border-border py-6 space-y-5">
+          <h2 className="font-display text-xl">Pós-venda deste produto</h2>
+          <div className="flex items-center gap-3"><Switch id="custom-after-sales" checked={useCustomAfterSales} onCheckedChange={setUseCustomAfterSales} /><Label htmlFor="custom-after-sales">Usar regra específica (caso contrário, regra geral)</Label></div>
+          {useCustomAfterSales && <AfterSalesRuleFields value={afterSalesRule} onChange={setAfterSalesRule} />}
+          <Button asChild variant="outline"><Link to="/admin/atelie">Gestão de pós-venda e agendamentos</Link></Button>
+        </section>
+        {/* FAQ por produto (apenas ao editar — precisa do ID) */}
+        {isEditing && id && (
+          <ProductFaqEditor
+            productId={id}
+            productName={formData.name || 'produto'}
+            productionDays={formData.production_days ? Number(formData.production_days) : null}
+            personalizationEnabled={formData.personalization_enabled}
+            categoryName={categories?.find((c) => c.id === formData.category_id)?.name ?? null}
+          />
+        )}
+
+        {/* Dock flutuante de salvar — sempre visível, compacto, canto inferior direito.
+            pointer-events controlado para não bloquear cliques fora dos botões. */}
+        <div className="fixed bottom-4 right-4 left-4 sm:left-auto z-40 pointer-events-none">
+          <div className="pointer-events-auto flex items-center gap-2 bg-background/90 backdrop-blur-md px-2 py-2 rounded-full border shadow-lg w-fit ml-auto">
+            <DraftStatusBadge className="ml-1" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 rounded-full text-xs"
+              onClick={() => navigate('/admin/produtos')}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSaving}
+              size="sm"
+              className="h-9 rounded-full text-xs px-4"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5 mr-1.5" />
+                  {isEditing ? 'Salvar' : 'Criar'}
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+        {/* Espaço extra no fim do form para o dock flutuante não tampar o último campo. */}
+        <div aria-hidden className="h-20" />
+      </form>
+    </div>
+  );
+};
+
+export default AdminProductForm;

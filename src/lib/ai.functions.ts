@@ -108,7 +108,7 @@ export const suggestPhrases = createServerFn({ method: "POST" })
     try {
       const { generateResponse } = await import("@lovable.dev/ai-gateway");
       const res = await generateResponse({
-        model: "openai/gpt-6.1-sol",
+        model: "openai/gpt-5.6-sol",
         instructions: [
           "Você é a redatora da PapeLemi, papelaria afetiva brasileira. Escreva em português do Brasil, com delicadeza, elegância e calor humano, sem emojis, hashtags, aspas ou clichês exagerados.",
           "Foco desta linha de produtos (" + profile.theme + "): " + profile.guidance + ".",

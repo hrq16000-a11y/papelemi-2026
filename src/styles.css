@@ -5,6 +5,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 
 @font-face {
   font-family: "DM Sans";
@@ -58,6 +59,16 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-coral: var(--coral);
+  --color-coral-light: var(--coral-light);
+  --color-coral-dark: var(--coral-dark);
+  --color-warm-gray: var(--warm-gray);
+  --color-soft-gray: var(--soft-gray);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-light: var(--success-light);
+  --color-success-dark: var(--success-dark);
+  --font-body: "DM Sans", system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

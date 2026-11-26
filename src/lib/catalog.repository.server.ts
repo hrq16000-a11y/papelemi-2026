@@ -1,136 +1,173 @@
-import { createClient } from "@supabase/supabase-js";
-import { z } from "zod";
+import { personalizationSchema } from "@/lib/catalog-validation";
 import {
   getCategory as getFallbackCategory,
   getProduct as getFallbackProduct,
   type Category,
   type Product,
 } from "@/data/catalog";
-import type { Database } from "@/integrations/supabase/types";
+import { engineAdmin } from "@/lib/engine.server";
+import type { Database as EngineDatabase } from "@/emp-orio/integrations/supabase/types";
+import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 
-type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type EngineProductBase = EngineDatabase["papelemi_engine"]["Tables"]["products"]["Row"];
+type LegacyProductRow = CatalogLifecycleDatabase["public"]["Tables"]["products"]["Row"];
 
-const personalizationOptionSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("text"),
-    key: z.string().trim().min(1).max(40),
-    label: z.string().trim().min(1).max(120),
-    maxLength: z.number().int().min(1).max(400),
-    ai: z.boolean().optional(),
-  }),
-  z.object({
-    type: z.literal("choice"),
-    key: z.string().trim().min(1).max(40),
-    label: z.string().trim().min(1).max(120),
-    options: z.array(z.string().trim().min(1).max(60)).min(1).max(50),
-  }),
-  z.object({
-    type: z.literal("notes"),
-    key: z.string().trim().min(1).max(40),
-    label: z.string().trim().min(1).max(120),
-  }),
-]);
+// Compatibility mapper for the existing PapeLemi catalog-lifecycle endpoints.
+// New storefront and copied Emporio admin reads use productFromEngineRow.
+export const productFromRow = (row: LegacyProductRow): Product => {
+  const personalizationResult = personalizationSchema.safeParse(row.personalization ?? []);
 
-const personalizationSchema = z.array(personalizationOptionSchema).max(20);
+  if (!personalizationResult.success) {
+    console.error("PapeLemi legacy personalization needs adaptation:", row.slug, personalizationResult.error.issues);
+  }
 
-export function publicClient() {
-  const url = process.env["SUPABASE_URL"];
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
-  if (!url || !key) throw new Error("Banco de dados não configurado");
+  const promoPrice = row.promo_price == null ? null : Number(row.promo_price);
 
-  return createClient<Database>(url, key, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const headers = new Headers(init?.headers);
-        if (headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
-        headers.set("apikey", key);
-        return fetch(input, { ...init, headers });
-      },
-    },
-  });
-}
+  return {
+    slug: row.slug,
+    name: row.name,
+    category: row.category_slug,
+    description: row.description ?? "",
+    images: row.images ?? [],
+    price: Number(row.price),
+    ...(promoPrice !== null && promoPrice < Number(row.price) ? { promoPrice } : {}),
+    colors: row.colors ?? [],
+    sizes: row.sizes ?? [],
+    finishes: row.finishes ?? [],
+    productionDays: row.production_days ?? "",
+    stock: Number(row.stock ?? 0),
+    published: Boolean(row.published),
+    bestSeller: Boolean(row.best_seller),
+    personalizable: Boolean(row.personalizable),
+    personalization: personalizationResult.success ? personalizationResult.data : [],
+    ...(row.min_qty != null && row.min_qty > 1 ? { minQty: row.min_qty } : {}),
+    ...(row.weight_kg == null ? {} : { weightKg: Number(row.weight_kg) }),
+    ...(row.length_cm == null ? {} : { lengthCm: Number(row.length_cm) }),
+    ...(row.width_cm == null ? {} : { widthCm: Number(row.width_cm) }),
+    ...(row.height_cm == null ? {} : { heightCm: Number(row.height_cm) }),
+    requiresShipping: row.requires_shipping,
+  };
+};
 
-export const categoryFromRow = (row: CategoryRow): Category => ({
+type EngineCategoryRow = EngineDatabase["papelemi_engine"]["Tables"]["categories"]["Row"];
+
+export type PapeLemiEngineProductRow = EngineProductBase & {
+  colors?: string[] | null;
+  sizes?: string[] | null;
+  finishes?: string[] | null;
+  stock?: number | null;
+};
+
+export const categoryFromEngineRow = (row: EngineCategoryRow): Category => ({
   slug: row.slug,
   name: row.name,
-  description: row.description,
-  image: row.image,
+  description: row.description ?? "",
+  image: row.image_url ?? row.image_ref ?? "",
 });
 
-export const productFromRow = (row: ProductRow): Product => ({
-  slug: row.slug,
-  name: row.name,
-  category: row.category_slug,
-  description: row.description,
-  images: row.images,
-  price: Number(row.price),
-  ...(row.promo_price == null ? {} : { promoPrice: Number(row.promo_price) }),
-  colors: row.colors,
-  sizes: row.sizes,
-  finishes: row.finishes,
-  productionDays: row.production_days,
-  stock: row.stock,
-  published: row.published,
-  bestSeller: row.best_seller,
-  personalizable: row.personalizable,
-  personalization: personalizationSchema.parse(row.personalization ?? []) as Product["personalization"],
-  ...(row.min_qty == null ? {} : { minQty: row.min_qty }),
-});
+export const productFromEngineRow = (row: PapeLemiEngineProductRow, categorySlug: string): Product => {
+  const currentPrice = Number(row.price);
+  const originalPrice = row.original_price == null ? null : Number(row.original_price);
+  const hasPromo = originalPrice !== null && originalPrice > currentPrice;
+  const personalizationResult = personalizationSchema.safeParse(row.personalization_options ?? []);
+
+  if (!personalizationResult.success) {
+    console.error("PapeLemi personalization options need adaptation:", row.slug, personalizationResult.error.issues);
+  }
+
+  return {
+    slug: row.slug,
+    name: row.name,
+    category: categorySlug,
+    description: row.description ?? row.long_description ?? "",
+    images: row.images ?? row.image_refs ?? [],
+    price: hasPromo ? originalPrice : currentPrice,
+    ...(hasPromo ? { promoPrice: currentPrice } : {}),
+    colors: row.colors ?? [],
+    sizes: row.sizes ?? [],
+    finishes: row.finishes ?? [],
+    productionDays: row.production_days == null ? "" : String(row.production_days) + " dias úteis",
+    stock: Number(row.stock ?? 0),
+    published: Boolean(row.is_active),
+    bestSeller: Number(row.featured_weight ?? 0) > 0,
+    personalizable: Boolean(row.personalization_enabled),
+    personalization: personalizationResult.success ? personalizationResult.data : [],
+    ...(row.min_quantity != null && row.min_quantity > 1 ? { minQty: row.min_quantity } : {}),
+    ...((row.weight_kg ?? row.weight) == null ? {} : { weightKg: Number(row.weight_kg ?? row.weight) }),
+    ...(row.length_cm == null ? {} : { lengthCm: Number(row.length_cm) }),
+    ...(row.width_cm == null ? {} : { widthCm: Number(row.width_cm) }),
+    ...(row.height_cm == null ? {} : { heightCm: Number(row.height_cm) }),
+    requiresShipping: row.requires_shipping,
+  };
+};
 
 export async function getCatalogFromDatabase() {
-  const sb = publicClient();
+  const engine = engineAdmin();
   const [{ data: categoryRows, error: categoryError }, { data: productRows, error: productError }] = await Promise.all([
-    sb.from("categories").select("*").eq("store_key", "papelemi").order("sort"),
-    sb.from("products").select("*").eq("store_key", "papelemi").order("name"),
+    engine.from("categories").select("*").eq("is_draft", false).eq("is_indexed", true).order("position").order("name"),
+    engine.from("products").select("*").eq("is_active", true).order("name"),
   ]);
 
   if (categoryError || productError) {
     throw new Error(categoryError?.message ?? productError?.message ?? "Falha ao carregar catálogo");
   }
 
-  return {
-    categories: (categoryRows ?? []).map(categoryFromRow),
-    products: (productRows ?? []).map(productFromRow),
-  };
+  const categories = (categoryRows ?? []).map(categoryFromEngineRow);
+  const categorySlugById = new Map((categoryRows ?? []).map((category) => [category.id, category.slug]));
+  const products = ((productRows ?? []) as unknown as PapeLemiEngineProductRow[])
+    .flatMap((row) => {
+      const categorySlug = row.category_id ? categorySlugById.get(row.category_id) : undefined;
+      return categorySlug ? [productFromEngineRow(row, categorySlug)] : [];
+    });
+
+  return { categories, products };
 }
 
 export async function getPublishedProductFromDatabase(slug: string): Promise<Product | null> {
-  const sb = publicClient();
-  const { data, error } = await sb
+  const engine = engineAdmin();
+  const { data: row, error } = await engine
     .from("products")
     .select("*")
-    .eq("store_key", "papelemi")
     .eq("slug", slug)
-    .eq("published", true)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data ? productFromRow(data) : null;
+  if (!row?.category_id) return null;
+
+  const { data: category, error: categoryError } = await engine
+    .from("categories")
+    .select("*")
+    .eq("id", row.category_id)
+    .eq("is_draft", false)
+    .eq("is_indexed", true)
+    .maybeSingle();
+
+  if (categoryError) throw new Error(categoryError.message);
+  return category ? productFromEngineRow(row as unknown as PapeLemiEngineProductRow, category.slug) : null;
 }
 
 export async function getPublishedCategoryFromDatabase(slug: string): Promise<Category | null> {
-  const sb = publicClient();
-  const { data, error } = await sb
+  const { data, error } = await engineAdmin()
     .from("categories")
     .select("*")
-    .eq("store_key", "papelemi")
     .eq("slug", slug)
+    .eq("is_draft", false)
+    .eq("is_indexed", true)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  return data ? categoryFromRow(data) : null;
+  return data ? categoryFromEngineRow(data) : null;
 }
 
-// Keep the storefront usable during a temporary database outage, but never revive a
-// product/category that the live database successfully reports as unpublished or missing.
+// A successful database response is authoritative. Local fallback is used only
+// during a temporary engine/API outage, never when a product was unpublished.
 export async function getPublishedProductWithFallback(slug: string): Promise<Product | null> {
   try {
     return await getPublishedProductFromDatabase(slug);
   } catch (error) {
     console.error(
-      "PapeLemi product lookup failed; using local fallback:",
+      "PapeLemi engine product lookup failed; using local fallback:",
       error instanceof Error ? error.message : "unknown catalog error",
     );
     return getFallbackProduct(slug) ?? null;
@@ -142,10 +179,9 @@ export async function getPublishedCategoryWithFallback(slug: string): Promise<Ca
     return await getPublishedCategoryFromDatabase(slug);
   } catch (error) {
     console.error(
-      "PapeLemi category lookup failed; using local fallback:",
+      "PapeLemi engine category lookup failed; using local fallback:",
       error instanceof Error ? error.message : "unknown catalog error",
     );
     return getFallbackCategory(slug) ?? null;
   }
 }
-

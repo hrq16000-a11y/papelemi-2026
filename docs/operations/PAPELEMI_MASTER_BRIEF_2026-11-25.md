@@ -386,7 +386,7 @@ Consulta read-only do Supabase dedicado:
 - \`coupons\`: 0 registros.
 - \`orders\`: 0 registros.
 - \`user_roles\`: 1 registro.
-- 6 migrations registradas.
+- 10 migrations registradas (confirmadas por consulta read-only em 25/11/2026).
 
 As tabelas existentes têm diferenças relevantes do Empório. Exemplo: PapeLemi \`orders\` armazena endereço/itens em JSONB; Empório utiliza endereço relacional e \`order_items\`. Produtos e categorias também têm modelos diferentes. A migração precisa ser aditiva e preservar compatibilidade, não substituir tabelas às cegas.
 
@@ -410,3 +410,144 @@ A PapeLemi só será declarada 100% funcional quando:
 7. a homologação funcional e mobile estiver aprovada.
 
 Não classificar como concluído apenas porque o build ou o Preview ficou READY.
+
+
+---
+
+## 2026-11-25 — Rodada PR #13: paridade operacional do catálogo
+
+**Base técnica:** PR #12, branch \`feat/papelemi-consolidated-admin-checkout-01-20261125\`, HEAD \`f9cefbf362d3a1fc5afc397cf82035059033e625\`.
+
+**Entrega:** PR #13, branch \`feat/catalog-admin-parity-01-20261125\`, commit inicial \`4d0bd0ed7da83a5828bb9db3cae55969865d33d2\`.
+
+### Implementado no código
+
+- Editor de campos de personalização por produto: texto, escolha, observações, limite de caracteres e permissão de sugestão por IA.
+- Persistência server-side da configuração de personalização, sem sobrescrever os campos existentes durante uma edição.
+- Gestão dos dados de embalagem já presentes no schema: peso, comprimento, largura, altura e exigência de envio.
+- Validação de imagens HTTPS e caminhos locais seguros em \`/images/\`.
+- Validação de preço promocional, campos duplicados/reservados e dimensões de embalagem.
+- Renomeação de produtos e categorias atualizando o registro original. A FK de produtos para categorias foi confirmada com \`ON UPDATE CASCADE\`.
+- Testes unitários para validação administrativa e mapeamento dos dados de frete.
+
+### Estado read-only do Supabase PapeLemi
+
+Projeto \`gpdpfoxpbferjwbppcmb\`, região \`sa-east-1\`, Postgres 17.12, status \`ACTIVE_HEALTHY\`.
+
+| Estrutura | Registros |
+|---|---:|
+| Categorias | 4 |
+| Produtos | 8 |
+| Frases | 10 |
+| Cupons | 0 |
+| Clientes | 0 |
+| Pedidos | 0 |
+| Itens de pedidos | 0 |
+| Papéis de usuário | 1 |
+
+As 10 migrations registradas no projeto são:
+
+- \`20261125075644_create_papelemi_order_request_tables\`
+- \`20261125080520_create_papelemi_shop_schema\`
+- \`20261125080558_seed_papelemi_original_catalog\`
+- \`20261125080624_add_store_order_privacy_and_store_scope\`
+- \`20261125081940_tighten_storefront_rls_and_role_checks\`
+- \`20261125082207_restrict_order_table_to_server_role\`
+- \`20261125213419_add_store_scoped_crm_and_order_items\`
+- \`20261125214907_add_store_scoped_shipping_engine\`
+- \`20261125215858_add_store_lookup_indexes\`
+- \`20261125215901_lock_shipping_provider_credentials\`
+
+A migration \`20261125220000_add_order_360_operations.sql\` continua fora da lista aplicada em Production. Não foi executada nesta rodada.
+
+### Homologação da PR #13
+
+- GitHub Actions run \`45723524452\`: testes unitários, lint direcionado, TypeScript e replay local das migrations/contratos de banco concluídos com SUCCESS.
+- Vercel Preview: deployment \`dpl_48HaMfm9mgxg8XeVzbS5V43rk8eK\`, estado READY.
+- Preview \`/\`: HTTP 200.
+- Preview \`/admin\`: HTTP 200 e \`noindex\`.
+- Preview \`/produto/caderneta-saude-ursinho-clean\`: HTTP 500 por ausência das variáveis \`SUPABASE_URL\` e \`SUPABASE_PUBLISHABLE_KEY\` no ambiente Preview. O mesmo erro foi reproduzido na Preview da base PR #12; a rota correspondente em Production respondeu HTTP 200. Não é regressão introduzida pela PR #13.
+- O job de reconstrução do schema hospedado do Empório permaneceu SKIPPED, sem acesso ao banco de origem.
+
+### Limites preservados
+
+- Nenhuma migration, DDL, policy RLS ou dado comercial foi alterado no Supabase Production.
+- Nenhuma configuração de ambiente Vercel foi alterada.
+- Nenhum pedido de teste, pagamento ou frete real foi executado.
+- PR #12 e PR #13 permanecem abertas; sem merge e sem publicação Production.
+
+### Próxima etapa
+
+Configurar, mediante autorização, as variáveis Supabase do ambiente Preview para permitir homologação autenticada e do catálogo. Em seguida, avançar para estoque transacional e integração completa de pedidos/pagamentos/fretes, sem assumir que o campo de estoque atual representa reserva automática.
+
+
+---
+
+## 2026-11-26 — Replicação fiel do motor Empório Lele Cute
+
+A estratégia passa a ser transferência em lote do sistema original, com o repositório Empório como fonte de código e a PapeLemi como destino independente. A evidência e a matriz de paridade estão em [EMPORIO_REPLICATION_MATRIX_2026-11-26.md](./EMPORIO_REPLICATION_MATRIX_2026-11-26.md).
+
+A PR #13 contém 1.373 arquivos reutilizados, runtime administrativo original com 124 entradas de rota e 119 imports dinâmicos, 54 diretórios de Edge Functions com 75 arquivos, e as 199 migrations em projeto local isolado. O build, o smoke SSR e o replay isolado das migrations concluíram com sucesso. O cliente Supabase do runtime foi adaptado para usar o cliente da PapeLemi.
+
+O replay local produziu 144 tabelas públicas, 84 funções, 4 views, 306 índices e 234 policies. Os tipos versionados da fonte declaram 150 tabelas e 63 funções. A diferença exige confirmação contra o Supabase remoto original; não será resolvida por suposição.
+
+O Supabase PapeLemi permanece com 15 tabelas públicas e 10 migrations aplicadas. As diferenças de colunas em `products`, `categories`, `orders` e `coupons` impedem declarar o painel plenamente conectado. Nenhuma migration hospedada, importação de dados ou alteração na Production foi executada.
+
+O inventário inicial de funções críticas encontrou dependências de `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `RESEND_API_KEY`, `IG_ACCESS_TOKEN`, `IG_BUSINESS_ACCOUNT_ID`, `GOOGLE_SEARCH_CONSOLE_API_KEY`, `LOVABLE_API_KEY`, `SEMRUSH_API_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT` e `STORE_NOTIFICATION_EMAIL`, além das variáveis Supabase. Nenhum valor de segredo foi lido ou copiado; as funções ainda não foram implantadas.
+
+O projeto Supabase remoto da Empório não está disponível nas conexões atuais desta sessão. A aplicação de migrations hospedadas continuará condicionada à reconciliação completa, revisão do SQL, backup/rollback confirmado e aprovação explícita do proprietário.
+
+
+---
+
+## 2026-11-26 — Correção do replay isolado e reconciliação do clone
+
+A branch de integração preserva o runtime original da Empório e as correções de compatibilidade TypeScript. O último conjunto de verificações aprovado no HEAD anterior confirmou 38 testes, lint direcionado e TypeScript; o teste adicional de rota foi ajustado para considerar o route ID gerado pelo TanStack Router (`/admin/$`), sem confundir route ID com URL pública.
+
+O replay isolado das 199 migrations já foi executado com sucesso anteriormente. O workflow foi ajustado para fixar o Supabase CLI em 3.4.0 e produzir um artefato schema-only com DDL público, tipos gerados, nomes de tabelas, métricas por schema e buckets. O artefato não inclui dados comerciais e redige referências de projetos hospedados e URLs locais.
+
+A pasta combinada `tools/papelemi-combined-supabase` é somente um teste estrutural descartável: move as 12 tabelas sobrepostas da PapeLemi para um schema legado local e aplica as migrations originais no schema público. Não representa migração de dados nem arquitetura final e não pode ser aplicada em Production.
+
+Os scripts de replay substituem URLs de projeto Supabase por endereço local via padrão genérico; nenhum project ref hospedado fica hardcoded nos scripts. Nenhuma alteração foi feita no banco original ou no Supabase hospedado da PapeLemi.
+
+
+## 2026-11-26 — Ajuste do runner de transferência
+
+O primeiro disparo do workflow de artefato schema-only identificou uma configuração inválida do runtime Bun (versão 3.4.0, que é a versão do Supabase CLI, não do Bun) e escape indevido nas expressões de caminho do artefato. O workflow foi corrigido para manter Bun em `latest`, fixar somente o Supabase CLI em 3.4.0 e expandir corretamente `runner.temp`. O replay anterior das 199 migrations continua válido; o novo disparo repetirá a reconstrução isolada para gerar o artefato sem dados.
+
+
+## 2026-11-26 — Metadados privados da rota administrativa
+
+O smoke/contract da rota `/admin` confirma o componente original e o metadado `robots: noindex, nofollow`. A verificação automatizada foi ajustada para exigir o valor completo efetivamente retornado pelo TanStack Router. A falha anterior era somente uma expectativa de teste incompleta; a rota já entregava a proteção correta.
+
+
+---
+
+## 2026-11-26 — Rodada 4.3: replicação em lote e homologação local
+
+A PR #13 deixou de ser uma transferência pontual: o manifesto registra 1.373 arquivos reutilizados do Empório e 1.429 arquivos alterados no total. O runtime administrativo original está fisicamente em `src/emp-orio/` e é montado pela rota `/admin`. A transferência inclui 563 componentes, 69 hooks, 284 módulos de biblioteca/serviços, 120 páginas administrativas, 124 entradas de rota e 119 imports dinâmicos. Também foram copiados 201 arquivos de referência Supabase e 76 arquivos de Edge Functions em 54 diretórios.
+
+O motor está sendo preparado no schema isolado `papelemi_engine`, dentro do Supabase dedicado da PapeLemi. O replay local atual valida 150 tabelas de origem, 88 funções de origem, 95 triggers, 246 policies RLS, 309 índices de origem, 4 views e 5 enums, além de uma tabela, duas funções e dois índices auxiliares específicos da PapeLemi. RLS está habilitado nas 151 tabelas do schema.
+
+As migrations de integração preservam o schema público atual e copiam somente os dados com `store_key = 'papelemi'`. Os oito produtos atuais não possuem peso cadastrado; o seed usa o padrão inicial de 0,150 kg, consistente com o RPC original `apply_default_weight` e com a configuração de frete da PapeLemi. O valor poderá ser ajustado por produto.
+
+**Homologação local:** GitHub Actions run `45762789548` — SUCCESS em testes, lint, TypeScript, replay das migrations e contratos SQL. O job de reconstrução do Supabase remoto original da Empório foi SKIPPED por falta de conexão com a origem.
+
+**Supabase hospedado PapeLemi permanece intacto:** 15 tabelas públicas, 10 migrations, 4 funções, 40 índices, 30 policies, 3 enums, 0 views e 0 Edge Functions. O schema `papelemi_engine` ainda não foi aplicado no projeto hospedado. Nenhuma alteração no Supabase original, nenhum merge e nenhuma publicação Production foram executados.
+
+O Preview READY identificado pertence ao SHA antigo `a2482340`; não há Preview confirmado para o checkpoint de código `4013d259`. As chaves publicáveis do Supabase estão disponíveis em Preview, mas service role/secret permanecem restritos a Production. Não compartilhar a credencial de produção com Preview.
+
+Persistem dois pontos que impedem declarar paridade integral do banco: o Supabase remoto da Empório não está conectado e o backup ZIP listado na Biblioteca não pôde ser materializado. Os tipos versionados da origem declaram 63 funções, enquanto o replay local valida 88; o inventário remoto histórico registra 242 policies, enquanto o replay local valida 246. Essas diferenças precisam de confirmação na origem ou em backup legível.
+
+A cadeia #8 → #12 → #13 permanece aberta e em Draft. #15 e #16 foram preservadas para reconciliação após a estabilização da #13. A branch experimental divergente permanece sem merge.
+
+Referência operacional atualizada: [EMPORIO_REPLICATION_MATRIX_2026-11-26.md](./EMPORIO_REPLICATION_MATRIX_2026-11-26.md).
+
+
+### PR #15 — port seletivo, sem sobrescrever o Admin original
+
+A revisão da PR #15 identificou conflito de estratégia: seu `src/routes/admin.tsx` é a interface legada da PapeLemi e substituiria o runtime original da Empório que a PR #13 agora monta em `/admin`. Além disso, seus handlers e sua migration operam em `public` com `store_key`, enquanto o motor copiado opera em `papelemi_engine`. Portanto, a PR #15 permanece preservada em Draft, mas não deve ser mesclada integralmente.
+
+O motor original já contém `payment_events`, `tracking_email_log`, `order_status_notifications` e `check_resend_email_cooldown`. O que falta portar é principalmente `order_status_history` e `admin_update_order`, adaptados ao schema do motor e às permissões administrativas existentes, além dos painéis de histórico/eventos na página original `src/emp-orio/pages/admin/AdminOrders.tsx`. A validação e os testes da PR #15 permanecem úteis. A PR #16 deve ser reconciliada depois, sem duplicar a fonte pública de pedidos.
+
+Comentário registrado na [PR #15](https://github.com/hrq16000-a11y/papelemi-2026/pull/15#issuecomment-7183807569).

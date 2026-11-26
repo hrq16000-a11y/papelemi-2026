@@ -19,8 +19,10 @@ import { Route as LojaRouteImport } from './routes/loja'
 import { Route as PersonalizadosRouteImport } from './routes/personalizados'
 import { Route as PoliticaDePrivacidadeRouteImport } from './routes/politica-de-privacidade'
 import { Route as PresentesRouteImport } from './routes/presentes'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as TermosDeUsoRouteImport } from './routes/termos-de-uso'
+import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as CategoriaSlugRouteImport } from './routes/categoria.$slug'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
@@ -76,6 +78,11 @@ const PresentesRoute = PresentesRouteImport.update({
   path: '/presentes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SobreRoute = SobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
@@ -85,6 +92,11 @@ const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
   id: '/termos-de-uso',
   path: '/termos-de-uso',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSplatRoute = AdminSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => AdminRoute,
 } as any)
 const CategoriaSlugRoute = CategoriaSlugRouteImport.update({
   id: '/categoria/$slug',
@@ -110,7 +122,7 @@ const ApiPublicMercadopagoWebhookRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
@@ -119,8 +131,10 @@ export interface FileRoutesByFullPath {
   '/personalizados': typeof PersonalizadosRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/presentes': typeof PresentesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/admin/$': typeof AdminSplatRoute
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -128,7 +142,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
@@ -137,8 +151,10 @@ export interface FileRoutesByTo {
   '/personalizados': typeof PersonalizadosRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/presentes': typeof PresentesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/admin/$': typeof AdminSplatRoute
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -147,7 +163,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
@@ -156,8 +172,10 @@ export interface FileRoutesById {
   '/personalizados': typeof PersonalizadosRoute
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/presentes': typeof PresentesRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/admin/$': typeof AdminSplatRoute
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -176,8 +194,10 @@ export interface FileRouteTypes {
     | '/personalizados'
     | '/politica-de-privacidade'
     | '/presentes'
+    | '/sitemap.xml'
     | '/sobre'
     | '/termos-de-uso'
+    | '/admin/$'
     | '/categoria/$slug'
     | '/pedido/$id'
     | '/produto/$slug'
@@ -194,8 +214,10 @@ export interface FileRouteTypes {
     | '/personalizados'
     | '/politica-de-privacidade'
     | '/presentes'
+    | '/sitemap.xml'
     | '/sobre'
     | '/termos-de-uso'
+    | '/admin/$'
     | '/categoria/$slug'
     | '/pedido/$id'
     | '/produto/$slug'
@@ -212,8 +234,10 @@ export interface FileRouteTypes {
     | '/personalizados'
     | '/politica-de-privacidade'
     | '/presentes'
+    | '/sitemap.xml'
     | '/sobre'
     | '/termos-de-uso'
+    | '/admin/$'
     | '/categoria/$slug'
     | '/pedido/$id'
     | '/produto/$slug'
@@ -222,7 +246,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   CarrinhoRoute: typeof CarrinhoRoute
   CheckoutRoute: typeof CheckoutRoute
   ContatoRoute: typeof ContatoRoute
@@ -231,6 +255,7 @@ export interface RootRouteChildren {
   PersonalizadosRoute: typeof PersonalizadosRoute
   PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
   PresentesRoute: typeof PresentesRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   TermosDeUsoRoute: typeof TermosDeUsoRoute
   CategoriaSlugRoute: typeof CategoriaSlugRoute
@@ -311,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PresentesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sobre': {
       id: '/sobre'
       path: '/sobre'
@@ -324,6 +356,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/termos-de-uso'
       preLoaderRoute: typeof TermosDeUsoRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/$': {
+      id: '/admin/$'
+      path: '/$'
+      fullPath: '/admin/$'
+      preLoaderRoute: typeof AdminSplatRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/categoria/$slug': {
       id: '/categoria/$slug'
@@ -356,9 +395,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminSplatRoute: typeof AdminSplatRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminSplatRoute: AdminSplatRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   CarrinhoRoute: CarrinhoRoute,
   CheckoutRoute: CheckoutRoute,
   ContatoRoute: ContatoRoute,
@@ -367,6 +416,7 @@ const rootRouteChildren: RootRouteChildren = {
   PersonalizadosRoute: PersonalizadosRoute,
   PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
   PresentesRoute: PresentesRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   TermosDeUsoRoute: TermosDeUsoRoute,
   CategoriaSlugRoute: CategoriaSlugRoute,

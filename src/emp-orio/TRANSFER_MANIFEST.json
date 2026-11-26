@@ -1,0 +1,39 @@
+{
+  "sourceRepository": "hrq16000-a11y/emporiolelecute-2026",
+  "sourceSha": "d01d843c266b5a32d03af22eeaac6eda4a7fcf0f",
+  "destinationBranch": "feat/catalog-admin-parity-01-20261125",
+  "strategy": "original admin route group mounted inside the existing TanStack /admin route",
+  "reusedFiles": 1373,
+  "reusedBytes": 6241944,
+  "skippedSourceMediaFiles": 0,
+  "byArea": {
+    "components": 563,
+    "contexts": 1,
+    "hooks": 69,
+    "lib": 284,
+    "admin-pages": 120,
+    "stores": 3,
+    "generated": 2,
+    "types": 1,
+    "database-types": 1,
+    "edge-functions": 75,
+    "source-migrations": 199,
+    "drizzle-reference": 32,
+    "source-scripts": 10,
+    "source-e2e": 7,
+    "source-skills": 3,
+    "papelemi-data-adapters": 3
+  },
+  "originalAdminRouteEntries": 124,
+  "adminPageModulesImportedByOriginalRoute": 119,
+  "originalAdminPageFilesCopied": 120,
+  "sourceEdgeFunctionFilesCopied": 75,
+  "sourceMigrationFilesCopiedToIsolatedLocalProject": 199,
+  "dataPolicy": "Empório catalog/blog/landing records and all source media excluded; static adapters read PapeLemi catalog only.",
+  "typeScriptValidation": {
+    "papelemi": "strict tsconfig.order-integrity.json",
+    "emporio": "source-compatible tsconfig.emp-orio.json",
+    "compatibilityPatches": 7
+  },
+  "safety": "No source .env, seed.sql, hosted project id, service-role value, or hosted migration applied."
+}

@@ -1,45 +1,57 @@
-import { describe, expect, it } from "vitest";
-import type { Database } from "@/integrations/supabase/types";
-import { categoryFromRow, productFromRow } from "@/lib/catalog.repository.server";
+import { describe, expect, it, vi } from "vitest";
+import {
+  categoryFromEngineRow,
+  productFromEngineRow,
+  type PapeLemiEngineProductRow,
+} from "@/lib/catalog.repository.server";
 
-type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type EngineCategoryRow = Parameters<typeof categoryFromEngineRow>[0];
 
-const productRow: ProductRow = {
+const productRow = {
+  id: "product-1",
   slug: "caderneta-teste",
-  category_slug: "cadernetas",
   name: "Caderneta de teste",
   description: "Produto de teste",
+  long_description: null,
   images: ["/images/teste.jpg"],
+  image_refs: ["/images/teste.jpg"],
   price: 59.9,
-  promo_price: null,
+  original_price: null,
+  min_quantity: 1,
+  production_days: 10,
+  weight: 0.25,
+  weight_kg: 0.25,
+  category_id: "category-1",
   colors: ["Rosa"],
   sizes: [],
   finishes: [],
-  production_days: "10 dias úteis",
   stock: 0,
-  published: true,
-  best_seller: false,
-  personalizable: true,
-  personalization: [
+  is_active: true,
+  featured_weight: 0,
+  personalization_enabled: true,
+  personalization_options: [
     { type: "text", key: "nome", label: "Nome", maxLength: 40 },
     { type: "text", key: "frase", label: "Dedicatória", maxLength: 140, ai: true },
     { type: "notes", key: "observacoes", label: "Observações" },
   ],
-  min_qty: null,
-};
+  requires_shipping: true,
+  length_cm: 20,
+  width_cm: 15,
+  height_cm: 5,
+} as unknown as PapeLemiEngineProductRow;
 
-const categoryRow: CategoryRow = {
+const categoryRow = {
+  id: "category-1",
   slug: "cadernetas",
   name: "Cadernetas",
   description: "Para guardar cada fase.",
-  image: "/images/papelemi/caderneta-ursinho-clean.jpg",
-  sort: 1,
-};
+  image_url: "/images/papelemi/caderneta-ursinho-clean.jpg",
+  image_ref: null,
+} as EngineCategoryRow;
 
-describe("Supabase catalog mapping", () => {
-  it("maps live product values and per-product personalization without static catalog data", () => {
-    const product = productFromRow(productRow);
+describe("PapeLemi engine catalog mapping", () => {
+  it("maps engine product values and per-product personalization", () => {
+    const product = productFromEngineRow(productRow, "cadernetas");
 
     expect(product).toMatchObject({
       slug: "caderneta-teste",
@@ -52,22 +64,33 @@ describe("Supabase catalog mapping", () => {
         { type: "text", key: "frase", maxLength: 140, ai: true },
         { type: "notes", key: "observacoes" },
       ],
+      productionDays: "10 dias úteis",
+      weightKg: 0.25,
+      lengthCm: 20,
+      widthCm: 15,
+      heightCm: 5,
+      requiresShipping: true,
     });
     expect(product.promoPrice).toBeUndefined();
     expect(product.minQty).toBeUndefined();
   });
 
-  it("rejects malformed personalization configuration from the database", () => {
+  it("does not expose malformed personalization configuration", () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const malformed = {
       ...productRow,
-      personalization: [{ type: "text", key: "frase", label: "Dedicatória", maxLength: 0 }],
-    } as unknown as ProductRow;
+      personalization_options: [
+        { type: "text", key: "frase", label: "Dedicatória", maxLength: 0 },
+      ],
+    } as unknown as PapeLemiEngineProductRow;
 
-    expect(() => productFromRow(malformed)).toThrow();
+    expect(productFromEngineRow(malformed, "cadernetas").personalization).toEqual([]);
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
   });
 
-  it("maps category metadata directly from its database row", () => {
-    expect(categoryFromRow(categoryRow)).toEqual({
+  it("maps category metadata from the engine row", () => {
+    expect(categoryFromEngineRow(categoryRow)).toEqual({
       slug: "cadernetas",
       name: "Cadernetas",
       description: "Para guardar cada fase.",

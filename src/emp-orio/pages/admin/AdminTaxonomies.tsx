@@ -1,0 +1,200 @@
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/emp-orio/components/ui/tabs';
+import { Button } from '@/emp-orio/components/ui/button';
+import { Card, CardContent } from '@/emp-orio/components/ui/card';
+import { Activity, Calendar, ArrowRight, RefreshCw, Loader2 } from 'lucide-react-v462';
+import { toast } from 'sonner';
+
+import TaxonomyManager from '@/emp-orio/components/admin/TaxonomyManager';
+import { TaxonomyEntity, TaxonomyKind } from '@/emp-orio/lib/taxonomy';
+import { invalidatePublicTaxonomy, markPublicTaxonomyDirty } from '@/emp-orio/lib/taxonomyAutomation';
+import {
+  useDbCategories, useDbOccasions,
+  useCreateCategory, useUpdateCategory, useDeleteCategory,
+  useCreateOccasion, useUpdateOccasion, useDeleteOccasion,
+} from '@/emp-orio/hooks/useProducts';
+import {
+  useSegments, useCreateSegment, useUpdateSegment, useDeleteSegment,
+} from '@/emp-orio/hooks/useSegments';
+import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/emp-orio/hooks/useTags';
+import { supabase } from '@/emp-orio/integrations/supabase/client';
+
+const AdminTaxonomies = () => {
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<TaxonomyKind>(() => {
+    try {
+      const saved = localStorage.getItem('admin_taxonomies_tab') as TaxonomyKind | null;
+      return saved && ['categoria', 'ocasiao', 'segmento', 'tag'].includes(saved) ? saved : 'categoria';
+    } catch {
+      return 'categoria';
+    }
+  });
+  const cats = useDbCategories();
+  const occs = useDbOccasions();
+  const segs = useSegments();
+  const tagsQ = useTags();
+
+  const createCat = useCreateCategory(); const updCat = useUpdateCategory(); const delCat = useDeleteCategory();
+  const createOcc = useCreateOccasion(); const updOcc = useUpdateOccasion(); const delOcc = useDeleteOccasion();
+  const createSeg = useCreateSegment(); const updSeg = useUpdateSegment(); const delSeg = useDeleteSegment();
+  const createTag = useCreateTag(); const updTag = useUpdateTag(); const delTag = useDeleteTag();
+
+  const slugsByKind: Record<TaxonomyKind, Map<string, string>> = useMemo(() => {
+    const build = (arr: { name: string; slug: string }[] = []) =>
+      new Map(arr.map((x) => [x.slug, x.name]));
+    return {
+      categoria: build(cats.data ?? []),
+      ocasiao:   build(occs.data ?? []),
+      segmento:  build(segs.data ?? []),
+      tag:       build(tagsQ.data ?? []),
+    };
+  }, [cats.data, occs.data, segs.data, tagsQ.data]);
+
+  // The hooks for categories/occasions are typed narrowly; bypass with a generic update via supabase.
+  const updateCategoryGeneric = async (id: string, values: Partial<TaxonomyEntity>) => {
+    const { error } = await supabase.from('categories').update(values).eq('id', id);
+    if (error) throw error;
+    await cats.refetch();
+    invalidatePublicTaxonomy(queryClient, 'categories');
+    void markPublicTaxonomyDirty('categories');
+  };
+  const createCategoryGeneric = async (values: Partial<TaxonomyEntity>) => {
+    const { error } = await supabase.from('categories').insert(values as never);
+    if (error) throw error;
+    await cats.refetch();
+    invalidatePublicTaxonomy(queryClient, 'categories');
+    void markPublicTaxonomyDirty('categories');
+  };
+
+  // Regeneração manual do sitemap + notificação IndexNow/GSC.
+  const [regenerating, setRegenerating] = useState(false);
+  const forceSitemapRegeneration = async () => {
+    setRegenerating(true);
+    try {
+      const { error } = await supabase.functions.invoke('generate-sitemap', {
+        body: { force: true, source: 'admin-taxonomias' },
+      });
+      if (error) throw error;
+      await supabase.functions.invoke('seo-sitemap-auto-resubmit', {
+        body: { force: true, reason: 'admin-taxonomias' },
+      });
+      toast.success('Sitemap regenerado e IndexNow notificado');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Falha ao regenerar o sitemap');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  // Suppress unused-warnings for the original hooks (kept for compat; not used directly here)
+  void createCat; void updCat; void createOcc; void updOcc; void delOcc;
+
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-display font-semibold text-foreground">Taxonomias</h1>
+          <p className="text-muted-foreground mt-1">
+            Centro unificado para gerenciar categorias, ocasiões, segmentos e tags.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={forceSitemapRegeneration} disabled={regenerating}>
+            {regenerating
+              ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              : <RefreshCw className="w-4 h-4 mr-2" />}
+            Forçar regeneração agora
+          </Button>
+          <Link to="/admin/taxonomias/health">
+            <Button variant="outline"><Activity className="w-4 h-4 mr-2" /> Healthcheck</Button>
+          </Link>
+        </div>
+
+      </div>
+
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const next = value as TaxonomyKind;
+          setActiveTab(next);
+          try { localStorage.setItem('admin_taxonomies_tab', next); } catch { /* noop */ }
+        }}
+        className="space-y-4"
+      >
+        <TabsList className="h-auto max-w-full justify-start overflow-x-auto md:flex-wrap">
+          <TabsTrigger value="categoria">Categorias</TabsTrigger>
+          <TabsTrigger value="ocasiao">Ocasiões</TabsTrigger>
+          <TabsTrigger value="segmento">Segmentos</TabsTrigger>
+          <TabsTrigger value="tag">Tags</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="categoria" forceMount hidden={activeTab !== 'categoria'}>
+          <TaxonomyManager
+            kind="categoria"
+            items={(cats.data ?? []) as TaxonomyEntity[]}
+            isLoading={cats.isLoading}
+            existingSlugsByKind={slugsByKind}
+            onCreate={createCategoryGeneric}
+            onUpdate={updateCategoryGeneric}
+            onDelete={(id) => delCat.mutateAsync(id)}
+          />
+        </TabsContent>
+        <TabsContent value="ocasiao" forceMount hidden={activeTab !== 'ocasiao'}>
+          <Card>
+            <CardContent className="p-6 sm:p-10 flex flex-col items-center text-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <Calendar className="w-7 h-7" />
+              </div>
+              <div className="space-y-1 max-w-md">
+                <h3 className="font-display text-lg font-semibold text-foreground">
+                  Ocasiões têm um gerenciador dedicado
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Para evitar duplicidade, toda a gestão de ocasiões — ordenação, ícone Lucide, imagem,
+                  descrição e SEO — acontece em uma única página. Os dados são exatamente os mesmos
+                  ({occs.data?.length ?? 0} ocasião(ões) cadastrada(s)); nada se perde.
+                </p>
+              </div>
+              <Link to="/admin/ocasioes">
+                <Button>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Abrir gerenciador de Ocasiões
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="segmento" forceMount hidden={activeTab !== 'segmento'}>
+          <TaxonomyManager
+            kind="segmento"
+            items={(segs.data ?? []) as TaxonomyEntity[]}
+            isLoading={segs.isLoading}
+            existingSlugsByKind={slugsByKind}
+            onCreate={(v) => createSeg.mutateAsync(v as { name: string; slug: string })}
+            onUpdate={(id, v) => updSeg.mutateAsync({ id, ...v })}
+            onDelete={(id) => delSeg.mutateAsync(id)}
+          />
+        </TabsContent>
+        <TabsContent value="tag" forceMount hidden={activeTab !== 'tag'}>
+          <TaxonomyManager
+            kind="tag"
+            items={(tagsQ.data ?? []) as TaxonomyEntity[]}
+            isLoading={tagsQ.isLoading}
+            showSeo={false}
+            existingSlugsByKind={slugsByKind}
+            onCreate={(v) => createTag.mutateAsync({ name: v.name!, slug: v.slug! })}
+            onUpdate={(id, v) => updTag.mutateAsync({ id, name: v.name, slug: v.slug })}
+            onDelete={(id) => delTag.mutateAsync(id)}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default AdminTaxonomies;

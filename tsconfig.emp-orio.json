@@ -1,0 +1,36 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "allowJs": false,
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "noImplicitOverride": false,
+    "noImplicitReturns": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedSideEffectImports": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "types": [
+      "vite/client",
+      "node"
+    ]
+  },
+  "include": [
+    "src/emp-orio/**/*.ts",
+    "src/emp-orio/**/*.tsx",
+    "src/emp-orio/**/*.d.ts"
+  ],
+  "exclude": [
+    "src/emp-orio/**/*.test.ts",
+    "src/emp-orio/**/*.test.tsx",
+    "src/emp-orio/**/*.spec.ts",
+    "src/emp-orio/**/*.spec.tsx"
+  ]
+}

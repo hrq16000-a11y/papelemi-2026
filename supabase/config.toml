@@ -1,1 +1,22 @@
 project_id = "gpdpfoxpbferjwbppcmb"
+
+
+[api]
+schemas = ["public", "graphql_public", "papelemi_engine"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+
+[functions.track-visit]
+verify_jwt = false
+
+
+[functions.order-stream]
+verify_jwt = false
+
+
+[functions.notify-order-status]
+verify_jwt = false
+

@@ -1,0 +1,175 @@
+import { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { Tag } from "lucide-react-v462";
+import CrossSellComplete from "@/emp-orio/components/CrossSellComplete";
+import ProductBundleBelongsTo from "@/emp-orio/components/ProductBundleBelongsTo";
+import VisualComposition from "@/emp-orio/components/VisualComposition";
+import ProductReviews from "@/emp-orio/components/ProductReviews";
+import RelatedSmart from "@/emp-orio/components/RelatedSmart";
+import PackagingStory from "@/emp-orio/components/PackagingStory";
+
+export interface PdpSectionContext {
+  product: {
+    id: string;
+    slug: string;
+    name: string;
+    description?: string;
+    longDescription?: string;
+  };
+  dbProduct: any;
+  canonicalUrl: string;
+}
+
+type Renderer = (ctx: PdpSectionContext) => ReactNode;
+
+// Biblioteca editorial de fallback — usada apenas quando não há
+// description/longDescription/editorial_content preenchidos.
+// Tom: artesanal, sensorial, silencioso. Sem adjetivos promocionais.
+const EDITORIAL_FALLBACKS: string[] = [
+  `Composto à mão, em pequena tiragem.
+Embalado peça a peça no ateliê.`,
+  `Aroma pensado para durar.
+Discreto no ambiente, presente na memória.`,
+  `Feito para ser usado.
+Não para ficar guardado.`,
+  `Cada unidade passa por revisão antes de sair da bancada.`,
+  `Pequena produção.
+Estoque limitado por composição.`,
+  `Uma peça de perfumaria artesanal pensada para repousar onde for vista.`,
+  `Material e fragrância selecionados um a um.`,
+  `Para quem oferece pensando em quem recebe.`,
+  `Do nosso ateliê em Curitiba.
+Embalado com calma.`,
+  `Acompanha bem mesas postas, banheiros de visita e gestos cotidianos.`,
+];
+
+// Hash determinístico simples (djb2) — evita randomização instável
+// e mantém SSR/hydration consistente entre servidor e cliente.
+const pickEditorialFallback = (seed: string): string => {
+  if (!seed) return EDITORIAL_FALLBACKS[0];
+  let hash = 5381;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) + hash) ^ seed.charCodeAt(i);
+  }
+  const idx = Math.abs(hash) % EDITORIAL_FALLBACKS.length;
+  return EDITORIAL_FALLBACKS[idx];
+};
+
+export const pdpSectionRegistry: Record<string, Renderer> = {
+  packaging: () => <PackagingStory />,
+  description: ({ product }) => (
+    <section className="mb-14 md:mb-16" key="description" aria-labelledby="pdp-description-title">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70 mb-2">Sobre o produto</p>
+      <h2 id="pdp-description-title" className="font-display text-2xl md:text-3xl font-light text-foreground mb-5">
+        Descrição
+      </h2>
+      <div className="prose prose-sm md:prose-base max-w-none">
+        <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+          {product.longDescription || product.description || pickEditorialFallback(product.id || product.slug || product.name)}
+        </p>
+      </div>
+    </section>
+  ),
+
+  cross_sell_complete: ({ dbProduct, product }) =>
+    dbProduct?.id ? (
+      <CrossSellComplete
+        key="cross_sell_complete"
+        currentProductId={dbProduct.id}
+        currentProductSlug={product.slug}
+        occasions={dbProduct?.occasions ?? []}
+        tags={dbProduct?.tags ?? []}
+        categoryId={dbProduct?.category?.id ?? null}
+        limit={4}
+      />
+    ) : null,
+
+  bundle_belongs_to: ({ dbProduct }) =>
+    dbProduct?.id ? <ProductBundleBelongsTo key="bundle_belongs_to" productId={dbProduct.id} /> : null,
+
+  visual_composition: () => null,
+
+  editorial: ({ dbProduct, product, canonicalUrl }) =>
+    dbProduct?.editorial_content ? (
+      <section key="editorial" className="mb-14 md:mb-16" aria-labelledby="editorial-title">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70 mb-2">Inspire-se</p>
+        <h2 id="editorial-title" className="font-display text-2xl md:text-3xl font-light text-foreground mb-5">
+          Sobre esta lembrancinha
+        </h2>
+        <div className="prose prose-sm md:prose-base max-w-none text-muted-foreground border-l-2 border-primary/20 pl-5 md:pl-6">
+          <div className="whitespace-pre-line leading-relaxed">{dbProduct.editorial_content}</div>
+        </div>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            // Escape HTML-significant characters so stored text can never close the script tag.
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Article",
+              headline: `Sobre ${product.name}`,
+              articleBody: dbProduct.editorial_content.slice(0, 4000),
+              mainEntityOfPage: canonicalUrl,
+              author: { "@type": "Organization", name: "PapeLemi" },
+            })
+              .replace(/</g, "\\u003c")
+              .replace(/>/g, "\\u003e")
+              .replace(/&/g, "\\u0026")
+              .replace(/\u2028/g, "\\u2028")
+              .replace(/\u2029/g, "\\u2029"),
+          }}
+        />
+      </section>
+    ) : null,
+
+  reviews: ({ dbProduct }) =>
+    dbProduct?.id ? (
+      <div key="reviews" className="lg:hidden">
+        <ProductReviews productId={dbProduct.id} initialLimit={3} />
+      </div>
+    ) : null,
+
+  related_themes: ({ dbProduct }) =>
+    dbProduct?.tags && dbProduct.tags.length > 0 ? (
+      <section key="related_themes" className="mb-10 md:mb-12" aria-labelledby="themes-title">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70 mb-2">Explore</p>
+        <h2 id="themes-title" className="font-display text-lg md:text-xl font-light text-foreground mb-4">
+          Temas relacionados
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {dbProduct.tags.slice(0, 12).map((t: any) => (
+            <Link
+              key={t.id}
+              to={`/produtos?tag=${t.slug}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted/60 hover:bg-muted rounded-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Tag className="h-3 w-3" strokeWidth={1.5} />
+              {t.name}
+            </Link>
+          ))}
+        </div>
+      </section>
+    ) : null,
+
+  related_smart: ({ product, dbProduct }) => (
+    <RelatedSmart
+      key="related_smart"
+      currentProductId={product.id}
+      occasions={dbProduct?.occasions ?? []}
+      tags={dbProduct?.tags ?? []}
+      category={dbProduct?.category ?? null}
+      limit={8}
+    />
+  ),
+};
+
+export const PDP_SECTION_LABELS: Record<string, string> = {
+  packaging: "Embalagem e unboxing",
+  description: "Descrição do produto",
+  cross_sell_complete: "Complete o kit",
+  bundle_belongs_to: "Kits relacionados",
+  visual_composition: "Composição visual",
+  editorial: "Conteúdo editorial",
+  reviews: "Avaliações (mobile)",
+  related_themes: "Temas relacionados",
+  related_smart: "Produtos relacionados (inteligente)",
+};
