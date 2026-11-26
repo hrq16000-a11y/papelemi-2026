@@ -28,6 +28,8 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Validate isolated Emporio engine migration
+        run: node scripts/emp-orio/validate-papelemi-engine-migration.mjs
 
       - name: Unit tests
         run: bun run test
@@ -72,6 +74,11 @@ jobs:
         uses: supabase/setup-cli@v3
         with:
           version: 3.4.0
+      - name: Ensure Docker daemon is available
+        run: |
+          sudo systemctl start docker || sudo service docker start
+          docker info
+
       - name: Start isolated local Supabase
         run: supabase start
       - name: Replay versioned migrations without seed data

@@ -1,30 +1,18 @@
-name: PapeLemi Emporio engine transfer
+name: PapeLemi Emporio transfer validation
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/catalog-admin-parity-01-20261125
-    paths:
-      - ".github/workflows/papelemi-emp-orio-transfer.yml"
-      - "scripts/emp-orio/transfer-source.mjs"
-      - "scripts/emp-orio/prepare-combined-schema.mjs"
-      - "supabase/config.toml"
-      - "tools/emp-orio-supabase/supabase/config.toml"
-      - "tools/emp-orio-supabase/supabase/migrations/**"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  transfer-and-validate:
+  validate-transfer:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 25
     env:
       EMPORIO_SOURCE_DIR: /tmp/emporio-source
       EMPORIO_SOURCE_SHA: d01d843c266b5a32d03af22eeaac6eda4a7fcf0f
-      PAPELEMI_BRANCH: feat/catalog-admin-parity-01-20261125
-      SUPABASE_TELEMETRY_DISABLED: "1"
     steps:
       - name: Checkout PapeLemi integration branch
         uses: actions/checkout@v4
@@ -43,28 +31,28 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.3.14"
 
-      - name: Transfer original source modules in batch
+      - name: Regenerate the pinned source transfer
         run: node scripts/emp-orio/transfer-source.mjs
 
-      - name: Resolve combined dependencies and update Bun lock
-        run: bun install
+      - name: Verify the committed transfer is deterministic
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            echo "Generated transfer differs from the reviewed branch; inspect the diff before committing."
+            exit 1
+          fi
+
+      - name: Install dependencies without changing the lockfile
+        run: bun install --frozen-lockfile
+
+      - name: Validate the isolated engine migration and source boundaries
+        run: node scripts/emp-orio/validate-papelemi-engine-migration.mjs
 
       - name: Build PapeLemi with original admin runtime mounted
         run: bun run build
-
-      - name: Commit verified structural transfer
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then echo 'No transfer changes to commit.'; else
-            git commit -m "feat(engine): transfer Emporio admin runtime and source schema"
-            git push origin HEAD:feat/catalog-admin-parity-01-20261125
-          fi
-
 
       - name: SSR smoke test for original admin entry route
         shell: bash
@@ -80,126 +68,9 @@ jobs:
           admin_status="$(curl -sS -o "$RUNNER_TEMP/admin-login.html" -w '%{http_code}' http://127.0.0.1:4173/admin/login || true)"
           if [ "$root_status" != "200" ] || [ "$admin_status" != "200" ]; then
             echo "SSR smoke failed — root: $root_status; admin: $admin_status"
-            echo "--- preview server log ---"
-            tail -n 180 "$RUNNER_TEMP/papelemi-preview.log" || true
-            echo "--- admin response body ---"
+            tail -n 160 "$RUNNER_TEMP/papelemi-preview.log" || true
             head -n 100 "$RUNNER_TEMP/admin-login.html" || true
             exit 1
           fi
           grep -q "Painel administrativo" "$RUNNER_TEMP/admin-login.html"
-          echo "SSR /admin/login PASS — PapeLemi shell responds without loading Emporio runtime on the server."
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v3
-        with:
-          version: 3.4.0
-
-      - name: Diagnose isolated local Supabase prerequisites
-        shell: bash
-        working-directory: tools/emp-orio-supabase
-        run: |
-          docker info
-          supabase --version
-          echo "Original migrations: $(find supabase/migrations -maxdepth 1 -name '*.sql' -type f | wc -l)"
-          grep -n -A2 -E '^\[(studio|inbucket|local_smtp|edge_runtime)\]' supabase/config.toml || true
-
-      - name: Replay original migrations in isolated local Supabase
-        shell: bash
-        working-directory: tools/emp-orio-supabase
-        run: |
-          if ! supabase start --debug > "$RUNNER_TEMP/emp-orio-start.log" 2>&1; then
-            echo "Supabase local stack failed to start:"
-            tail -n 160 "$RUNNER_TEMP/emp-orio-start.log"
-            exit 1
-          fi
-          if ! supabase db reset > "$RUNNER_TEMP/emp-orio-reset.log" 2>&1; then
-            echo "Original Emporio migration replay failed:"
-            tail -n 160 "$RUNNER_TEMP/emp-orio-reset.log"
-            supabase stop --no-backup > /dev/null 2>&1 || true
-            exit 1
-          fi
-          applied="$(grep -c 'Applying migration' "$RUNNER_TEMP/emp-orio-reset.log" || true)"
-          supabase db dump --local --schema public --file "$RUNNER_TEMP/emp-orio-schema.sql"
-          supabase gen types typescript --local --schema public > "$RUNNER_TEMP/emp-orio-types.ts"
-          local_db_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          tables="$(grep -Eic '^CREATE TABLE' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
-          functions="$(grep -Eic '^CREATE( OR REPLACE)? FUNCTION' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
-          views="$(grep -Eic '^CREATE( OR REPLACE)? VIEW' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
-          indexes="$(grep -Eic '^CREATE (UNIQUE )?INDEX' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
-          policies="$(grep -Eic '^CREATE POLICY' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
-          triggers="$(grep -Eic '^CREATE TRIGGER' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
-          all_triggers="$(psql "$local_db_url" -X -q -Atc "select count(*) from pg_trigger where not tgisinternal" 2>/dev/null || echo unavailable)"
-          storage_buckets="$(psql "$local_db_url" -X -q -Atc "select count(*) from storage.buckets" 2>/dev/null || echo unavailable)"
-          policies_by_schema="$(psql "$local_db_url" -X -q -Atc "select schemaname || '=' || count(*) from pg_policies group by schemaname order by schemaname" 2>/dev/null || echo unavailable)"
-          psql "$local_db_url" -X -q -Atc "select tablename from pg_tables where schemaname='public' order by tablename" > "$RUNNER_TEMP/emp-orio-public-tables.txt" 2>/dev/null || true
-          psql "$local_db_url" -X -q -Atc "select id || ':' || name from storage.buckets order by id" > "$RUNNER_TEMP/emp-orio-storage-buckets.txt" 2>/dev/null || true
-          {
-            echo "migrations=$applied"
-            echo "public_tables=$tables"
-            echo "public_functions=$functions"
-            echo "public_views=$views"
-            echo "public_indexes=$indexes"
-            echo "public_policies=$policies"
-            echo "public_triggers=$triggers"
-            echo "all_schema_triggers=$all_triggers"
-            echo "storage_buckets=$storage_buckets"
-            echo "policies_by_schema=$policies_by_schema"
-          } > "$RUNNER_TEMP/emp-orio-schema-metrics.txt"
-          # Redact hosted project references and local callback URLs from the schema-only artifact.
-          python3 - <<'PY'
-          from pathlib import Path
-          import os
-          import re
-
-          schema = Path(os.environ["RUNNER_TEMP"]) / "emp-orio-schema.sql"
-          sql = schema.read_text()
-          sql = re.sub(r"https?://[a-z0-9]{20}\.supabase\.co", "https://<SUPABASE_PROJECT_REF>.supabase.co", sql)
-          sql = sql.replace("http://127.0.0.1:54321", "<SUPABASE_URL>")
-          schema.write_text(sql)
-          PY
-          echo "Emporio isolated replay PASS — migrations applied: $applied; tables: $tables; functions: $functions; views: $views; indexes: $indexes; policies: $policies; public triggers: $triggers; all-schema triggers: $all_triggers; storage buckets: $storage_buckets."
-          echo "=== Reconstructed public table names ==="
-          cat "$RUNNER_TEMP/emp-orio-public-tables.txt"
-          echo "=== Reconstructed schema metrics ==="
-          cat "$RUNNER_TEMP/emp-orio-schema-metrics.txt"
-          supabase stop --no-backup > /dev/null 2>&1 || true
-
-      - name: Upload schema-only reconstruction evidence
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: emp-orio-schema-reference
-          path: |
-            ${{ runner.temp }}/emp-orio-schema.sql
-            ${{ runner.temp }}/emp-orio-types.ts
-            ${{ runner.temp }}/emp-orio-schema-metrics.txt
-            ${{ runner.temp }}/emp-orio-public-tables.txt
-            ${{ runner.temp }}/emp-orio-storage-buckets.txt
-          retention-days: 7
-
-      - name: Prepare combined PapeLemi and Emporio schema workspace
-        run: node scripts/emp-orio/prepare-combined-schema.mjs
-
-      - name: Replay original Emporio schema after preserving PapeLemi data
-        shell: bash
-        working-directory: tools/papelemi-combined-supabase
-        run: |
-          if ! supabase start --debug > "$RUNNER_TEMP/papelemi-combined-start.log" 2>&1; then
-            echo "Combined local Supabase stack failed to start:"
-            tail -n 160 "$RUNNER_TEMP/papelemi-combined-start.log"
-            exit 1
-          fi
-          if ! supabase db reset > "$RUNNER_TEMP/papelemi-combined-reset.log" 2>&1; then
-            echo "Combined PapeLemi + Emporio migration replay failed:"
-            tail -n 180 "$RUNNER_TEMP/papelemi-combined-reset.log"
-            supabase stop --no-backup > /dev/null 2>&1 || true
-            exit 1
-          fi
-          DB_URL="$(supabase status --output env | sed -n 's/^DB_URL=//p' | tr -d '"')"
-          public_tables="$(psql "$DB_URL" -Atc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE'")"
-          legacy_tables="$(psql "$DB_URL" -Atc "select count(*) from information_schema.tables where table_schema='papelemi_legacy' and table_type='BASE TABLE'")"
-          legacy_products="$(psql "$DB_URL" -Atc "select count(*) from papelemi_legacy.products")"
-          legacy_categories="$(psql "$DB_URL" -Atc "select count(*) from papelemi_legacy.categories")"
-          echo "Combined schema replay PASS — public tables: $public_tables; preserved legacy tables: $legacy_tables; preserved PapeLemi products: $legacy_products; preserved PapeLemi categories: $legacy_categories."
-          supabase stop --no-backup > /dev/null 2>&1 || true
-
+          echo "SSR /admin/login PASS."

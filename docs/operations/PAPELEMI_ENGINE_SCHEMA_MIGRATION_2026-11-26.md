@@ -49,3 +49,9 @@ A vitrine PapeLemi continua usando `public`; o painel original passa a usar `pap
 Portanto, esta etapa entrega a estrutura isolada e o adaptador de consultas do painel, mas **a loja ainda não está em paridade ponta a ponta**. A próxima etapa precisa mapear os dados próprios da PapeLemi, unificar catálogo/checkout/pedidos entre vitrine e painel, revisar as 75 Edge Functions e seus segredos, e só então homologar os fluxos completos.
 
 A aplicação em Production permanece bloqueada até que o backup seja acessível, o plano de rollback esteja comprovado e a migration passe no replay local e na revisão final.
+
+## Pipeline de segurança
+
+A antiga etapa de schema combinado foi desativada. Ela movia 12 tabelas públicas atuais da PapeLemi para `papelemi_legacy` e tentava reaplicar as 199 migrations brutas do Empório. O bloqueio de DML detectou 11 possíveis inserções comerciais em produtos, categorias, pedidos e clientes. O gate foi mantido; não foi contornado.
+
+A validação passa a usar o snapshot schema-only e a migration isolada `papelemi_engine`. O replay local da migration da PapeLemi e os contratos pgTAP ficam no workflow de qualidade. O workflow de transferência do código fica manual e sem escrita automática no Git.

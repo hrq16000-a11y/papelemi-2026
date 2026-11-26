@@ -22,10 +22,13 @@ function transformText(text, namespaced = false, brand = false) {
     brand = true;
   }
   if (brand) {
+    // Rewrite exact project/domain references before generic brand substitutions.
+    text = text.replace(/https?:\/\/(?:www\.)?(?:emporio)?lelecute\.com\.br/gi, "https://www.papelemi.com.br");
+    text = text.replace(/https?:\/\/(?:www\.)?emporioPapeLemi\.com\.br/gi, "https://www.papelemi.com.br");
+    text = text.replaceAll("xfqffqxqiuqauefrrcxn", "gpdpfoxpbferjwbppcmb");
     text = text.replace(/Emp[oó]rio\s+Lele\s*Cute/gi, "PapeLemi");
     text = text.replace(/Lele\s*Cute/gi, "PapeLemi");
     text = text.replaceAll("LeleCute", "PapeLemi");
-    text = text.replace(/https?:\/\/(?:www\.)?(?:emporio)?lelecute\.com\.br/gi, "https://www.papelemi.com.br");
   }
   return text;
 }
@@ -202,11 +205,43 @@ async function writeSupabaseAdapters() {
     'import { supabase as papeLemiSupabase } from "@/integrations/supabase/client";',
     'import type { SupabaseClient } from "@supabase/supabase-js";',
     'import type { Database } from "./types";',
-    "export const supabase = papeLemiSupabase as unknown as SupabaseClient<Database>;"
+    "",
+    "type EngineClient = SupabaseClient<Database>;",
+    "",
+    "function engineClient() {",
+    '  return (papeLemiSupabase as unknown as EngineClient).schema("papelemi_engine");',
+    "}",
+    "",
+    "// Auth and Storage stay on the same PapeLemi project client.",
+    "// Original admin data queries and RPCs use the isolated Emporio schema.",
+    "export const supabase = new Proxy(papeLemiSupabase as unknown as EngineClient, {",
+    "  get(target, property, receiver) {",
+    '    if (property === "from") {',
+    "      const engine = engineClient();",
+    "      return engine.from.bind(engine);",
+    "    }",
+    '    if (property === "rpc") {',
+    "      const engine = engineClient();",
+    "      return engine.rpc.bind(engine);",
+    "    }",
+    "    return Reflect.get(target, property, receiver);",
+    "  },",
+    "});"
   ].join("\n");
   const clientPath = path.join(ROOT, "src/emp-orio/integrations/supabase/client.ts");
   await fs.mkdir(path.dirname(clientPath), { recursive: true });
-  await fs.writeFile(clientPath, client, "utf8");
+  await fs.writeFile(clientPath, client + "\n", "utf8");
+
+  const typesPath = path.join(ROOT, "src/emp-orio/integrations/supabase/types.ts");
+  let types = await fs.readFile(typesPath, "utf8");
+  const publicSchemaKeys = (types.match(/\n  public: \{/g) || []).length;
+  if (publicSchemaKeys === 2) {
+    types = types.replace(/\n  public: \{/g, "\n  papelemi_engine: {");
+  } else if (publicSchemaKeys !== 0 || (types.match(/\n  papelemi_engine: \{/g) || []).length !== 2) {
+    throw new Error("Original Supabase Database types did not contain the expected public schema shape.");
+  }
+  await fs.writeFile(typesPath, types, "utf8");
+
   const lovableAdapter = [
     'import { supabase } from "../supabase/client";',
     "type SignInOptions = { redirect_uri?: string; extraParams?: Record<string, string> };",

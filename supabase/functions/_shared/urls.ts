@@ -10,7 +10,7 @@
  * em ambos os arquivos (frontend + edge).
  */
 
-export const CANONICAL_ORIGIN = "https://emporioPapeLemi.com.br";
+export const CANONICAL_ORIGIN = "https://www.papelemi.com.br";
 
 /** Prefixo público canônico (Fase 2.2 FLIPPED: singular). Espelha frontend. */
 export const PRODUCT_PATH_PREFIX = "/produto";
