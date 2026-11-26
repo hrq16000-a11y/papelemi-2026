@@ -6,9 +6,9 @@ import { brl, type PersonalizationOption } from "@/data/catalog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   deleteCategory, deleteCoupon, deletePhrase, deleteProduct,
-  getMyRole, getOrderDetails, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders,
+  getMyRole, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders,
   archiveCategory, archiveProduct, restoreCategory, restoreProduct, setCategoryActive, setProductPublished,
-  saveCategory, saveCoupon, saveCustomer, savePhrase, saveProduct, setOrderStatus,
+  saveCategory, saveCoupon, saveCustomer, savePhrase, saveProduct,
 } from "@/lib/shop.functions";
 import { cn } from "@/lib/utils";
 import EmporioOrdersPanel from "@/components/admin/EmporioOrdersPanel";

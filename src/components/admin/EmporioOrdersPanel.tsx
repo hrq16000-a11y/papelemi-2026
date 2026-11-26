@@ -53,6 +53,7 @@ interface OrderItem {
 
 const statusOptions = [
   { value: 'pending', label: 'Pendente', color: 'bg-yellow-500', icon: Clock },
+  { value: 'paid', label: 'Pago', color: 'bg-emerald-500', icon: CheckCircle },
   { value: 'confirmed', label: 'Confirmado', color: 'bg-blue-500', icon: CheckCircle },
   { value: 'processing', label: 'Em produção', color: 'bg-purple-500', icon: Package },
   { value: 'shipped', label: 'Enviado', color: 'bg-indigo-500', icon: Truck },

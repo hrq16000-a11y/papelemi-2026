@@ -601,7 +601,7 @@ export const setOrderStatus = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const admin = supabaseAdmin as unknown as SupabaseClient<any>;
     const { data: current, error: currentError } = await admin.from("orders")
       .select("*")
       .eq("id", data.id)
