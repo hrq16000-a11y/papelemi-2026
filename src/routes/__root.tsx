@@ -128,9 +128,9 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
-    document.documentElement.dataset.appHydrated = "true";
+    document.documentElement.dataset["appHydrated"] = "true";
     return () => {
-      delete document.documentElement.dataset.appHydrated;
+      delete document.documentElement.dataset["appHydrated"];
     };
   }, []);
 
