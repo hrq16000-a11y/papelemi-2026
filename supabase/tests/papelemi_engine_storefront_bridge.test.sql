@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(24);
+SELECT plan(25);
 
 SELECT is(
   (SELECT count(*)::int FROM papelemi_engine.products WHERE external_ref LIKE 'papelemi:product:%'),
