@@ -531,6 +531,7 @@ async function main() {
     sourceEdgeFunctionFilesCopied: counts.byArea["edge-functions"] || 0,
     sourceMigrationFilesCopiedToIsolatedLocalProject: counts.byArea["source-migrations"] || 0,
     dataPolicy: "Empório catalog/blog/landing records and all source media excluded; static adapters read PapeLemi catalog only.",
+    typeScriptValidation: { papelemi: "strict tsconfig.order-integrity.json", emporio: "source-compatible tsconfig.emp-orio.json" },
     safety: "No source .env, seed.sql, hosted project id, service-role value, or hosted migration applied."
   };
   await fs.mkdir(path.join(ROOT, "src/emp-orio"), { recursive: true });
