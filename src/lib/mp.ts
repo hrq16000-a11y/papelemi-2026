@@ -49,7 +49,7 @@ async function recordPaymentEvent(
       orderCode: order?.order_code ?? null,
       appliedStatus,
       result,
-      errorMessage,
+      ...(errorMessage === undefined ? {} : { errorMessage }),
     }),
     { onConflict: "store_key,provider,event_id", ignoreDuplicates: true },
   );
