@@ -12,6 +12,7 @@ function transformText(text, namespaced = false, brand = false) {
     text = text.replace(/(["'])@\/assets\/[^"']+\1/g, '$1@/emp-orio/assets/papelemi-mark.svg$1');
     text = text.replace(/(["'])(?:\.\.\/)+assets\/[^"']+\1/g, '$1@/emp-orio/assets/papelemi-mark.svg$1');
     text = text.replace(/@\/(?!emp-orio\/)/g, "@/emp-orio/");
+    text = text.replace(/(["'])\.\.\/\.\.\/supabase\/functions\//g, '$1../../../supabase/functions/');
     text = text.replace(/(["'])date-fns\1/g, '$1date-fns-v3$1');
     text = text.replace(/(["'])react-day-picker\1/g, '$1react-day-picker-v8$1');
     text = text.replace(/(["'])react-resizable-panels\1/g, '$1react-resizable-panels-v2$1');
@@ -106,6 +107,43 @@ function scopedAdminTheme() {
     '.emp-orio-admin .font-script { font-family: "DM Serif Display", Georgia, serif; font-style: italic; }',
     "@media (prefers-reduced-motion: reduce) { .emp-orio-admin *, .emp-orio-admin *::before, .emp-orio-admin *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }"
   ].join("\n");
+}
+
+
+async function patchSourceTypeCompatibility() {
+  const patches = [
+    ["src/emp-orio/components/admin/BulkEditProductsDialog.tsx", [
+      [".update(patch)", ".update(patch as never)"]
+    ]],
+    ["src/emp-orio/components/admin/OperationalSettingsPanel.tsx", [
+      [".upsert(payload)", ".upsert(payload as never)"]
+    ]],
+    ["src/emp-orio/components/support/SupportWorkspace.tsx", [
+      ["useRef<AbortController>()", "useRef<AbortController | null>(null)"]
+    ]],
+    ["src/emp-orio/hooks/useProducts.ts", [
+      ["mutationFn: async ({ id, ...product }: Partial<DbProduct> & { id: string }) => {", "mutationFn: async ({ id, __slugMeta: _slugMeta, ...product }: Partial<DbProduct> & { id: string }) => {"],
+      [".update(product)", ".update(product as never)"]
+    ]],
+    ["src/emp-orio/pages/admin/AdminCategories.tsx", [
+      [".update({ [field]: value })", ".update({ [field]: value } as never)"]
+    ]],
+    ["src/emp-orio/pages/admin/AdminCollections.tsx", [
+      [".update({ [field]: value })", ".update({ [field]: value } as never)"]
+    ]],
+    ["src/emp-orio/pages/admin/AdminOrders.tsx", [
+      [".update(update)", ".update(update as never)"]
+    ]]
+  ];
+  for (const [relativePath, replacements] of patches) {
+    const file = path.join(ROOT, relativePath);
+    let contents = await fs.readFile(file, "utf8");
+    for (const [before, after] of replacements) {
+      if (!contents.includes(before)) throw new Error("Expected source compatibility pattern missing in " + relativePath + ": " + before);
+      contents = contents.replace(before, after);
+    }
+    await fs.writeFile(file, contents, "utf8");
+  }
 }
 
 async function writeDataAdapters() {
@@ -509,6 +547,7 @@ async function main() {
   await copyTree("scripts", "scripts/emp-orio/source", "source-scripts", { transform: false });
   await copyTree("e2e", "e2e/emp-orio", "source-e2e", { transform: false });
   await copyTree(".agents/skills", ".agents/skills/emp-orio", "source-skills", { transform: false });
+  await patchSourceTypeCompatibility();
 
   await writeDataAdapters();
   await writeSupabaseAdapters();
