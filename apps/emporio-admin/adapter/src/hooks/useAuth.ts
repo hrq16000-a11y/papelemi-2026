@@ -59,10 +59,9 @@ export function useAuth() {
     const roleClient = supabase as unknown as {
       rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
     };
-    const { data, error } = await roleClient.rpc("has_store_role", {
+    const { data, error } = await roleClient.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
-      _store_key: "papelemi",
     });
     if (error) {
       console.error("Error checking PapeLemi admin role:", error);

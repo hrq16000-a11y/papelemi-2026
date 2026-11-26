@@ -9,5 +9,6 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
+  db: { schema: "papelemi_engine" } as any,
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 });

@@ -1,1 +1,19 @@
 project_id = "gpdpfoxpbferjwbppcmb"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public", "papelemi_engine"]
+extra_search_path = ["public", "extensions", "papelemi_engine"]
+max_rows = 1000
+
+[db]
+major_version = 17
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[storage.buckets.product-images]
+public = true
+file_size_limit = "10MiB"
+allowed_mime_types = ["image/png", "image/jpeg", "image/webp", "image/avif", "image/svg+xml"]
