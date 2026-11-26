@@ -306,6 +306,9 @@ async function writeSupabaseAdapters() {
   } else if (publicSchemaKeys !== 0 || (types.match(/\n  papelemi_engine: \{/g) || []).length !== 2) {
     throw new Error("Original Supabase Database types did not contain the expected public schema shape.");
   }
+  // Generated Row/Insert/Update definitions reference their own enum schema.
+  // Rewrite those indexed references together with the top-level schema key.
+  types = types.replace(/Database\[(["'])public\1\]/g, 'Database["papelemi_engine"]');
   await fs.writeFile(typesPath, types, "utf8");
 
   const lovableAdapter = [
