@@ -4,7 +4,7 @@
   "source_commit": "d01d843c266b5a32d03af22eeaac6eda4a7fcf0f",
   "destination_repository": "hrq16000-a11y/papelemi-2026",
   "snapshot_path": "apps/emporio-admin/source",
-  "file_count": 1371,
+  "file_count": 1373,
   "counts": {
     "src/pages/admin/": 120,
     "src/components/admin/": 411,
@@ -14,6 +14,7 @@
     "src/stores/": 3,
     "src/contexts/": 1,
     "src/integrations/supabase/": 3,
+    "src/integrations/lovable/": 1,
     "supabase/migrations/": 199,
     "supabase/functions/": 75,
     "supabase/tests/": 0,
@@ -245,6 +246,11 @@
       "path": "roadmap.md",
       "bytes": 14170,
       "sha256": "b4cc82536b70b50fb6b5a495e5a2a99c6d4a3715ba750a3915ba878b2b505c78"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 244775,
+      "sha256": "ea42ddf6a5e50b225916513b3384fba9bfa5ff8efb9c91c69fd00676d219aaf2"
     },
     {
       "path": "src/ai-gateway.types.ts",
@@ -3425,6 +3431,11 @@
       "path": "src/index.css",
       "bytes": 25263,
       "sha256": "86ed03628d3a3600080da01981bf7e004139ddcc2b7077a7631f4c34716ae699"
+    },
+    {
+      "path": "src/integrations/lovable/index.ts",
+      "bytes": 964,
+      "sha256": "ff6990c9a3d111edb6efff4171c1ef971b5481a25d2af0bf2134d321cc0ba369"
     },
     {
       "path": "src/integrations/supabase/client.ts",

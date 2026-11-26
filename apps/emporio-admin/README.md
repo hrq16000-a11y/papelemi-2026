@@ -23,8 +23,9 @@ A pasta source é referência vendorizada; não importar suas migrations diretam
 - src/stores/: 3
 - src/contexts/: 1
 - src/integrations/supabase/: 3
+- src/integrations/lovable/: 1
 - supabase/migrations/: 199
 - supabase/functions/: 75
 - supabase/tests/: 0
 - drizzle/migrations/: 31
-- Arquivos totais: 1371
+- Arquivos totais: 1373
