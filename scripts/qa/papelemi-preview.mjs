@@ -11,24 +11,24 @@ const results = [];
 page.on("pageerror", (error) => pageErrors.push(error.message));
 
 function htmlAttribute(tag, name) {
-  const match = tag.match(new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
+  const match = tag.match(new RegExp("\\b" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))", "i"));
   return match?.[1] ?? match?.[2] ?? match?.[3] ?? "";
 }
 
 function readHtmlMeta(html, attributeName, expectedValue) {
-  const tags = html.match(/<meta\\b[^>]*>/gi) ?? [];
+  const tags = html.match(/<meta\b[^>]*>/gi) ?? [];
   const tag = tags.find((candidate) => htmlAttribute(candidate, attributeName) === expectedValue);
   return tag ? htmlAttribute(tag, "content") : "";
 }
 
 function readHtmlTitle(html) {
-  return html.match(/<title\\b[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1]?.trim() ?? "";
+  return html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ?? "";
 }
 
 function readHtmlJsonLd(html) {
-  const tags = html.match(/<script\\b[^>]*type=["']application\\/ld\\+json["'][^>]*>[\\s\\S]*?<\\/script>/gi) ?? [];
+  const tags = html.match(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi) ?? [];
   return tags.flatMap((tag) => {
-    const body = tag.replace(/^<script\\b[^>]*>/i, "").replace(/<\\/script>$/i, "").trim();
+    const body = tag.replace(/^<script\b[^>]*>/i, "").replace(/<\/script>$/i, "").trim();
     try {
       return [JSON.parse(body)];
     } catch {
