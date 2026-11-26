@@ -459,8 +459,8 @@ BEGIN
   v_privacy_at := NULLIF(_order->>'privacy_consent_at', '')::timestamptz;
 
   IF v_request_id IS NOT NULL THEN
-    IF v_request_hash IS NULL OR v_request_hash !~ '^[0-9a-f]{64}
- THEN
+    IF v_request_hash IS NULL OR length(v_request_hash) <> 64
+       OR translate(v_request_hash, '0123456789abcdef', '') <> '' THEN
       RAISE EXCEPTION 'Invalid request hash';
     END IF;
     IF COALESCE((_order->>'accepted_privacy')::boolean, false) IS NOT TRUE OR v_privacy_at IS NULL THEN
@@ -516,8 +516,9 @@ BEGIN
   new_order_code := NULLIF(trim(COALESCE(_order->>'order_code', '')), '');
 
   IF length(v_customer_name) < 2 OR length(v_customer_name) > 200
-     OR v_email !~ '^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}
-
+     OR position('@' in v_email) <= 1
+     OR position('@' in split_part(v_email, '@', 2)) > 0
+     OR position('.' in split_part(v_email, '@', 2)) <= 1
      OR length(v_email) > 320
      OR length(COALESCE(v_phone, '')) > 40 THEN
     RAISE EXCEPTION 'Invalid customer fields';
@@ -533,8 +534,8 @@ BEGIN
      OR length(v_address_neighborhood) > 80
      OR length(v_address_city) < 2
      OR length(v_address_city) > 80
-     OR v_address_state !~ '^[A-Z]{2}
- THEN
+     OR length(v_address_state) <> 2
+     OR v_address_state ~ '[^A-Z]' THEN
     RAISE EXCEPTION 'Invalid delivery address';
   END IF;
 
@@ -548,8 +549,7 @@ BEGIN
   IF new_order_code IS NULL THEN
     new_order_code := 'PL-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 24));
   END IF;
-  IF length(new_order_code) > 32 OR new_order_code !~ '^[A-Za-z0-9-]{4,32}
- THEN
+  IF length(new_order_code) < 4 OR length(new_order_code) > 32 OR new_order_code ~ '[^A-Za-z0-9-]' THEN
     RAISE EXCEPTION 'Invalid order_code format';
   END IF;
 

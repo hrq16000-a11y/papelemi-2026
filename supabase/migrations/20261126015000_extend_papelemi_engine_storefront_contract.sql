@@ -53,7 +53,7 @@ CREATE OR REPLACE FUNCTION papelemi_engine.consume_shipping_quote_rate_limit(
   _limit integer DEFAULT 20
 ) RETURNS integer
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path TO papelemi_engine, pg_catalog, public, pg_temp
 AS $$
 DECLARE

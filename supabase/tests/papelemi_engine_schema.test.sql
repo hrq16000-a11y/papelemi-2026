@@ -89,8 +89,12 @@ SELECT ok(
   NOT (SELECT prosecdef FROM pg_proc WHERE oid = to_regprocedure('papelemi_engine.create_order_with_items(jsonb,jsonb)'))
   AND has_function_privilege('service_role','papelemi_engine.create_order_with_items(jsonb,jsonb)','EXECUTE')
   AND NOT has_function_privilege('authenticated','papelemi_engine.create_order_with_items(jsonb,jsonb)','EXECUTE')
-  AND NOT has_function_privilege('anon','papelemi_engine.create_order_with_items(jsonb,jsonb)','EXECUTE'),
-  'checkout RPC runs as invoker and is restricted to the server service role'
+  AND NOT has_function_privilege('anon','papelemi_engine.create_order_with_items(jsonb,jsonb)','EXECUTE')
+  AND NOT (SELECT prosecdef FROM pg_proc WHERE oid = to_regprocedure('papelemi_engine.consume_shipping_quote_rate_limit(text,timestamptz,integer)'))
+  AND has_function_privilege('service_role','papelemi_engine.consume_shipping_quote_rate_limit(text,timestamptz,integer)','EXECUTE')
+  AND NOT has_function_privilege('authenticated','papelemi_engine.consume_shipping_quote_rate_limit(text,timestamptz,integer)','EXECUTE')
+  AND NOT has_function_privilege('anon','papelemi_engine.consume_shipping_quote_rate_limit(text,timestamptz,integer)','EXECUTE'),
+  'checkout and shipping rate-limit RPCs are invoker and server-role only'
 );
 SELECT * FROM finish();
 ROLLBACK;
