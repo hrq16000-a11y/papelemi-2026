@@ -450,6 +450,14 @@ export const getOrderStatus = createServerFn({ method: "GET" })
     return { status, total: Number(order.total) };
   });
 
+// ===== Administração (exige papel de admin) =====
+
+type AdminCtx = { supabase: ReturnType<typeof publicClient>; userId: string };
+async function requireAdmin(context: AdminCtx) {
+  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+  if (!data) throw new Error("Acesso restrito ao administrador da loja");
+}
+
 export const getMyRole = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
