@@ -1,0 +1,84 @@
+name: PapeLemi Emporio engine transfer
+
+on:
+  push:
+    branches:
+      - feat/catalog-admin-parity-01-20261125
+    paths:
+      - ".github/workflows/papelemi-emp-orio-transfer.yml"
+      - "scripts/emp-orio/transfer-source.mjs"
+
+permissions:
+  contents: write
+
+jobs:
+  transfer-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EMPORIO_SOURCE_DIR: ${{ runner.temp }}/emporio-source
+      EMPORIO_SOURCE_SHA: d01d843c266b5a32d03af22eeaac6eda4a7fcf0f
+      PAPELEMI_BRANCH: feat/catalog-admin-parity-01-20261125
+      SUPABASE_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout PapeLemi integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/catalog-admin-parity-01-20261125
+          fetch-depth: 0
+
+      - name: Checkout pinned public Emporio source
+        shell: bash
+        run: |
+          git clone --no-checkout https://github.com/hrq16000-a11y/emporiolelecute-2026.git "$EMPORIO_SOURCE_DIR"
+          git -C "$EMPORIO_SOURCE_DIR" fetch --depth=1 origin "$EMPORIO_SOURCE_SHA"
+          git -C "$EMPORIO_SOURCE_DIR" checkout --detach "$EMPORIO_SOURCE_SHA"
+          test "$(git -C "$EMPORIO_SOURCE_DIR" rev-parse HEAD)" = "$EMPORIO_SOURCE_SHA"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Transfer original source modules in batch
+        run: node scripts/emp-orio/transfer-source.mjs
+
+      - name: Resolve combined dependencies and update Bun lock
+        run: bun install
+
+      - name: Build PapeLemi with original admin runtime mounted
+        run: bun run build
+
+      - name: Commit verified structural transfer
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No transfer changes to commit."
+          else
+            git commit -m "feat(engine): transfer Emporio admin runtime and source schema"
+            git push origin HEAD:feat/catalog-admin-parity-01-20261125
+          fi
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Replay original migrations in isolated local Supabase
+        shell: bash
+        working-directory: tools/emp-orio-supabase
+        run: |
+          supabase start > "$RUNNER_TEMP/emp-orio-start.log" 2>&1
+          if supabase db reset > "$RUNNER_TEMP/emp-orio-reset.log" 2>&1; then
+            echo "Original Emporio migrations replayed in the isolated local project."
+            grep -E "Applying migration|Finished supabase db reset|Local database is up to date" "$RUNNER_TEMP/emp-orio-reset.log" | tail -n 30 || true
+          else
+            echo "Isolated migration replay failed:"
+            tail -n 120 "$RUNNER_TEMP/emp-orio-reset.log"
+            supabase stop --no-backup > /dev/null 2>&1 || true
+            exit 1
+          fi
+          supabase stop --no-backup > /dev/null 2>&1 || true
