@@ -514,3 +514,8 @@ Os scripts de replay substituem URLs de projeto Supabase por endereço local via
 ## 2026-11-26 — Ajuste do runner de transferência
 
 O primeiro disparo do workflow de artefato schema-only identificou uma configuração inválida do runtime Bun (versão 3.4.0, que é a versão do Supabase CLI, não do Bun) e escape indevido nas expressões de caminho do artefato. O workflow foi corrigido para manter Bun em `latest`, fixar somente o Supabase CLI em 3.4.0 e expandir corretamente `runner.temp`. O replay anterior das 199 migrations continua válido; o novo disparo repetirá a reconstrução isolada para gerar o artefato sem dados.
+
+
+## 2026-11-26 — Metadados privados da rota administrativa
+
+O smoke/contract da rota `/admin` confirma o componente original e o metadado `robots: noindex, nofollow`. A verificação automatizada foi ajustada para exigir o valor completo efetivamente retornado pelo TanStack Router. A falha anterior era somente uma expectativa de teste incompleta; a rota já entregava a proteção correta.

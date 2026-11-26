@@ -154,3 +154,8 @@ Não aplicar as 199 migrations cegamente. O destino deverá receber migrations a
 ## 10. Correção do workflow de artefato
 
 O primeiro disparo do workflow de schema-only falhou antes do replay porque a versão 3.4.0 foi aplicada indevidamente ao setup do Bun. A configuração foi corrigida: Bun volta a `latest`, Supabase CLI permanece fixado em 3.4.0, as expressões `runner.temp` são avaliadas pelo GitHub Actions e a expressão de redaction do project ref usa escapes corretos. Nenhum banco hospedado foi afetado.
+
+
+## 11. Contrato de rota administrativa
+
+O teste de contrato confirma que `/admin` é resolvido pelo route tree, que o componente e a função de head existem, e que a rota entrega `robots: noindex, nofollow`. A expectativa do teste foi alinhada ao valor completo real. Isso protege o painel administrativo contra indexação pública.

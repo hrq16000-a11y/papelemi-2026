@@ -12,7 +12,7 @@ describe("PapeLemi Emporio admin route", () => {
     expect(router.matchRoutes("/admin").some((match) => match.routeId.startsWith("/admin"))).toBe(true);
     expect(Route.options.component).toBeTypeOf("function");
     expect(Route.options.head).toBeTypeOf("function");
-    expect(Route.options.head?.().meta).toContainEqual({ name: "robots", content: "noindex" });
+    expect(Route.options.head?.().meta).toContainEqual({ name: "robots", content: "noindex, nofollow" });
   });
 
   it("uses the PapeLemi canonical origin in the imported engine", () => {
