@@ -55,7 +55,9 @@ const dropStatements = withoutDollarBodies.split("\n").filter(line => /^\s*DROP\
 const truncateStatements = withoutDollarBodies.split("\n").filter(line => /^\s*TRUNCATE\b/i.test(line));
 
 check("150 tables", count(migration, /CREATE TABLE IF NOT EXISTS "papelemi_engine"\./g) === 150);
-const declaredFunctions = count(migration, /CREATE OR REPLACE FUNCTION "papelemi_engine"\./g) + (drizzleMigration.includes("admin_search_preview_rank") ? 1 : 0);
+const declaredFunctions = count(migration, /CREATE OR REPLACE FUNCTION "papelemi_engine"\./g)
+  - (drizzleMigration.includes('FUNCTION "papelemi_engine"."create_order_with_items"') ? 1 : 0)
+  + (drizzleMigration.includes("admin_search_preview_rank") ? 1 : 0);
 check("88 functions including dynamically derived admin preview RPC", declaredFunctions === 88, String(declaredFunctions));
 check("95 triggers", count(migration, /CREATE (?:OR REPLACE )?TRIGGER /g) === 95);
 check("250 total policies including storage policies", count(migration, /CREATE POLICY /g) === 250);
@@ -63,7 +65,7 @@ check("150 RLS enable statements", count(migration, /ENABLE ROW LEVEL SECURITY/g
 check("4 views", count(migration, /CREATE OR REPLACE VIEW /g) === 4);
 check("309 indexes", count(migration, /CREATE (?:UNIQUE )?INDEX /g) === 309);
 check("5 enum types", count(migration, /CREATE TYPE "papelemi_engine"\./g) === 5);
-check("87 explicit safe search paths plus derived admin preview path", searchPaths.length === 87 && safeSearchPaths.length === 87 && drizzleMigration.includes("admin_search_preview_rank"), JSON.stringify({ total: searchPaths.length, safe: safeSearchPaths.length }));
+check("88 safe search path clauses; the dynamic admin preview inherits the engine-first path", searchPaths.length === 88 && safeSearchPaths.length === 88 && drizzleMigration.includes("admin_search_preview_rank"), JSON.stringify({ total: searchPaths.length, safe: safeSearchPaths.length }));
 check("only PapeLemi role and empty bucket inserts", disallowedInserts.length === 0, JSON.stringify({ allowed: topLevelInserts, disallowed: disallowedInserts }));
 check("no top-level update/delete/copy/truncate", dmlLines.length === 0, dmlLines.slice(0, 12).join("\n"));
 check("no DROP statements", dropStatements.length === 0, dropStatements.join("\n"));

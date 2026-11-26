@@ -83,6 +83,8 @@ A revisão do repositório de origem encontrou 15 migrations em `drizzle/migrati
 
 As migrations Drizzle de agendamento cron (`0009`) e de verificação com fixtures (`0010`) não são executadas nesta fase. Os agendamentos dependem das Edge Functions e dos segredos específicos da PapeLemi; as fixtures não devem criar dados comerciais no ambiente real.
 
-A migration Drizzle `0014` altera `create_order_with_items` para aceitar preços enviados pelo cliente. A PapeLemi não copia esse enfraquecimento: mantém o cálculo de preço pelo catálogo no servidor e adiciona apenas os campos de resposta `subtotal` e `items`, compatíveis com a interface.
+A migration Drizzle `0014` é a versão mais recente e mais segura de `create_order_with_items`: valida os itens, busca cada produto no catálogo do motor, calcula subtotal e desconto no servidor e retorna `subtotal` e `items`. A migration complementar reproduz essa lógica com referências ao schema `papelemi_engine`. O motor permanece privado; o checkout público só poderá usar essa RPC depois que o catálogo próprio da PapeLemi for reconciliado e o fluxo for homologado.
 
 A origem Supabase do Empório continua indisponível nas conexões autorizadas, e o ZIP de backup da Biblioteca não liberou seus bytes para inspeção. Portanto, mesmo com a reconciliação das migrations versionadas, a paridade com o banco hospedado do Empório ainda precisa de confirmação quando o backup ou a conexão de origem estiverem acessíveis.
+
+**Dependência para o checkout do motor:** a RPC agora deriva preços de `papelemi_engine.products` e `papelemi_engine.product_slugs`. Como os oito produtos atuais da PapeLemi permanecem no schema público `public`, o checkout da vitrine ainda não foi apontado para essa RPC. A sincronização do catálogo e a troca do checkout ficam para uma etapa posterior, com backup e homologação, sem afetar os pedidos atuais.
