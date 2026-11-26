@@ -197,6 +197,9 @@ async function patchPapeLemiStoreIdentity() {
     ]],
     ["supabase/functions/seo-semrush-snapshot/index.ts", [
       ["const DOMAIN = 'www.papelemi.com.br'", "const DOMAIN = 'papelemi.com.br'"]
+    ]],
+    ["src/emp-orio/pages/admin/AdminSEOReport.tsx", [
+      ["href=\"https://gpdpfoxpbferjwbppcmb.supabase.co/functions/v1/generate-sitemap\" ", "href=\"https://gpdpfoxpbferjwbppcmb.supabase.co/functions/v1/generate-sitemap\""]
     ]]
   ];
 
