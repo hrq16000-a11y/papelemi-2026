@@ -69,7 +69,7 @@ const excluded = [
 function shouldCopy(absPath) {
   const rel = relative(sourceRoot, absPath).split(sep).join("/");
   if (/(^|\/)\.env($|\.)/.test(rel)) return false;
-  if (/(^|\/)(public|assets|data|node_modules|\.git|\.tmp-ig|\.lovable|\.agents)(\/|$)/.test(rel)) return false;
+  if (/^(public|src\/assets|src\/data|node_modules|\.git|\.tmp-ig|\.lovable|\.agents)(\/|$)/.test(rel)) return false;
   if (rel === "supabase/seed.sql" || rel === "supabase/config.toml") return false;
   if (/\.(png|jpe?g|webp|gif|avif|mp4|mov|woff2?|ttf|ico)$/i.test(rel)) return false;
   return true;
