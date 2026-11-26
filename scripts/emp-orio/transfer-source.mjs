@@ -22,11 +22,15 @@ function transformText(text, namespaced = false, brand = false) {
     brand = true;
   }
   if (brand) {
-    // Rewrite exact project/domain references before generic brand substitutions.
-    text = text.replace(/https?:\/\/(?:www\.)?(?:emporio)?lelecute\.com\.br/gi, "https://www.papelemi.com.br");
-    text = text.replace(/https?:\/\/(?:www\.)?emporioPapeLemi\.com\.br/gi, "https://www.papelemi.com.br");
+    // Resolve source-store identities before generic brand replacement.
+    // Email domains are handled before bare hostnames to avoid corrupting addresses.
+    text = text.replace(/sc-domain:(?:www\.)?(?:emporio)?(?:lelecute|papelemi)\.com\.br/gi, "sc-domain:papelemi.com.br");
+    text = text.replace(/@(?:www\.)?(?:emporio)?(?:lelecute|papelemi)\.com\.br/gi, "@papelemi.com.br");
+    text = text.replace(/https?:\/\/(?:www\.)?(?:emporio)?(?:lelecute|papelemi)\.com\.br/gi, "https://www.papelemi.com.br");
+    text = text.replace(/(?<![@\w./-])(?:www\.)?(?:emporio)?(?:lelecute|papelemi)\.com\.br/gi, "www.papelemi.com.br");
     text = text.replaceAll("xfqffqxqiuqauefrrcxn", "gpdpfoxpbferjwbppcmb");
-    text = text.replace(/Emp[oó]rio\s+Lele\s*Cute/gi, "PapeLemi");
+    text = text.replace(/Emp[oó]rio\s*Lele\s*Cute/gi, "PapeLemi");
+    text = text.replace(/Emp[oó]rioPapeLemi/gi, "PapeLemi");
     text = text.replace(/Lele\s*Cute/gi, "PapeLemi");
     text = text.replaceAll("LeleCute", "PapeLemi");
   }
@@ -144,6 +148,65 @@ async function patchSourceTypeCompatibility() {
     let contents = await fs.readFile(file, "utf8");
     for (const [before, after] of replacements) {
       if (!contents.includes(before)) throw new Error("Expected source compatibility pattern missing in " + relativePath + ": " + before);
+      contents = contents.replace(before, after);
+    }
+    await fs.writeFile(file, contents, "utf8");
+  }
+}
+
+
+async function patchPapeLemiStoreIdentity() {
+  const patches = [
+    ["src/emp-orio/pages/admin/AdminSettings.tsx", [
+      ["whatsapp: '5541992214299'", "whatsapp: ''"],
+      ["email: 'contato@papelemi.com.br'", "email: ''"],
+      ["address: 'São José dos Pinhais, PR'", "address: ''"],
+      ["instagram: 'https://www.instagram.com/PapeLemi'", "instagram: ''"],
+      ["facebook: 'https://www.facebook.com/PapeLemi'", "facebook: ''"]
+    ]],
+    ["supabase/functions/_shared/seoAlert.ts", [
+      ["const resendKey = Deno.env.get('RESEND_API_KEY');", "const resendKey = Deno.env.get('RESEND_API_KEY');\n    const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL');"],
+      ["if (!to || !resendKey)", "if (!to || !resendKey || !fromEmail)"],
+      ["from: 'PapeLemi <noreply@papelemi.com.br>',", "from: fromEmail,"]
+    ]],
+    ["supabase/functions/generate-sitemap/index.ts", [
+      ["'emporioPapeLemi@gmail.com'", "''"],
+      ["const resendKey = Deno.env.get('RESEND_API_KEY')", "const resendKey = Deno.env.get('RESEND_API_KEY')\n        const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL')"],
+      ["if (resendKey) {", "if (resendKey && fromEmail) {"],
+      ["from: 'PapeLemi <noreply@papelemi.com.br>',", "from: fromEmail,"]
+    ]],
+    ["supabase/functions/notify-role-change/index.ts", [
+      ["const FROM = Deno.env.get('NOTIFY_FROM_EMAIL') ?? 'PapeLemi <noreply@papelemi.com.br>';","const FROM = Deno.env.get('NOTIFY_FROM_EMAIL');"],
+      ["if (!RESEND_API_KEY) {","if (!RESEND_API_KEY || !FROM) {"],
+      ["'resend_key_missing_skipping_send'","'resend_key_or_from_missing_skipping_send'"]
+    ]],
+    ["supabase/functions/seo-indexation-monitor/index.ts", [
+      ["seoConfig.sitemap_notification_email || 'emporioPapeLemi@gmail.com'", "seoConfig.sitemap_notification_email || Deno.env.get('STORE_NOTIFICATION_EMAIL') || ''"],
+      ["if (newIssues.length > 0) {", "if (newIssues.length > 0 && notificationEmail) {"],
+      ["const resendKey = Deno.env.get('RESEND_API_KEY')", "const resendKey = Deno.env.get('RESEND_API_KEY')\n      const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL')"],
+      ["if (resendKey) {", "if (resendKey && fromEmail) {"],
+      ["from: 'PapeLemi <noreply@papelemi.com.br>',", "from: fromEmail,"]
+    ]],
+    ["supabase/functions/submit-sitemap/index.ts", [
+      ["const resendKey = Deno.env.get('RESEND_API_KEY')", "const resendKey = Deno.env.get('RESEND_API_KEY')\n        const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL')"],
+      ["if (resendKey) {", "if (resendKey && fromEmail) {"],
+      ["from: 'PapeLemi <noreply@papelemi.com.br>',", "from: fromEmail,"]
+    ]],
+    ["supabase/functions/seo-bing-verify/index.ts", [
+      ["const INDEXNOW_KEY = '87296b506db34e8cb22cc31288f33f84';", "const INDEXNOW_KEY = Deno.env.get('INDEXNOW_KEY') ?? '';"]
+    ]],
+    ["supabase/functions/seo-semrush-snapshot/index.ts", [
+      ["const DOMAIN = 'www.papelemi.com.br'", "const DOMAIN = 'papelemi.com.br'"]
+    ]]
+  ];
+
+  for (const [relativePath, replacements] of patches) {
+    const file = path.join(ROOT, relativePath);
+    let contents = await fs.readFile(file, "utf8");
+    for (const [before, after] of replacements) {
+      if (!contents.includes(before)) {
+        throw new Error("Expected PapeLemi identity pattern missing in " + relativePath + ": " + before);
+      }
       contents = contents.replace(before, after);
     }
     await fs.writeFile(file, contents, "utf8");
@@ -584,6 +647,7 @@ async function main() {
   await copyTree("e2e", "e2e/emp-orio", "source-e2e", { transform: false });
   await copyTree(".agents/skills", ".agents/skills/emp-orio", "source-skills", { transform: false });
   await patchSourceTypeCompatibility();
+  await patchPapeLemiStoreIdentity();
 
   await writeDataAdapters();
   await writeSupabaseAdapters();
