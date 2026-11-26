@@ -67,8 +67,18 @@ async function verifyMpSignature(req: Request, url: URL, dataId: string): Promis
     false,
     ['verify'],
   );
+  const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    return copy.buffer;
+  };
   try {
-    return await crypto.subtle.verify('HMAC', key, hexToBytes(v1), new TextEncoder().encode(manifest));
+    return await crypto.subtle.verify(
+      'HMAC',
+      key,
+      toArrayBuffer(hexToBytes(v1)),
+      toArrayBuffer(new TextEncoder().encode(manifest)),
+    );
   } catch {
     return false;
   }

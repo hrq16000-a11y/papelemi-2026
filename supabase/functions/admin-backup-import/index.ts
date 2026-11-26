@@ -77,9 +77,11 @@ Deno.serve(async (req) => {
     if (mode === "replace") {
       // Cuidado: apaga todo o catálogo. Junctions caem por CASCADE.
       await admin.from("kit_products").delete().gte("created_at", "1900-01-01");
-      await admin.from("product_tags").delete().gte("created_at", "1900-01-01").catch(() => {});
-      await admin.from("product_occasions").delete().gte("created_at", "1900-01-01").catch(() => {});
-      await admin.from("product_segments").delete().gte("created_at", "1900-01-01").catch(() => {});
+      await Promise.all([
+        admin.from("product_tags").delete().gte("created_at", "1900-01-01"),
+        admin.from("product_occasions").delete().gte("created_at", "1900-01-01"),
+        admin.from("product_segments").delete().gte("created_at", "1900-01-01"),
+      ]).catch(() => {});
       await admin.from("kits").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await admin.from("products").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await admin.from("tags").delete().neq("id", "00000000-0000-0000-0000-000000000000");

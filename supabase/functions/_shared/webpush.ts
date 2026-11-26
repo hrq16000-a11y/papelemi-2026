@@ -3,6 +3,12 @@
 
 const enc = new TextEncoder();
 
+const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+};
+
 const b64urlToBytes = (input: string): Uint8Array => {
   const pad = input.length % 4 === 0 ? "" : "=".repeat(4 - (input.length % 4));
   const base64 = (input + pad).replace(/-/g, "+").replace(/_/g, "/");
@@ -30,8 +36,8 @@ const concat = (...arrays: Uint8Array[]): Uint8Array => {
 };
 
 async function hmac(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
-  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return new Uint8Array(await crypto.subtle.sign("HMAC", cryptoKey, data));
+  const cryptoKey = await crypto.subtle.importKey("raw", toArrayBuffer(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", cryptoKey, toArrayBuffer(data)));
 }
 
 async function hkdf(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, length: number): Promise<Uint8Array> {
@@ -97,7 +103,7 @@ export async function sendWebPush(
 
     const clientKey = await crypto.subtle.importKey(
       "raw",
-      clientPublic,
+      toArrayBuffer(clientPublic),
       { name: "ECDH", namedCurve: "P-256" },
       false,
       [],
@@ -118,9 +124,9 @@ export async function sendWebPush(
     const nonce = await hkdf(salt, ikm, enc.encode("Content-Encoding: nonce\0"), 12);
 
     const plaintext = concat(enc.encode(payload), new Uint8Array([2]));
-    const aesKey = await crypto.subtle.importKey("raw", cek, { name: "AES-GCM" }, false, ["encrypt"]);
+    const aesKey = await crypto.subtle.importKey("raw", toArrayBuffer(cek), { name: "AES-GCM" }, false, ["encrypt"]);
     const ciphertext = new Uint8Array(
-      await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce, tagLength: 128 }, aesKey, plaintext),
+      await crypto.subtle.encrypt({ name: "AES-GCM", iv: toArrayBuffer(nonce), tagLength: 128 }, aesKey, toArrayBuffer(plaintext)),
     );
 
     const recordSize = new Uint8Array(4);
@@ -145,7 +151,7 @@ export async function sendWebPush(
         Urgency: "normal",
         Authorization: `vapid t=${jwt}, k=${vapid.publicKey}`,
       },
-      body,
+      body: toArrayBuffer(body),
     });
 
     if (res.ok) return { ok: true, status: res.status };
