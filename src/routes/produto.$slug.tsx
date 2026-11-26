@@ -92,14 +92,14 @@ function ProductDetail({ p }: { p: Product }) {
                 <div key={o.key}>
                   <label htmlFor={o.key} className="mb-1.5 block text-sm font-medium">{o.label}</label>
                   {o.type === "choice" ? (
-                    <select id={o.key} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} className={field}><option value="">Escolha…</option>{o.options.map((v) => <option key={v}>{v}</option>)}</select>
+                    <select id={o.key} required={o.required ?? false} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} className={field}><option value="">Escolha…</option>{o.options.map((v) => <option key={v}>{v}</option>)}</select>
                   ) : o.type === "notes" ? (
-                    <textarea id={o.key} rows={2} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} placeholder="Algo que precisamos saber?" className={field} maxLength={400} />
+                    <textarea id={o.key} required={o.required ?? false} rows={2} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} placeholder="Algo que precisamos saber?" className={field} maxLength={400} />
                   ) : (
                     <>
                       {o.maxLength > 60
-                        ? <textarea id={o.key} rows={3} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={`${field} font-display text-lg italic`} />
-                        : <input id={o.key} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={field} />}
+                        ? <textarea id={o.key} required={o.required ?? false} rows={3} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={`${field} font-display text-lg italic`} />
+                        : <input id={o.key} required={o.required ?? false} value={opts[o.key] ?? ""} onChange={(e) => set(o.key, e.target.value)} maxLength={o.maxLength} className={field} />}
                       <p className="mt-1 text-right text-xs text-muted-foreground">{(opts[o.key] ?? "").length}/{o.maxLength}</p>
                       {o.ai && <button type="button" onClick={() => setGenOpen(true)} className="mt-1 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"><Sparkles className="size-4" /> Criar dedicatória com a assistente</button>}
                     </>
