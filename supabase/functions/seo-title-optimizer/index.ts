@@ -1,13 +1,8 @@
 // Sugestões determinísticas de título SEO (<= 60 caracteres) para produtos
 // com nome longo, e aplicação em lote em products.seo_title.
 // Uso restrito a administradores autenticados. Sem IA.
-import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",

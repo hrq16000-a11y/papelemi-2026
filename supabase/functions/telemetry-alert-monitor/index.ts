@@ -4,13 +4,7 @@
 // exceeds THRESHOLD and we haven't alerted within COOLDOWN_MINUTES, sends a
 // batched e-mail to all admins via Resend (Lovable connector gateway).
 
-import { createClient as createBaseClient } from "npm:@supabase/supabase-js@2";
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { authorizeOperationalRequest } from "../_shared/operational-auth.ts";
 
 const corsHeaders = {

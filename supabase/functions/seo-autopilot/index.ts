@@ -5,13 +5,8 @@
 // Endpoint: POST /seo-autopilot  body: { mode: 'dry_run' | 'execute' }
 // Admin-only (JWT enforced in-code).
 
-import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",

@@ -3,14 +3,7 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 // registra histórico de indexação em store_settings (chave `sitemap_monitor_history`).
 // Pode ser chamado manualmente ou agendado via pg_cron.
 
-import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
-import { sendSeoFailureAlert } from '../_shared/seoAlert.ts'
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";import { sendSeoFailureAlert } from '../_shared/seoAlert.ts'
 import { isLocalEnv, mockIntegration } from '../_shared/localEnv.ts'
 
 const corsHeaders = {

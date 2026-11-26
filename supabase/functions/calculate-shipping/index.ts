@@ -2,13 +2,7 @@
 // Lê configurações, provedores e regras 100% do banco (shipping_settings,
 // shipping_providers, shipping_rules). Loga falhas em shipping_audit_logs.
 
-import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@4.6.7';
 import { packCart, buildMelhorEnvioPayload, quoteCorreiosEstimate, round2 } from './lib.ts';

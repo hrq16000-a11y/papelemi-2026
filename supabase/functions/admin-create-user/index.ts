@@ -4,13 +4,8 @@
 // - Cria usuário no auth com email_confirm=true (ou envia magic link)
 // - Insere papéis (admin/editor) em user_roles
 // - Atualiza profile com full_name e whatsapp (em notes/meta)
-import { createClient as createBaseClient } from "npm:@supabase/supabase-js@2";
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",

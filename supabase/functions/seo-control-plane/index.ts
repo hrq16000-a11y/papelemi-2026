@@ -5,13 +5,7 @@
 //
 // Triggered by: POST /seo-control-plane  (admin-only, JWT enforced in-code)
 
-import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { productPath } from "../_shared/urls.ts";
 
 const cors = {

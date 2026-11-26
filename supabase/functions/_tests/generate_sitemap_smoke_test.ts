@@ -12,13 +12,7 @@
  */
 import 'https://deno.land/std@0.224.0/dotenv/load.ts';
 import { assert } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { resilientSelect } from '../_shared/resilientSelect.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('VITE_SUPABASE_URL')!;

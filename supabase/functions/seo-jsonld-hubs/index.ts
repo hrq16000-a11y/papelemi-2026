@@ -13,13 +13,7 @@
  * Somente leitura: nunca escreve no catálogo. Registra o resultado em
  * `seo_submission_log` (channel = 'jsonld-hubs').
  */
-import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { resilientSelect } from '../_shared/resilientSelect.ts';
 
 const corsHeaders = {

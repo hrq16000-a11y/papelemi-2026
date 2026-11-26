@@ -5,13 +5,7 @@
 // sending any email. This prevents arbitrary phishing via this endpoint.
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 
 interface Payload {

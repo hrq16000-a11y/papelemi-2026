@@ -3,14 +3,7 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 // Busca o XML gerado por `merchant-feed` e aplica as regras do Merchant Center
 // item a item, retornando erros/avisos por produto. Somente leitura.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
-import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
-interface Issue { severity: 'error' | 'warn'; code: string; detail: string }
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";interface Issue { severity: 'error' | 'warn'; code: string; detail: string }
 interface ItemReport {
   id: string; title: string; link: string; issues: Issue[]
   images: string[]; https_images: number; price: string; availability: string

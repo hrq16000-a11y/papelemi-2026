@@ -1,12 +1,6 @@
 // Rotina de teste de notificação (Web Push + fallback de e-mail).
 // Uso restrito a administradores autenticados.
-import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { sendWebPush } from "../_shared/webpush.ts";
 

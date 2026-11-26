@@ -8,13 +8,7 @@
  * Também persiste os limites configurados em `store_settings.seo_vitals_thresholds`
  * quando enviados. Requer JWT de admin.
  */
-import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { sendSeoFailureAlert } from '../_shared/seoAlert.ts';
 
 const corsHeaders = {

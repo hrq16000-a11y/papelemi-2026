@@ -1,13 +1,6 @@
 import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
-import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
-// Semrush exports use TSV. Each call costs API units.
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";// Semrush exports use TSV. Each call costs API units.
 // Endpoints used:
 //  - domain_ranks: Authority Score, organic keywords/traffic/cost
 //  - backlinks_overview: backlinks total + referring domains

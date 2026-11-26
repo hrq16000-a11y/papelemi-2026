@@ -9,13 +9,7 @@ import sanitizeHtmlLib from "npm:sanitize-html@2.13.0";
 // Unknown routes -> 200 + <meta name="robots" content="noindex,follow">
 // (avoids soft-404 because the SPA also returns 200 for unknown paths).
 
-import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { productPath } from "../_shared/urls.ts";
 import { crawlerProductSchema } from '../_shared/crawler-product-schema.ts';
 

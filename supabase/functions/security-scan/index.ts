@@ -4,13 +4,7 @@
 // pacotes npm do projeto (`deps.json`, gerado a partir do package.json),
 // registra o resultado em `security_scan_runs` e alerta o time por e-mail
 // (Resend) em caso de achado crítico/alto ou regressão frente à última run.
-import { createClient as createBaseClient } from 'npm:@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import deps from './deps.json' with { type: 'json' };
 import { hasHighRegression } from '../_shared/security-regression.ts';

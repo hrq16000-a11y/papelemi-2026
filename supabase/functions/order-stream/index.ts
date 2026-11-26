@@ -2,13 +2,7 @@
 // POST /order-stream with the capability in the body, never the URL.
 // Emite: "ready" (snapshot inicial), "status" (mudanças), "ping" (heartbeat).
 // O cliente faz fallback automático para polling se a conexão falhar.
-import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { createTrackingLimiter, trackingClient } from '../_shared/tracking-rate-limit.ts';
 
 const limitTracking = createTrackingLimiter();

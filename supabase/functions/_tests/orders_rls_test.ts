@@ -5,13 +5,7 @@
 // Run with:
 //   deno test --allow-net --allow-env supabase/functions/_tests/orders_rls_test.ts
 
-import { createClient as createBaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "https://gpdpfoxpbferjwbppcmb.supabase.co";

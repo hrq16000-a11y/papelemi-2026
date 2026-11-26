@@ -8,13 +8,7 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
  *
  * Histórico gravado em `seo_check_runs` (source = 'daily-guard').
  */
-import { createClient as createBaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const createClient = (url: string, key: string, options: any = {}) =>
-  createBaseClient(url, key, {
-    ...options,
-    db: { ...(options?.db ?? {}), schema: "papelemi_engine" },
-  });
+import { createEngineClient as createClient} from "../_shared/createEngineClient.ts";
 import { CANONICAL_ORIGIN } from '../_shared/urls.ts';
 import { sendSeoFailureAlert } from '../_shared/seoAlert.ts';
 
