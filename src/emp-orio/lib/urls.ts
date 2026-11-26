@@ -13,7 +13,7 @@
  */
 
 /** Origem canônica oficial do site (sem trailing slash). */
-export const CANONICAL_ORIGIN = "https://emporiolelecute.com.br";
+export const CANONICAL_ORIGIN = "https://www.papelemi.com.br";
 
 /**
  * Prefixo público canônico de URL de produto.

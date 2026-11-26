@@ -479,3 +479,20 @@ A migration \`20261125220000_add_order_360_operations.sql\` continua fora da lis
 ### Próxima etapa
 
 Configurar, mediante autorização, as variáveis Supabase do ambiente Preview para permitir homologação autenticada e do catálogo. Em seguida, avançar para estoque transacional e integração completa de pedidos/pagamentos/fretes, sem assumir que o campo de estoque atual representa reserva automática.
+
+
+---
+
+## 2026-11-26 — Replicação fiel do motor Empório Lele Cute
+
+A estratégia passa a ser transferência em lote do sistema original, com o repositório Empório como fonte de código e a PapeLemi como destino independente. A evidência e a matriz de paridade estão em [EMPORIO_REPLICATION_MATRIX_2026-11-26.md](./EMPORIO_REPLICATION_MATRIX_2026-11-26.md).
+
+A PR #13 contém 1.373 arquivos reutilizados, runtime administrativo original com 124 entradas de rota e 119 imports dinâmicos, 54 diretórios de Edge Functions com 75 arquivos, e as 199 migrations em projeto local isolado. O build, o smoke SSR e o replay isolado das migrations concluíram com sucesso. O cliente Supabase do runtime foi adaptado para usar o cliente da PapeLemi.
+
+O replay local produziu 144 tabelas públicas, 84 funções, 4 views, 306 índices e 234 policies. Os tipos versionados da fonte declaram 150 tabelas e 63 funções. A diferença exige confirmação contra o Supabase remoto original; não será resolvida por suposição.
+
+O Supabase PapeLemi permanece com 15 tabelas públicas e 10 migrations aplicadas. As diferenças de colunas em `products`, `categories`, `orders` e `coupons` impedem declarar o painel plenamente conectado. Nenhuma migration hospedada, importação de dados ou alteração na Production foi executada.
+
+O inventário inicial de funções críticas encontrou dependências de `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `RESEND_API_KEY`, `IG_ACCESS_TOKEN`, `IG_BUSINESS_ACCOUNT_ID`, `GOOGLE_SEARCH_CONSOLE_API_KEY`, `LOVABLE_API_KEY`, `SEMRUSH_API_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT` e `STORE_NOTIFICATION_EMAIL`, além das variáveis Supabase. Nenhum valor de segredo foi lido ou copiado; as funções ainda não foram implantadas.
+
+O projeto Supabase remoto da Empório não está disponível nas conexões atuais desta sessão. A aplicação de migrations hospedadas continuará condicionada à reconciliação completa, revisão do SQL, backup/rollback confirmado e aprovação explícita do proprietário.

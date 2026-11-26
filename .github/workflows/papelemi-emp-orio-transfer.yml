@@ -1,12 +1,15 @@
 name: PapeLemi Emporio engine transfer
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - feat/catalog-admin-parity-01-20261125
     paths:
       - ".github/workflows/papelemi-emp-orio-transfer.yml"
       - "scripts/emp-orio/transfer-source.mjs"
+      - "tools/emp-orio-supabase/supabase/config.toml"
+      - "tools/emp-orio-supabase/supabase/migrations/**"
 
 permissions:
   contents: write
@@ -96,7 +99,7 @@ jobs:
           docker info
           supabase --version
           echo "Original migrations: $(find supabase/migrations -maxdepth 1 -name '*.sql' -type f | wc -l)"
-          grep -n -A2 -E '^\[(studio|inbucket|edge_runtime)\]' supabase/config.toml || true
+          grep -n -A2 -E '^\[(studio|inbucket|local_smtp|edge_runtime)\]' supabase/config.toml || true
 
       - name: Replay original migrations in isolated local Supabase
         shell: bash
@@ -111,17 +114,65 @@ jobs:
             echo "Original Emporio migration replay failed:"
             tail -n 160 "$RUNNER_TEMP/emp-orio-reset.log"
             supabase stop --no-backup > /dev/null 2>&1 || true
+
+      - name: Upload schema-only reconstruction evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emp-orio-schema-reference
+          path: |
+            ${{ runner.temp }}/emp-orio-schema.sql
+            ${{ runner.temp }}/emp-orio-types.ts
+            ${{ runner.temp }}/emp-orio-schema-metrics.txt
+            ${{ runner.temp }}/emp-orio-public-tables.txt
+            ${{ runner.temp }}/emp-orio-storage-buckets.txt
+          retention-days: 7
             exit 1
           fi
           applied="$(grep -c 'Applying migration' "$RUNNER_TEMP/emp-orio-reset.log" || true)"
           supabase db dump --local --schema public --file "$RUNNER_TEMP/emp-orio-schema.sql"
+          supabase gen types typescript --local --schema public > "$RUNNER_TEMP/emp-orio-types.ts"
+          local_db_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           tables="$(grep -Eic '^CREATE TABLE' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
           functions="$(grep -Eic '^CREATE( OR REPLACE)? FUNCTION' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
           views="$(grep -Eic '^CREATE( OR REPLACE)? VIEW' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
           indexes="$(grep -Eic '^CREATE (UNIQUE )?INDEX' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
           policies="$(grep -Eic '^CREATE POLICY' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
           triggers="$(grep -Eic '^CREATE TRIGGER' "$RUNNER_TEMP/emp-orio-schema.sql" || true)"
-          echo "Emporio isolated replay PASS — migrations applied: $applied; tables: $tables; functions: $functions; views: $views; indexes: $indexes; policies: $policies; triggers: $triggers."
+          all_triggers="$(psql "$local_db_url" -X -q -Atc "select count(*) from pg_trigger where not tgisinternal" 2>/dev/null || echo unavailable)"
+          storage_buckets="$(psql "$local_db_url" -X -q -Atc "select count(*) from storage.buckets" 2>/dev/null || echo unavailable)"
+          policies_by_schema="$(psql "$local_db_url" -X -q -Atc "select schemaname || '=' || count(*) from pg_policies group by schemaname order by schemaname" 2>/dev/null || echo unavailable)"
+          psql "$local_db_url" -X -q -Atc "select tablename from pg_tables where schemaname='public' order by tablename" > "$RUNNER_TEMP/emp-orio-public-tables.txt" 2>/dev/null || true
+          psql "$local_db_url" -X -q -Atc "select id || ':' || name from storage.buckets order by id" > "$RUNNER_TEMP/emp-orio-storage-buckets.txt" 2>/dev/null || true
+          {
+            echo "migrations=$applied"
+            echo "public_tables=$tables"
+            echo "public_functions=$functions"
+            echo "public_views=$views"
+            echo "public_indexes=$indexes"
+            echo "public_policies=$policies"
+            echo "public_triggers=$triggers"
+            echo "all_schema_triggers=$all_triggers"
+            echo "storage_buckets=$storage_buckets"
+            echo "policies_by_schema=$policies_by_schema"
+          } > "$RUNNER_TEMP/emp-orio-schema-metrics.txt"
+          # Redact hosted project references and local callback URLs from the schema-only artifact.
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          schema = Path(os.environ["RUNNER_TEMP"]) / "emp-orio-schema.sql"
+          sql = schema.read_text()
+          sql = re.sub(r"https?://[a-z0-9]{20}\\.supabase\\.co", "https://<SUPABASE_PROJECT_REF>.supabase.co", sql)
+          sql = sql.replace("http://127.0.0.1:54321", "<SUPABASE_URL>")
+          schema.write_text(sql)
+          PY
+          echo "Emporio isolated replay PASS — migrations applied: $applied; tables: $tables; functions: $functions; views: $views; indexes: $indexes; policies: $policies; public triggers: $triggers; all-schema triggers: $all_triggers; storage buckets: $storage_buckets."
+          echo "=== Reconstructed public table names ==="
+          cat "$RUNNER_TEMP/emp-orio-public-tables.txt"
+          echo "=== Reconstructed schema metrics ==="
+          cat "$RUNNER_TEMP/emp-orio-schema-metrics.txt"
           supabase stop --no-backup > /dev/null 2>&1 || true
 
       - name: Prepare combined PapeLemi and Emporio schema workspace

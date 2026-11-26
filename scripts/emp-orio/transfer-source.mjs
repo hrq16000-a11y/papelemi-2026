@@ -22,9 +22,10 @@ function transformText(text, namespaced = false, brand = false) {
     brand = true;
   }
   if (brand) {
+    text = text.replace(/Emp[oó]rio\s+Lele\s*Cute/gi, "PapeLemi");
+    text = text.replace(/Lele\s*Cute/gi, "PapeLemi");
     text = text.replaceAll("LeleCute", "PapeLemi");
-    text = text.replaceAll("Empório LeleCute", "PapeLemi");
-    text = text.replace(/https?:\/\/(?:www\.)?lelecute\.com\.br/gi, "https://www.papelemi.com.br");
+    text = text.replace(/https?:\/\/(?:www\.)?(?:emporio)?lelecute\.com\.br/gi, "https://www.papelemi.com.br");
   }
   return text;
 }
