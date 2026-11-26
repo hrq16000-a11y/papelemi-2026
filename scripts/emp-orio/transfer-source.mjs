@@ -304,10 +304,12 @@ async function writeDestinationFiles() {
   const rootPath = path.join(ROOT, "src/routes/__root.tsx");
   let root = await fs.readFile(rootPath, "utf8");
   if (!root.includes("useRouterState")) root = 'import { useRouterState } from "@tanstack/react-router";\n' + root;
-  root = root.replace(
-    "function RootComponent() {\n  const { queryClient } = Route.useRouteContext();",
-    'function RootComponent() {\n  const { queryClient } = Route.useRouteContext();\n  const pathname = useRouterState({ select: (state) => state.location.pathname });\n  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");'
-  );
+  if (!root.includes("const isAdminRoute = pathname ===")) {
+    root = root.replace(
+      "function RootComponent() {\n  const { queryClient } = Route.useRouteContext();",
+      'function RootComponent() {\n  const { queryClient } = Route.useRouteContext();\n  const pathname = useRouterState({ select: (state) => state.location.pathname });\n  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");'
+    );
+  }
   root = root.replace(
     '<Header />\n            <main className="flex-1"><Outlet /></main>\n            <Footer />',
     '{!isAdminRoute && <Header />}\n            <main className="flex-1"><Outlet /></main>\n            {!isAdminRoute && <Footer />}'
