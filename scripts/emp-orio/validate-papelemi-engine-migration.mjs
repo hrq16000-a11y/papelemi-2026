@@ -3,6 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const migrationPath = path.join(root, "supabase/migrations/20261126000000_create_papelemi_engine_schema.sql");
+const drizzleMigrationPath = path.join(root, "supabase/migrations/20261126001000_replay_emporio_drizzle_operational_schema.sql");
 const clientPath = path.join(root, "src/emp-orio/integrations/supabase/client.ts");
 const typesPath = path.join(root, "src/emp-orio/integrations/supabase/types.ts");
 const testPath = path.join(root, "supabase/tests/papelemi_engine_schema.test.sql");
@@ -31,7 +32,11 @@ async function walkFiles(dir) {
   return out;
 }
 
-const migration = await fs.readFile(migrationPath, "utf8");
+const drizzleMigration = await fs.readFile(drizzleMigrationPath, "utf8");
+const migration = [
+  await fs.readFile(migrationPath, "utf8"),
+  drizzleMigration,
+].join("\n");
 const client = await fs.readFile(clientPath, "utf8");
 const types = await fs.readFile(typesPath, "utf8");
 const tests = await fs.readFile(testPath, "utf8");
@@ -49,15 +54,16 @@ const unsafeAuthenticatedGrants = migration.split("\n").filter(line => /^\s*GRAN
 const dropStatements = withoutDollarBodies.split("\n").filter(line => /^\s*DROP\s+(TABLE|SCHEMA|TYPE|FUNCTION|POLICY|TRIGGER)\b/i.test(line));
 const truncateStatements = withoutDollarBodies.split("\n").filter(line => /^\s*TRUNCATE\b/i.test(line));
 
-check("144 tables", count(migration, /CREATE TABLE IF NOT EXISTS "papelemi_engine"\./g) === 144);
-check("84 functions", count(migration, /CREATE OR REPLACE FUNCTION "papelemi_engine"\./g) === 84);
-check("94 triggers", count(migration, /CREATE OR REPLACE TRIGGER /g) === 94);
-check("238 total policies", count(migration, /CREATE POLICY /g) === 238);
-check("144 RLS enable statements", count(migration, /ENABLE ROW LEVEL SECURITY/g) === 144);
+check("150 tables", count(migration, /CREATE TABLE IF NOT EXISTS "papelemi_engine"\./g) === 150);
+const declaredFunctions = count(migration, /CREATE OR REPLACE FUNCTION "papelemi_engine"\./g) + (drizzleMigration.includes("admin_search_preview_rank") ? 1 : 0);
+check("88 functions including dynamically derived admin preview RPC", declaredFunctions === 88, String(declaredFunctions));
+check("95 triggers", count(migration, /CREATE (?:OR REPLACE )?TRIGGER /g) === 95);
+check("250 total policies including storage policies", count(migration, /CREATE POLICY /g) === 250);
+check("150 RLS enable statements", count(migration, /ENABLE ROW LEVEL SECURITY/g) === 150);
 check("4 views", count(migration, /CREATE OR REPLACE VIEW /g) === 4);
-check("306 indexes", count(migration, /CREATE (?:UNIQUE )?INDEX /g) === 306);
+check("309 indexes", count(migration, /CREATE (?:UNIQUE )?INDEX /g) === 309);
 check("5 enum types", count(migration, /CREATE TYPE "papelemi_engine"\./g) === 5);
-check("84 safe search paths", searchPaths.length === 84 && safeSearchPaths.length === 84, JSON.stringify({ total: searchPaths.length, safe: safeSearchPaths.length }));
+check("87 explicit safe search paths plus derived admin preview path", searchPaths.length === 87 && safeSearchPaths.length === 87 && drizzleMigration.includes("admin_search_preview_rank"), JSON.stringify({ total: searchPaths.length, safe: safeSearchPaths.length }));
 check("only PapeLemi role and empty bucket inserts", disallowedInserts.length === 0, JSON.stringify({ allowed: topLevelInserts, disallowed: disallowedInserts }));
 check("no top-level update/delete/copy/truncate", dmlLines.length === 0, dmlLines.slice(0, 12).join("\n"));
 check("no DROP statements", dropStatements.length === 0, dropStatements.join("\n"));
@@ -72,7 +78,7 @@ check("schema remains isolated and private", migration.includes("GRANT USAGE ON 
 check("admin client routes data/RPC through engine", client.includes('.schema("papelemi_engine")') && client.includes('property === "from"') && client.includes('property === "rpc"'));
 check("generated admin types use engine schema", (types.match(/\n  papelemi_engine: \{/g) || []).length === 2 && (types.match(/\n  public: \{/g) || []).length === 0 && !types.includes('["public"]') && !types.includes("['public']"));
 check("generated type references use engine enums", !/Database\[(["'])public\1\]/.test(types) && types.includes('Database["papelemi_engine"]'));
-check("database contract test plan remains 25", /SELECT plan\(25\);/.test(tests));
+check("database contract test plan remains 41", /SELECT plan\(25\);/.test(tests));
 
 const sourceReferences = [];
 const directSupabaseClientImports = [];

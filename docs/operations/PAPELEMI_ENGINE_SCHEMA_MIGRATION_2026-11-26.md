@@ -6,9 +6,10 @@
 
 - Repositório de origem: `hrq16000-a11y/emporiolelecute-2026`
 - Commit-fonte fixado: `d01d843c266b5a32d03af22eeaac6eda4a7fcf0f`
-- O schema foi reconstruído por replay local das 199 migrations do repositório de origem, sem consultar o banco hospedado do Empório.
-- A reconstrução contém 144 tabelas, 84 funções, 94 triggers, 234 políticas RLS, 306 índices, 4 views e 5 tipos enum.
-- A reconstrução não é apresentada como inventário confirmado do banco hospedado.
+- A base Supabase foi reconstruída por replay local das 199 migrations do repositório de origem; a camada operacional também depende de 15 migrations Drizzle.
+- O replay Supabase-only inicial tinha 144 tabelas, 84 funções, 94 triggers, 234 políticas RLS e 306 índices explícitos. A reconciliação Drizzle acrescenta 6 tabelas, 4 funções, 1 trigger, 12 políticas e 3 índices explícitos.
+- O resultado versionado passa a conter 150 tabelas, 88 funções, 95 triggers, 246 políticas RLS, 309 índices explícitos, 4 views e 5 tipos enum.
+- A reconstrução é derivada do código e das migrations versionadas; não é apresentada como inventário confirmado do banco hospedado.
 
 ## Estado atual da PapeLemi
 
@@ -21,10 +22,10 @@ Consulta read-only ao projeto dedicado `gpdpfoxpbferjwbppcmb` em 26/11/2026:
 
 ## Estratégia desta etapa
 
-A migration `20261126000000_create_papelemi_engine_schema.sql` cria o schema isolado `papelemi_engine` no mesmo projeto Supabase da PapeLemi. Isso evita sobrescrever as 15 tabelas atuais de `public`, cujos contratos diferem do schema original.
+A migration `20261126000000_create_papelemi_engine_schema.sql` cria a base isolada `papelemi_engine`; a migration `20261126001000_replay_emporio_drizzle_operational_schema.sql` reconcilia os objetos que só existiam na camada Drizzle. Isso evita sobrescrever as 15 tabelas atuais de `public`, cujos contratos diferem do schema original.
 
-- Reproduz os 144 objetos de tabela, 84 funções, 94 triggers, 234 políticas RLS, 306 índices, 4 views e 5 enums.
-- Mantém RLS habilitado em todas as 144 tabelas.
+- Reproduz 150 tabelas, 88 funções, 95 triggers, 246 políticas RLS, 309 índices explícitos, 4 views e 5 enums.
+- Mantém RLS habilitado em todas as 150 tabelas.
 - O cliente do painel original encaminha `.from()` e `.rpc()` para `papelemi_engine`; Auth e Storage continuam no mesmo projeto PapeLemi.
 - Copia somente o papel `admin` já existente da PapeLemi para `papelemi_engine.user_roles` no momento da aplicação.
 - Não copia catálogo, clientes, encomendas, mídias, usuários ou segredos do Empório.
@@ -71,3 +72,17 @@ A migration complementar `20261126010000_bootstrap_papelemi_engine_admin.sql` si
 ## Tipagem do schema isolado
 
 O gerador renomeia tanto as duas declarações de schema quanto as referências indexadas `Database["public"]` / `Database['public']` dos helpers Supabase gerados. Isso mantém as referências a enums e tipos relacionais dentro de `papelemi_engine`, evitando erros de TypeScript após a troca do schema.
+
+## Reconciliação da camada Drizzle
+
+A revisão do repositório de origem encontrou 15 migrations em `drizzle/migrations`. O replay anterior executava somente as 199 migrations Supabase e, por isso, deixava de fora seis tabelas e quatro funções operacionais. A migration complementar agora incorpora:
+
+- `user_preferences`, `after_sales_rules`, `after_sales_followups`, `editorial_stories`, `support_threads` e `support_messages`;
+- `admin_search_preview_rank`, `preview_search_boost`, `validate_followup_schedule` e `claim_support_thread`;
+- a coluna `review_import_audit.decision_reason`, as políticas RLS, os índices e o trigger de pós-venda.
+
+As migrations Drizzle de agendamento cron (`0009`) e de verificação com fixtures (`0010`) não são executadas nesta fase. Os agendamentos dependem das Edge Functions e dos segredos específicos da PapeLemi; as fixtures não devem criar dados comerciais no ambiente real.
+
+A migration Drizzle `0014` altera `create_order_with_items` para aceitar preços enviados pelo cliente. A PapeLemi não copia esse enfraquecimento: mantém o cálculo de preço pelo catálogo no servidor e adiciona apenas os campos de resposta `subtotal` e `items`, compatíveis com a interface.
+
+A origem Supabase do Empório continua indisponível nas conexões autorizadas, e o ZIP de backup da Biblioteca não liberou seus bytes para inspeção. Portanto, mesmo com a reconciliação das migrations versionadas, a paridade com o banco hospedado do Empório ainda precisa de confirmação quando o backup ou a conexão de origem estiverem acessíveis.
