@@ -20,6 +20,19 @@ export const Route = createFileRoute("/checkout")({
 
 const input = "w-full border border-input bg-background px-3 py-3 text-base outline-none transition-colors focus:border-primary md:text-sm";
 
+async function getCheckoutAttemptKey(payload: unknown) {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const fingerprint = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+  const storageKey = `papelemi:checkout-attempt:${fingerprint}`;
+  const stored = localStorage.getItem(storageKey);
+  if (stored) return { idempotencyKey: stored, storageKey };
+
+  const idempotencyKey = crypto.randomUUID();
+  localStorage.setItem(storageKey, idempotencyKey);
+  return { idempotencyKey: localStorage.getItem(storageKey) ?? idempotencyKey, storageKey };
+}
+
 function Checkout() {
   const { items, clear } = useCart();
   const { getProduct } = useCatalog();
@@ -35,7 +48,7 @@ function Checkout() {
   const [coupon, setCoupon] = useState<{ code: string; percent: number } | null>(null);
   const [checkingCoupon, setCheckingCoupon] = useState(false);
   const [sending, setSending] = useState(false);
-  const [done, setDone] = useState<{ orderId: string; paymentReady: boolean } | null>(null);
+  const [done, setDone] = useState<{ orderId: string; paymentReady: boolean; total: number } | null>(null);
 
   useEffect(() => {
     window.__lovableEvents?.track?.("project.checkout_started", { items: rows.length, subtotal: Math.round(subtotal * 100) / 100 });
@@ -60,21 +73,33 @@ function Checkout() {
     e.preventDefault();
     if (sending || !rows.length) return;
     if (!acceptedPrivacy) { toast.error("É necessário aceitar o uso dos dados para atendimento da encomenda."); return; }
+    if (items.length !== rows.length) {
+      toast.error("Há um produto indisponível no carrinho. Revise os itens antes de continuar.");
+      return;
+    }
     setSending(true);
     try {
-      const r = await createOrder({ data: {
+      const request = {
         customer: { name: form.name, email: form.email, phone: form.phone },
         address: { cep: form.cep, street: form.street, number: form.number, complement: form.complement, district: form.district, city: form.city, state: form.state.toUpperCase() },
-        items: rows.map(({ i }) => ({ slug: i.slug, qty: i.qty, options: i.options })),
+        items: rows.map(({ i, p }) => ({
+          slug: i.slug,
+          qty: i.qty,
+          options: i.options,
+          expectedUnitPrice: finalPrice(p),
+        })),
         couponCode: coupon?.code,
         origin: window.location.origin,
         customerNotes,
-        acceptedPrivacy: true,
-      } });
+        acceptedPrivacy: true as const,
+      };
+      const attempt = await getCheckoutAttemptKey(request);
+      const r = await createOrder({ data: { ...request, idempotencyKey: attempt.idempotencyKey } });
+      localStorage.removeItem(attempt.storageKey);
       window.__lovableEvents?.track?.("project.order_created", { total: r.total, items: rows.length, coupon: coupon?.code ?? null });
       clear();
       if (r.initPoint) { window.location.href = r.initPoint; return; }
-      setDone({ orderId: r.orderId, paymentReady: r.paymentReady });
+      setDone({ orderId: r.orderId, paymentReady: r.paymentReady, total: r.total });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível registrar sua encomenda. Confira os dados e tente novamente.");
     } finally { setSending(false); }
@@ -94,6 +119,14 @@ function Checkout() {
         <Link to="/pedido/$id" params={{ id: done.orderId }} className="bg-primary px-7 py-3 text-sm text-primary-foreground">Acompanhar encomenda</Link>
         <Link to="/loja" className="border border-border px-7 py-3 text-sm hover:border-primary">Voltar à loja</Link>
       </div>
+    </div>
+  );
+
+  if (items.length !== rows.length) return (
+    <div className="mx-auto max-w-xl px-5 py-24 text-center">
+      <h1 className="font-display text-4xl">Revise seu carrinho</h1>
+      <p className="mt-3 text-sm text-muted-foreground">Um ou mais produtos foram removidos ou ficaram indisponíveis. Volte ao carrinho para revisar os itens. Nenhuma encomenda foi enviada.</p>
+      <Link to="/carrinho" className="mt-8 inline-block bg-foreground px-7 py-3 text-sm text-background">Revisar carrinho</Link>
     </div>
   );
 
