@@ -309,6 +309,13 @@ async function writeSupabaseAdapters() {
   // Generated Row/Insert/Update definitions reference their own enum schema.
   // Rewrite those indexed references together with the top-level schema key.
   types = types.replace(/Database\[(["'])public\1\]/g, 'Database["papelemi_engine"]');
+  // Generated Database helpers also reference the schema key; rename those
+  // indexed type references after moving the two schema objects.
+  types = types.replace(/\["public"\]/g, '["papelemi_engine"]');
+  types = types.replace(/\['public'\]/g, "['papelemi_engine']");
+  if (/\[(?:"|')public(?:"|')\]/.test(types)) {
+    throw new Error("Generated Supabase types still reference the public schema after engine isolation.");
+  }
   await fs.writeFile(typesPath, types, "utf8");
 
   const lovableAdapter = [

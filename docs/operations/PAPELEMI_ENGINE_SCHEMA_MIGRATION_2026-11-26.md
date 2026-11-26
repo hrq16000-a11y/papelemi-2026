@@ -67,3 +67,7 @@ O replay local confirmou 487 entradas em `pg_indexes` para `papelemi_engine`. As
 ## Identidade administrativa PapeLemi
 
 A migration complementar `20261126010000_bootstrap_papelemi_engine_admin.sql` sincroniza somente os perfis e papéis `admin` já existentes em `public.user_roles` para a loja `papelemi`, usando as identidades já presentes em `auth.users`. Não copia credenciais, clientes, encomendas ou pagamentos. A função de sincronização é restrita a `service_role` e usa search_path fixado.
+
+## Tipagem do schema isolado
+
+O gerador renomeia tanto as duas declarações de schema quanto as referências indexadas `Database["public"]` / `Database['public']` dos helpers Supabase gerados. Isso mantém as referências a enums e tipos relacionais dentro de `papelemi_engine`, evitando erros de TypeScript após a troca do schema.
