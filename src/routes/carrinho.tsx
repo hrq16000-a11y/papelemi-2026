@@ -19,9 +19,10 @@ function Cart() {
   const { items, setQty, remove } = useCart();
   const { getProduct } = useCatalog();
   const rows = items.flatMap((i) => { const p = getProduct(i.slug); return p ? [{ i, p }] : []; });
+  const unavailable = items.filter((item) => !getProduct(item.slug));
   const subtotal = rows.reduce((s, { i, p }) => s + finalPrice(p) * i.qty, 0);
 
-  if (!rows.length) return (
+  if (!items.length) return (
     <div className="mx-auto max-w-xl px-4 py-24 text-center">
       <p className="text-[10px] uppercase tracking-[0.2em] text-primary">PapeLemi</p>
       <h1 className="mt-3 font-display text-4xl md:text-5xl">Seu carrinho está vazio</h1>
@@ -36,6 +37,27 @@ function Cart() {
         <p className="text-[9px] uppercase tracking-[0.22em] text-primary">Suas escolhas</p>
         <h1 className="mt-2 font-display text-4xl md:text-5xl">Carrinho</h1>
         <p className="mt-2 text-xs text-muted-foreground">Confira os produtos e detalhes antes de solicitar sua encomenda.</p>
+        {unavailable.length > 0 && (
+          <div role="alert" className="mt-6 border border-destructive/40 bg-destructive/5 p-4">
+            <h2 className="font-medium text-sm">Produto(s) indisponível(is)</h2>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">Estes itens não estão mais no catálogo publicado. Suas personalizações foram preservadas; remova o item ou entre em contato antes de enviar a encomenda.</p>
+            <ul className="mt-3 space-y-3">
+              {unavailable.map((item) => (
+                <li key={item.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 text-xs">
+                  <div className="min-w-0">
+                    <p className="font-medium">{item.slug} · {item.qty} unidade(s)</p>
+                    <dl className="mt-1 space-y-1 text-muted-foreground">
+                      {Object.entries(item.options).filter(([, value]) => value).map(([key, value]) => (
+                        <div key={key} className="break-words"><dt className="inline font-medium">{key}:</dt> <dd className="inline">{value}</dd></div>
+                      ))}
+                    </dl>
+                  </div>
+                  <button type="button" onClick={() => remove(item.id)} className="shrink-0 underline underline-offset-2">Remover</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <ul className="mt-8 divide-y divide-border border-y border-border">
           {rows.map(({ i, p }) => (
             <li key={i.id} className="flex gap-4 py-6">
@@ -68,7 +90,9 @@ function Cart() {
           <p className="text-[10px] leading-5 text-muted-foreground">Os valores são referências. A PapeLemi confirmará disponibilidade, personalização, prazo, frete e pagamento antes da produção.</p>
           <p className="mt-3 text-[10px] leading-5 text-muted-foreground">Nenhuma cobrança é feita nesta etapa.</p>
         </div>
-        <Link to="/checkout" className="mt-6 flex w-full items-center justify-center gap-2 bg-foreground px-4 py-3.5 text-xs font-medium text-background transition-colors hover:bg-primary">Solicitar encomenda <ArrowRight className="size-3" /></Link>
+        {unavailable.length > 0
+            ? <p className="mt-6 text-xs leading-5 text-destructive">Remova ou resolva os produtos indisponíveis para continuar.</p>
+            : <Link to="/checkout" className="mt-6 flex w-full items-center justify-center gap-2 bg-foreground px-4 py-3.5 text-xs font-medium text-background transition-colors hover:bg-primary">Solicitar encomenda <ArrowRight className="size-3" /></Link>}
       </aside>
     </div>
   );
