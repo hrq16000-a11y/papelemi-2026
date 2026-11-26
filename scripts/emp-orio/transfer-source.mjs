@@ -170,7 +170,7 @@ async function patchPapeLemiStoreIdentity() {
       ["from: 'PapeLemi <noreply@papelemi.com.br>',", "from: fromEmail,"]
     ]],
     ["supabase/functions/generate-sitemap/index.ts", [
-      ["'emporioPapeLemi@gmail.com'", "''"],
+      ["'PapeLemi@gmail.com'", "''"],
       ["const resendKey = Deno.env.get('RESEND_API_KEY')", "const resendKey = Deno.env.get('RESEND_API_KEY')\n        const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL')"],
       ["if (resendKey) {", "if (resendKey && fromEmail) {"],
       ["from: 'PapeLemi <noreply@papelemi.com.br>',", "from: fromEmail,"]
@@ -181,7 +181,7 @@ async function patchPapeLemiStoreIdentity() {
       ["'resend_key_missing_skipping_send'","'resend_key_or_from_missing_skipping_send'"]
     ]],
     ["supabase/functions/seo-indexation-monitor/index.ts", [
-      ["seoConfig.sitemap_notification_email || 'emporioPapeLemi@gmail.com'", "seoConfig.sitemap_notification_email || Deno.env.get('STORE_NOTIFICATION_EMAIL') || ''"],
+      ["seoConfig.sitemap_notification_email || 'PapeLemi@gmail.com'", "seoConfig.sitemap_notification_email || Deno.env.get('STORE_NOTIFICATION_EMAIL') || ''"],
       ["if (newIssues.length > 0) {", "if (newIssues.length > 0 && notificationEmail) {"],
       ["const resendKey = Deno.env.get('RESEND_API_KEY')", "const resendKey = Deno.env.get('RESEND_API_KEY')\n      const fromEmail = Deno.env.get('NOTIFY_FROM_EMAIL')"],
       ["if (resendKey) {", "if (resendKey && fromEmail) {"],
