@@ -32,7 +32,8 @@
   "dataPolicy": "Empório catalog/blog/landing records and all source media excluded; static adapters read PapeLemi catalog only.",
   "typeScriptValidation": {
     "papelemi": "strict tsconfig.order-integrity.json",
-    "emporio": "source-compatible tsconfig.emp-orio.json"
+    "emporio": "source-compatible tsconfig.emp-orio.json",
+    "compatibilityPatches": 7
   },
   "safety": "No source .env, seed.sql, hosted project id, service-role value, or hosted migration applied."
 }
