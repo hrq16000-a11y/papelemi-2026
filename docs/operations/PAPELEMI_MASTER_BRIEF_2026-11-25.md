@@ -346,15 +346,15 @@ A PapeLemi será a primeira loja a receber o motor operacional completo da Empó
 
 ### Referências confirmadas
 
-- Supabase PapeLemi (destino central): \`gpdpfoxpbferjwbppcmb\`, região \`sa-east-1\`, status \`ACTIVE_HEALTHY\`.
-- Vercel Production da PapeLemi: \`VITE_SUPABASE_URL\` confirmado como \`https://gpdpfoxpbferjwbppcmb.supabase.co\`.
-- Supabase de origem Empório (referência do repositório): \`xfqffqxqiuqauefrrcxn\`, declarado em \`supabase/config.toml\` do Empório.
+- Supabase PapeLemi (destino central): `gpdpfoxpbferjwbppcmb`, região `sa-east-1`, status `ACTIVE_HEALTHY`.
+- Vercel Production da PapeLemi: `VITE_SUPABASE_URL` confirmado como `https://gpdpfoxpbferjwbppcmb.supabase.co`.
+- Supabase de origem Empório (referência do repositório): `xfqffqxqiuqauefrrcxn`, declarado em `supabase/config.toml` do Empório.
 - O projeto Supabase Empório não está disponível nas conexões Supabase atualmente autorizadas nesta sessão; a consulta de acesso retornou permissão negada. Não afirmar que seu banco hospedado foi inspecionado.
 
-### Inventário comprovado no repositório Empório, branch main, HEAD \`d01d843c266b5a32d03af22eeaac6eda4a7fcf0f\`
+### Inventário comprovado no repositório Empório, branch main, HEAD `d01d843c266b5a32d03af22eeaac6eda4a7fcf0f`
 
 - 199 migrations SQL Supabase.
-- 155 tabelas no tipo gerado \`src/integrations/supabase/types.ts\`.
+- 155 tabelas no tipo gerado `src/integrations/supabase/types.ts`.
 - 63 funções/RPCs tipadas.
 - 5 views tipadas.
 - 54 Edge Functions.
@@ -366,7 +366,7 @@ Este inventário é a referência de código versionado, não substitui o dump/s
 
 ### Arquitetura central planejada
 
-- Um único projeto Supabase dedicado: \`gpdpfoxpbferjwbppcmb\`.
+- Um único projeto Supabase dedicado: `gpdpfoxpbferjwbppcmb`.
 - PapeLemi é a primeira implantação e continua com catálogo, clientes, pedidos, arquivos, marca e conteúdo próprios.
 - O motor operacional Empório será portado integralmente para o schema operacional PapeLemi, preservando os dados atuais.
 - A futura migração da Empório utilizará o mesmo projeto Supabase, com isolamento de dados por loja. A implementação deverá escolher e homologar o mecanismo final de isolamento (schemas dedicados ou tenancy/RLS) antes de mover dados; não misturar registros de lojas.
@@ -380,21 +380,21 @@ Não importar produtos, preços, estoque, clientes, pedidos, cupons, avaliaçõe
 ### Estado atual da PapeLemi
 
 Consulta read-only do Supabase dedicado:
-- \`categories\`: 4 registros.
-- \`products\`: 8 registros.
-- \`curated_phrases\`: 10 registros.
-- \`coupons\`: 0 registros.
-- \`orders\`: 0 registros.
-- \`user_roles\`: 1 registro.
+- `categories`: 4 registros.
+- `products`: 8 registros.
+- `curated_phrases`: 10 registros.
+- `coupons`: 0 registros.
+- `orders`: 0 registros.
+- `user_roles`: 1 registro.
 - 10 migrations registradas (confirmadas por consulta read-only em 25/11/2026).
 
-As tabelas existentes têm diferenças relevantes do Empório. Exemplo: PapeLemi \`orders\` armazena endereço/itens em JSONB; Empório utiliza endereço relacional e \`order_items\`. Produtos e categorias também têm modelos diferentes. A migração precisa ser aditiva e preservar compatibilidade, não substituir tabelas às cegas.
+As tabelas existentes têm diferenças relevantes do Empório. Exemplo: PapeLemi `orders` armazena endereço/itens em JSONB; Empório utiliza endereço relacional e `order_items`. Produtos e categorias também têm modelos diferentes. A migração precisa ser aditiva e preservar compatibilidade, não substituir tabelas às cegas.
 
 ### Governança e bloqueios
 
-- O \`AGENTS.md\` mantém um bloco gerenciado pelo Lovable que proíbe editar migrations manualmente e manda solicitar alterações de schema pelo Lovable.
+- O `AGENTS.md` mantém um bloco gerenciado pelo Lovable que proíbe editar migrations manualmente e manda solicitar alterações de schema pelo Lovable.
 - A conexão das ferramentas Lovable falhou nesta sessão. Não contornar a regra nem aplicar DDL diretamente até o fluxo de governança estar resolvido.
-- O Supabase Empório \`xfqffqxqiuqauefrrcxn\` não está acessível nas conexões atuais. Para reconciliar 100% o estado hospedado, é necessário conectar esse projeto ou fornecer um schema dump completo sem dados pessoais/segredos.
+- O Supabase Empório `xfqffqxqiuqauefrrcxn` não está acessível nas conexões atuais. Para reconciliar 100% o estado hospedado, é necessário conectar esse projeto ou fornecer um schema dump completo sem dados pessoais/segredos.
 - Nenhuma migration Empório foi aplicada no Supabase PapeLemi nesta rodada.
 - Nenhuma migração de dados Empório foi iniciada.
 
@@ -416,23 +416,23 @@ Não classificar como concluído apenas porque o build ou o Preview ficou READY.
 
 ## 2026-11-25 — Rodada PR #13: paridade operacional do catálogo
 
-**Base técnica:** PR #12, branch \`feat/papelemi-consolidated-admin-checkout-01-20261125\`, HEAD \`f9cefbf362d3a1fc5afc397cf82035059033e625\`.
+**Base técnica:** PR #12, branch `feat/papelemi-consolidated-admin-checkout-01-20261125`, HEAD `f9cefbf362d3a1fc5afc397cf82035059033e625`.
 
-**Entrega:** PR #13, branch \`feat/catalog-admin-parity-01-20261125\`, commit inicial \`4d0bd0ed7da83a5828bb9db3cae55969865d33d2\`.
+**Entrega:** PR #13, branch `feat/catalog-admin-parity-01-20261125`, commit inicial `4d0bd0ed7da83a5828bb9db3cae55969865d33d2`.
 
 ### Implementado no código
 
 - Editor de campos de personalização por produto: texto, escolha, observações, limite de caracteres e permissão de sugestão por IA.
 - Persistência server-side da configuração de personalização, sem sobrescrever os campos existentes durante uma edição.
 - Gestão dos dados de embalagem já presentes no schema: peso, comprimento, largura, altura e exigência de envio.
-- Validação de imagens HTTPS e caminhos locais seguros em \`/images/\`.
+- Validação de imagens HTTPS e caminhos locais seguros em `/images/`.
 - Validação de preço promocional, campos duplicados/reservados e dimensões de embalagem.
-- Renomeação de produtos e categorias atualizando o registro original. A FK de produtos para categorias foi confirmada com \`ON UPDATE CASCADE\`.
+- Renomeação de produtos e categorias atualizando o registro original. A FK de produtos para categorias foi confirmada com `ON UPDATE CASCADE`.
 - Testes unitários para validação administrativa e mapeamento dos dados de frete.
 
 ### Estado read-only do Supabase PapeLemi
 
-Projeto \`gpdpfoxpbferjwbppcmb\`, região \`sa-east-1\`, Postgres 17.12, status \`ACTIVE_HEALTHY\`.
+Projeto `gpdpfoxpbferjwbppcmb`, região `sa-east-1`, Postgres 17.12, status `ACTIVE_HEALTHY`.
 
 | Estrutura | Registros |
 |---|---:|
@@ -447,26 +447,26 @@ Projeto \`gpdpfoxpbferjwbppcmb\`, região \`sa-east-1\`, Postgres 17.12, status 
 
 As 10 migrations registradas no projeto são:
 
-- \`20261125075644_create_papelemi_order_request_tables\`
-- \`20261125080520_create_papelemi_shop_schema\`
-- \`20261125080558_seed_papelemi_original_catalog\`
-- \`20261125080624_add_store_order_privacy_and_store_scope\`
-- \`20261125081940_tighten_storefront_rls_and_role_checks\`
-- \`20261125082207_restrict_order_table_to_server_role\`
-- \`20261125213419_add_store_scoped_crm_and_order_items\`
-- \`20261125214907_add_store_scoped_shipping_engine\`
-- \`20261125215858_add_store_lookup_indexes\`
-- \`20261125215901_lock_shipping_provider_credentials\`
+- `20261125075644_create_papelemi_order_request_tables`
+- `20261125080520_create_papelemi_shop_schema`
+- `20261125080558_seed_papelemi_original_catalog`
+- `20261125080624_add_store_order_privacy_and_store_scope`
+- `20261125081940_tighten_storefront_rls_and_role_checks`
+- `20261125082207_restrict_order_table_to_server_role`
+- `20261125213419_add_store_scoped_crm_and_order_items`
+- `20261125214907_add_store_scoped_shipping_engine`
+- `20261125215858_add_store_lookup_indexes`
+- `20261125215901_lock_shipping_provider_credentials`
 
-A migration \`20261125220000_add_order_360_operations.sql\` continua fora da lista aplicada em Production. Não foi executada nesta rodada.
+A migration `20261125220000_add_order_360_operations.sql` continua fora da lista aplicada em Production. Não foi executada nesta rodada.
 
 ### Homologação da PR #13
 
-- GitHub Actions run \`45723524452\`: testes unitários, lint direcionado, TypeScript e replay local das migrations/contratos de banco concluídos com SUCCESS.
-- Vercel Preview: deployment \`dpl_48HaMfm9mgxg8XeVzbS5V43rk8eK\`, estado READY.
-- Preview \`/\`: HTTP 200.
-- Preview \`/admin\`: HTTP 200 e \`noindex\`.
-- Preview \`/produto/caderneta-saude-ursinho-clean\`: HTTP 500 por ausência das variáveis \`SUPABASE_URL\` e \`SUPABASE_PUBLISHABLE_KEY\` no ambiente Preview. O mesmo erro foi reproduzido na Preview da base PR #12; a rota correspondente em Production respondeu HTTP 200. Não é regressão introduzida pela PR #13.
+- GitHub Actions run `45723524452`: testes unitários, lint direcionado, TypeScript e replay local das migrations/contratos de banco concluídos com SUCCESS.
+- Vercel Preview: deployment `dpl_48HaMfm9mgxg8XeVzbS5V43rk8eK`, estado READY.
+- Preview `/`: HTTP 200.
+- Preview `/admin`: HTTP 200 e `noindex`.
+- Preview `/produto/caderneta-saude-ursinho-clean`: HTTP 500 por ausência das variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` no ambiente Preview. O mesmo erro foi reproduzido na Preview da base PR #12; a rota correspondente em Production respondeu HTTP 200. Não é regressão introduzida pela PR #13.
 - O job de reconstrução do schema hospedado do Empório permaneceu SKIPPED, sem acesso ao banco de origem.
 
 ### Limites preservados

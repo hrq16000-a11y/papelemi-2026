@@ -6,6 +6,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
 import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 import { categoryAdminSchema, productAdminSchema } from "@/lib/catalog-validation";
+import { orderOperationsSchema, orderStatusSchema, type OrderOperationsInput } from "@/lib/order-admin-validation";
 import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
 
 const PUBLISHED_ORIGIN = "https://www.papelemi.com.br";
@@ -391,15 +392,57 @@ export const getOrderStatus = createServerFn({ method: "GET" })
 // ===== Administração (exige papel de admin) =====
 
 type AdminCtx = { supabase: ReturnType<typeof publicClient>; userId: string };
+
+type AdminOrderRow = Database["public"]["Tables"]["orders"]["Row"] & {
+  order_code: string;
+  address_cep: string | null;
+  address_street: string | null;
+  address_number: string | null;
+  address_complement: string | null;
+  address_neighborhood: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  shipping_method: string;
+  shipping_company: string | null;
+  shipping_days: string | null;
+  shipping_price: number;
+  discount_amount: number;
+  payment_status: "pending" | "approved" | "refunded" | "cancelled";
+  payment_id: string | null;
+  payment_method: string | null;
+  paid_at: string | null;
+  notes: string | null;
+  tracking_code: string | null;
+  tracking_carrier: string | null;
+  tracking_url: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  updated_at: string;
+};
+type AdminOrderItemRow = Pick<Database["public"]["Tables"]["order_items"]["Row"], "id" | "line_number" | "product_name" | "product_slug" | "product_image" | "quantity" | "unit_price" | "line_total" | "personalization">;
+type OrderStatusHistoryRow = { id: string; from_status: string | null; to_status: string; note: string | null; changed_by: string | null; created_at: string };
+type PaymentEventRow = { id: string; provider: string; payment_id: string; event_id: string; provider_status: string | null; applied_status: string | null; result: string; error_message: string | null; created_at: string };
+type TrackingEmailRow = { id: string; email_type: string; recipient_email: string; status: string; tracking_carrier: string | null; tracking_code: string | null; tracking_url: string | null; error_message: string | null; created_at: string };
+type OrderNotificationRow = { id: string; status: string; channel: string; success: boolean; error: string | null; created_at: string };
 async function requireAdmin(context: AdminCtx) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (!data) throw new Error("Acesso restrito ao administrador da loja");
+  const { data, error } = await context.supabase.rpc("has_store_role", {
+    _user_id: context.userId,
+    _role: "admin",
+    _store_key: "papelemi",
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Acesso restrito ao administrador desta loja");
 }
 
 export const getMyRole = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    const { data, error } = await context.supabase.rpc("has_store_role", {
+      _user_id: context.userId,
+      _role: "admin",
+      _store_key: "papelemi",
+    });
+    if (error) throw new Error(error.message);
     return { isAdmin: Boolean(data) };
   });
 
@@ -410,7 +453,7 @@ export const listOrders = createServerFn({ method: "GET" })
     // A tabela orders aceita acesso somente pelo servidor (service_role).
     // A autorização do usuário é validada antes de usar o cliente privilegiado.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
+    const admin = supabaseAdmin as unknown as SupabaseClient;
     const { data, error } = await admin
       .from("orders")
       .select("*")
@@ -418,7 +461,7 @@ export const listOrders = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return (data ?? []) as unknown as AdminOrderRow[];
   });
 
 export const listCustomers = createServerFn({ method: "GET" })
@@ -562,37 +605,89 @@ export const getOrderDetails = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
-    const { data: order, error: orderError } = await admin.from("orders")
-      .select("*")
-      .eq("id", data.id)
-      .eq("store_key", "papelemi")
-      .maybeSingle();
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const { data: order, error: orderError } = await admin.from("orders").select("*")
+      .eq("id", data.id).eq("store_key", "papelemi").maybeSingle();
     if (orderError) throw new Error(orderError.message);
     if (!order) throw new Error("Pedido não encontrado nesta loja.");
-    const { data: items, error: itemsError } = await admin.from("order_items")
-      .select("id,line_number,product_name,product_slug,product_image,quantity,unit_price,line_total,personalization")
-      .eq("order_id", data.id)
-      .eq("store_key", "papelemi")
-      .order("line_number", { ascending: true });
-    if (itemsError) throw new Error(itemsError.message);
-    return { order, items: items ?? [] };
+
+    const [itemsResult, historyResult, paymentResult, trackingResult, notificationResult] = await Promise.all([
+      admin.from("order_items").select("id,line_number,product_name,product_slug,product_image,quantity,unit_price,line_total,personalization")
+        .eq("order_id", data.id).eq("store_key", "papelemi").order("line_number", { ascending: true }),
+      admin.from("order_status_history").select("id,from_status,to_status,note,changed_by,created_at")
+        .eq("order_id", data.id).eq("store_key", "papelemi").order("created_at", { ascending: false }).limit(50),
+      admin.from("payment_events").select("id,provider,payment_id,event_id,provider_status,applied_status,result,error_message,created_at")
+        .eq("order_id", data.id).eq("store_key", "papelemi").order("created_at", { ascending: false }).limit(50),
+      admin.from("tracking_email_log").select("id,email_type,recipient_email,status,tracking_carrier,tracking_code,tracking_url,error_message,created_at")
+        .eq("order_id", data.id).eq("store_key", "papelemi").order("created_at", { ascending: false }).limit(50),
+      admin.from("order_status_notifications").select("id,status,channel,success,error,created_at")
+        .eq("order_id", data.id).eq("store_key", "papelemi").order("created_at", { ascending: false }).limit(50),
+    ]);
+    for (const result of [itemsResult, historyResult, paymentResult, trackingResult, notificationResult]) {
+      if (result.error) throw new Error(result.error.message);
+    }
+    return {
+      order: order as AdminOrderRow,
+      items: (itemsResult.data ?? []) as AdminOrderItemRow[],
+      history: (historyResult.data ?? []) as OrderStatusHistoryRow[],
+      paymentEvents: (paymentResult.data ?? []) as PaymentEventRow[],
+      trackingEmails: (trackingResult.data ?? []) as TrackingEmailRow[],
+      notifications: (notificationResult.data ?? []) as OrderNotificationRow[],
+    };
+  });
+
+async function callAdminOrderUpdate(admin: SupabaseClient, actorId: string, orderId: string, values: OrderOperationsInput) {
+  const { error } = await admin.rpc("admin_update_order", {
+    _actor_id: actorId,
+    _order_id: orderId,
+    _status: values.status,
+    _shipping_method: values.shippingMethod,
+    _shipping_company: values.shippingCompany,
+    _shipping_days: values.shippingDays,
+    _shipping_price: values.shippingPrice,
+    _tracking_code: values.trackingCode,
+    _tracking_carrier: values.trackingCarrier,
+    _tracking_url: values.trackingUrl,
+    _notes: values.notes,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export const updateOrderOperations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(orderOperationsSchema.extend({ id: z.string().uuid() }))
+  .handler(async ({ context, data }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const { id, ...values } = data;
+    await callAdminOrderUpdate(admin, context.userId, id, values);
+    return { ok: true };
   });
 
 export const setOrderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(z.object({ id: z.string().uuid(), status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]) }))
+  .validator(z.object({ id: z.string().uuid(), status: orderStatusSchema }))
   .handler(async ({ context, data }) => {
     await requireAdmin(context);
-    // Atualizações usam service_role somente após validar o papel do usuário.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
-    const { error } = await admin
-      .from("orders")
-      .update({ status: data.status })
-      .eq("id", data.id)
-      .eq("store_key", "papelemi");
+    const admin = supabaseAdmin as unknown as SupabaseClient;
+    const { data: current, error } = await admin.from("orders")
+      .select("shipping,shipping_method,shipping_company,shipping_days,tracking_code,tracking_carrier,tracking_url,notes")
+      .eq("id", data.id).eq("store_key", "papelemi").maybeSingle();
     if (error) throw new Error(error.message);
+    if (!current) throw new Error("Pedido não encontrado nesta loja.");
+    await callAdminOrderUpdate(admin, context.userId, data.id, {
+      status: data.status,
+      shippingMethod: current.shipping_method || "A combinar",
+      shippingCompany: current.shipping_company || "",
+      shippingDays: current.shipping_days || "",
+      shippingPrice: Number(current.shipping ?? 0),
+      trackingCode: current.tracking_code || "",
+      trackingCarrier: current.tracking_carrier || "",
+      trackingUrl: current.tracking_url || "",
+      notes: current.notes || "",
+    });
     return { ok: true };
   });
 

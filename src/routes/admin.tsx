@@ -3,12 +3,13 @@ import { Archive, Eye, EyeOff, Loader2, LogOut, Pencil, Plus, RotateCcw, Search,
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { brl, type PersonalizationOption } from "@/data/catalog";
+import type { OrderStatus } from "@/lib/order-admin-validation";
 import { supabase } from "@/integrations/supabase/client";
 import {
   deleteCategory, deleteCoupon, deletePhrase, deleteProduct,
   getMyRole, getOrderDetails, listAdminCategories, listAdminCoupons, listAdminPhrases, listAdminProducts, listCustomers, listOrders,
   archiveCategory, archiveProduct, restoreCategory, restoreProduct, setCategoryActive, setProductPublished,
-  saveCategory, saveCoupon, saveCustomer, savePhrase, saveProduct, setOrderStatus,
+  saveCategory, saveCoupon, saveCustomer, savePhrase, saveProduct, setOrderStatus, updateOrderOperations,
 } from "@/lib/shop.functions";
 import { cn } from "@/lib/utils";
 import ShippingAdminPanel from "@/components/admin/ShippingAdminPanel";
@@ -323,10 +324,12 @@ function PasswordTab() {
 
 type Order = Awaited<ReturnType<typeof listOrders>>[number];
 type OrderDetail = Awaited<ReturnType<typeof getOrderDetails>>;
-type OrderStatus = "pending" | "paid" | "shipped" | "delivered" | "cancelled";
+type OrderOperationsForm = { status: OrderStatus; shippingMethod: string; shippingCompany: string; shippingDays: string; shippingPrice: string; trackingCode: string; trackingCarrier: string; trackingUrl: string; notes: string; };
 const ORDER_STATUS: Record<OrderStatus, string> = {
   pending: "Recebido / aguardando confirmação",
   paid: "Pago",
+  confirmed: "Confirmado",
+  processing: "Em produção",
   shipped: "Enviado",
   delivered: "Entregue",
   cancelled: "Cancelado",
@@ -351,6 +354,7 @@ function OrdersTab() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [detail, setDetail] = useState<OrderDetail | null>(null);
+  const [operationsForm, setOperationsForm] = useState<OrderOperationsForm | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -373,7 +377,19 @@ function OrdersTab() {
     setDetail(null);
     setDetailLoading(true);
     try {
-      setDetail(await getOrderDetails({ data: { id } }));
+      const result = await getOrderDetails({ data: { id } });
+      setDetail(result);
+      setOperationsForm({
+        status: result.order.status as OrderStatus,
+        shippingMethod: result.order.shipping_method || "A combinar",
+        shippingCompany: result.order.shipping_company || "",
+        shippingDays: result.order.shipping_days || "",
+        shippingPrice: String(result.order.shipping_price ?? result.order.shipping ?? 0),
+        trackingCode: result.order.tracking_code || "",
+        trackingCarrier: result.order.tracking_carrier || "",
+        trackingUrl: result.order.tracking_url || "",
+        notes: result.order.notes || "",
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível carregar os detalhes do pedido.");
       setSelectedOrderId(null);
@@ -387,10 +403,25 @@ function OrdersTab() {
     try {
       await setOrderStatus({ data: { id, status } });
       setOrders((current) => current?.map((order) => order.id === id ? { ...order, status } : order) ?? null);
-      setDetail((current) => current?.order.id === id ? { ...current, order: { ...current.order, status } } : current);
       toast.success("Status do pedido atualizado.");
+      if (selectedOrderId === id) await openDetails(id);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o status.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const saveOperations = async () => {
+    if (!detail || !operationsForm || updatingId) return;
+    setUpdatingId(detail.order.id);
+    try {
+      await updateOrderOperations({ data: { id: detail.order.id, ...operationsForm, shippingPrice: Number(operationsForm.shippingPrice) } });
+      toast.success("Operação e dados de entrega atualizados.");
+      await load();
+      await openDetails(detail.order.id);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o pedido.");
     } finally {
       setUpdatingId(null);
     }
@@ -452,7 +483,7 @@ function OrdersTab() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-primary">Ficha completa</p>
-              <h3 className="mt-1 text-xl font-semibold">Pedido {selectedOrderId.slice(0, 8).toUpperCase()}</h3>
+              <h3 className="mt-1 text-xl font-semibold">Pedido {detail?.order.order_code || selectedOrderId.slice(0, 8).toUpperCase()}</h3>
             </div>
             <button type="button" onClick={() => { setSelectedOrderId(null); setDetail(null); }} className={btnGhost}>Fechar detalhes</button>
           </div>
@@ -477,12 +508,14 @@ function OrdersTab() {
                   </section>
                   <section className="border-t border-border pt-4">
                     <h4 className="text-sm font-semibold">Entrega</h4>
-                    <p className="mt-2 text-sm">{[address["street"], address["number"], address["complement"]].filter(Boolean).map(displayOrderValue).join(", ") || "Endereço não informado"}</p>
-                    <p className="text-sm text-muted-foreground">{[address["district"], address["city"], address["state"]].filter(Boolean).map(displayOrderValue).join(" · ")}</p>
-                    <p className="text-sm text-muted-foreground">CEP: {displayOrderValue(address["cep"]) || "—"}</p>
+                    <p className="mt-2 text-sm">{[detail.order.address_street || address["street"], detail.order.address_number || address["number"], detail.order.address_complement || address["complement"]].filter(Boolean).map(displayOrderValue).join(", ") || "Endereço não informado"}</p>
+                    <p className="text-sm text-muted-foreground">{[detail.order.address_neighborhood || address["district"], detail.order.address_city || address["city"], detail.order.address_state || address["state"]].filter(Boolean).map(displayOrderValue).join(" · ")}</p>
+                    <p className="text-sm text-muted-foreground">CEP: {detail.order.address_cep || displayOrderValue(address["cep"]) || "—"}</p>
                     <p className="mt-2 text-sm">Frete: {shippingSelection["requires_confirmation"] ? "A confirmar" : Number(detail.order.shipping) === 0 ? "Grátis" : brl(Number(detail.order.shipping))}</p>
-                    <p className="text-sm text-muted-foreground">Modalidade: {displayOrderValue(shippingSelection["provider"]) || "Não registrada"} · {displayOrderValue(shippingSelection["service_name"]) || "Frete a combinar"}</p>
-                    <p className="text-sm text-muted-foreground">Prazo: {displayOrderValue(shippingSelection["estimated_delivery_days"]) || "A confirmar"}{shippingSelection["estimated"] ? " · estimativa" : ""}</p>
+                    <p className="text-sm text-muted-foreground">Modalidade: {detail.order.shipping_method || displayOrderValue(shippingSelection["provider"]) || "Frete a combinar"} · {detail.order.shipping_company || displayOrderValue(shippingSelection["service_name"]) || "Transportadora a definir"}</p>
+                    <p className="text-sm text-muted-foreground">Prazo: {detail.order.shipping_days || displayOrderValue(shippingSelection["estimated_delivery_days"]) || "A confirmar"}{shippingSelection["estimated"] ? " · estimativa" : ""}</p>
+                    {detail.order.tracking_code ? <p className="mt-2 text-sm">Rastreamento: <span className="font-mono">{detail.order.tracking_code}</span></p> : null}
+                    {detail.order.tracking_url ? <a className="text-xs text-primary underline" href={detail.order.tracking_url} target="_blank" rel="noreferrer">Abrir rastreamento</a> : null}
                     {shippingSelection["pickup_address"] ? <p className="text-xs text-muted-foreground">Retirada: {displayOrderValue(shippingSelection["pickup_address"])}</p> : null}
                     {shippingSelection["pickup_instructions"] ? <p className="text-xs text-muted-foreground">{displayOrderValue(shippingSelection["pickup_instructions"])}</p> : null}
                   </section>
@@ -524,6 +557,9 @@ function OrdersTab() {
                       <p className="flex justify-between border-t border-border pt-2 font-semibold text-foreground"><span>Total</span><span>{brl(Number(detail.order.total))}</span></p>
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">Cupom: {detail.order.coupon_code || "Não utilizado"}</p>
+                    <p className="text-xs text-muted-foreground">Situação do pagamento: {detail.order.payment_status === "approved" ? "Aprovado" : detail.order.payment_status === "refunded" ? "Estornado" : detail.order.payment_status === "cancelled" ? "Cancelado" : "Pendente"}</p>
+                    <p className="text-xs text-muted-foreground">Forma: {detail.order.payment_method || "Não informada"} · ID: {detail.order.payment_id || detail.order.mp_payment_id || "Aguardando"}</p>
+                    {detail.order.paid_at ? <p className="text-xs text-muted-foreground">Pago em {formatOrderDate(detail.order.paid_at)}</p> : null}
                     <p className="text-xs text-muted-foreground">Pagamento Mercado Pago: {detail.order.mp_payment_id || "Ainda sem identificador"}</p>
                   </section>
                   <section className="border-t border-border pt-4">
@@ -532,6 +568,62 @@ function OrdersTab() {
                     <p className="text-xs text-muted-foreground">Consentimento: {detail.order.accepted_privacy ? "Aceito" : "Não registrado"}{detail.order.privacy_consent_at ? ` em ${formatOrderDate(detail.order.privacy_consent_at)}` : ""}</p>
                   </section>
                 </div>
+                <div className="lg:col-span-2 grid gap-4 md:grid-cols-2">
+                  <section className="rounded-xl border border-border p-3">
+                    <h4 className="text-sm font-semibold">Histórico de status</h4>
+                    {detail.history.length ? <ol className="mt-2 space-y-2">{detail.history.map((entry) => (
+                      <li key={entry.id} className="border-l-2 border-primary/30 pl-3">
+                        <p className="text-sm font-medium">{ORDER_STATUS[entry.to_status as OrderStatus] || entry.to_status}</p>
+                        <p className="text-xs text-muted-foreground">{entry.note || "Alteração registrada"} · {formatOrderDate(entry.created_at)}</p>
+                      </li>
+                    ))}</ol> : <p className="mt-2 text-xs text-muted-foreground">Nenhuma alteração de status registrada.</p>}
+                  </section>
+                  <section className="rounded-xl border border-border p-3">
+                    <h4 className="text-sm font-semibold">Eventos de pagamento</h4>
+                    {detail.paymentEvents.length ? <ul className="mt-2 space-y-2">{detail.paymentEvents.map((event) => (
+                      <li key={event.id} className="rounded-lg bg-muted/40 p-3 text-xs">
+                        <p className="font-medium">{event.provider} · {event.provider_status || "status não informado"} · {event.result}</p>
+                        <p className="mt-1 text-muted-foreground">Pagamento {event.payment_id} · {formatOrderDate(event.created_at)}</p>
+                        {event.error_message ? <p className="mt-1 text-destructive">{event.error_message}</p> : null}
+                      </li>
+                    ))}</ul> : <p className="mt-2 text-xs text-muted-foreground">Nenhum evento de pagamento registrado.</p>}
+                  </section>
+                  <section className="rounded-xl border border-border p-3">
+                    <h4 className="text-sm font-semibold">E-mails de rastreamento</h4>
+                    {detail.trackingEmails.length ? <ul className="mt-2 space-y-2">{detail.trackingEmails.map((email) => (
+                      <li key={email.id} className="text-xs text-muted-foreground">
+                        {email.email_type} · {email.status} · {email.recipient_email} · {formatOrderDate(email.created_at)}
+                        {email.error_message ? <span className="text-destructive"> · {email.error_message}</span> : null}
+                      </li>
+                    ))}</ul> : <p className="mt-2 text-xs text-muted-foreground">Nenhum envio de rastreamento registrado.</p>}
+                    {detail.notifications.length ? <ul className="mt-2 space-y-1">{detail.notifications.map((notification) => (
+                      <li key={notification.id} className="text-xs text-muted-foreground">
+                        {notification.channel} · {notification.status} · {notification.success ? "Enviado" : "Pendente/falhou"} · {formatOrderDate(notification.created_at)}
+                      </li>
+                    ))}</ul> : null}
+                  </section>
+                </div>
+            {operationsForm ? (
+              <form onSubmit={(event) => { event.preventDefault(); void saveOperations(); }} className="lg:col-span-2 mt-6 space-y-4 border-t border-border pt-5">
+                <div><h4 className="text-sm font-semibold">Atualizar operação do pedido</h4><p className="mt-1 text-xs text-muted-foreground">A alteração é auditada e o total é recalculado quando o frete muda.</p></div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <label className="text-xs text-muted-foreground">Status
+                    <select value={operationsForm.status} onChange={(e) => setOperationsForm({ ...operationsForm, status: e.target.value as OrderStatus })} className={cn(input, "mt-1")}>
+                      {Object.entries(ORDER_STATUS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  <label className="text-xs text-muted-foreground">Modalidade de envio<input value={operationsForm.shippingMethod} onChange={(e) => setOperationsForm({ ...operationsForm, shippingMethod: e.target.value })} className={cn(input, "mt-1")} required /></label>
+                  <label className="text-xs text-muted-foreground">Transportadora<input value={operationsForm.shippingCompany} onChange={(e) => setOperationsForm({ ...operationsForm, shippingCompany: e.target.value })} className={cn(input, "mt-1")} /></label>
+                  <label className="text-xs text-muted-foreground">Prazo informado<input value={operationsForm.shippingDays} onChange={(e) => setOperationsForm({ ...operationsForm, shippingDays: e.target.value })} className={cn(input, "mt-1")} placeholder="Ex.: 3 a 5 dias úteis" /></label>
+                  <label className="text-xs text-muted-foreground">Valor do frete (R$)<input type="number" min="0" max="99999" step="0.01" value={operationsForm.shippingPrice} onChange={(e) => setOperationsForm({ ...operationsForm, shippingPrice: e.target.value })} className={cn(input, "mt-1")} required /></label>
+                  <label className="text-xs text-muted-foreground">Código de rastreio<input value={operationsForm.trackingCode} onChange={(e) => setOperationsForm({ ...operationsForm, trackingCode: e.target.value })} className={cn(input, "mt-1")} /></label>
+                  <label className="text-xs text-muted-foreground">Transportadora do rastreio<input value={operationsForm.trackingCarrier} onChange={(e) => setOperationsForm({ ...operationsForm, trackingCarrier: e.target.value })} className={cn(input, "mt-1")} /></label>
+                  <label className="text-xs text-muted-foreground sm:col-span-2">URL de rastreamento (HTTPS)<input type="url" value={operationsForm.trackingUrl} onChange={(e) => setOperationsForm({ ...operationsForm, trackingUrl: e.target.value })} className={cn(input, "mt-1")} placeholder="https://..." /></label>
+                  <label className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-3">Observações administrativas<textarea rows={3} value={operationsForm.notes} onChange={(e) => setOperationsForm({ ...operationsForm, notes: e.target.value })} className={cn(input, "mt-1")} /></label>
+                </div>
+                <div className="flex justify-end"><button type="submit" disabled={updatingId === detail.order.id} className={btn}>{updatingId === detail.order.id ? <Loader2 className="size-3.5 animate-spin" /> : null} Salvar operação</button></div>
+              </form>
+            ) : null}
               </div>
             );
           })() : <p className="py-8 text-sm text-muted-foreground">Não foi possível carregar os detalhes deste pedido.</p>}
