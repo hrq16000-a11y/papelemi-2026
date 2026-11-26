@@ -50,7 +50,7 @@ BEGIN
   END IF;
 
   PERFORM net.http_post(
-    url := 'https://xfqffqxqiuqauefrrcxn.supabase.co/functions/v1/notify-order-status',
+    url := 'http://127.0.0.1:54321/functions/v1/notify-order-status',
     headers := jsonb_build_object('Content-Type', 'application/json', 'x-internal-key', v_secret),
     body := jsonb_build_object(
       'order_code', NEW.order_code,
@@ -71,11 +71,11 @@ FOR EACH ROW EXECUTE FUNCTION public.notify_order_status_change();
 -- 4) Posts reais do Instagram (@emporiolelecute)
 INSERT INTO public.instagram_posts (image_url, alt_text, post_url, position, is_visible, shortcode)
 SELECT * FROM (VALUES
-  ('https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/instagram/ig-1.jpg', 'Lembrancinha artesanal tema carrinho azul - Empório LeleCute', 'https://www.instagram.com/p/DbrcC2lR8fL/', 1, true, 'DbrcC2lR8fL'),
-  ('https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/instagram/ig-2.jpg', 'Lembrancinhas personalizadas tema astronauta - Empório LeleCute', 'https://www.instagram.com/p/DbeZRsGDYZK/', 2, true, 'DbeZRsGDYZK'),
-  ('https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/instagram/ig-3.jpg', 'Detalhes de lembrancinhas artesanais - Empório LeleCute', 'https://www.instagram.com/p/DbWxuZIAUyu/', 3, true, 'DbWxuZIAUyu'),
-  ('https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/instagram/ig-4.jpg', 'Caixinhas de lembrancinhas prontas para presente - Empório LeleCute', 'https://www.instagram.com/p/DbHHszwPI0f/', 4, true, 'DbHHszwPI0f'),
-  ('https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/instagram/ig-5.jpg', 'Sabonetes artesanais tema safari para festa infantil - Empório LeleCute', 'https://www.instagram.com/p/DbCAb-emXhm/', 5, true, 'DbCAb-emXhm'),
-  ('https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/instagram/ig-6.jpg', 'Lembrancinhas de primeiro aniversário - Empório LeleCute', 'https://www.instagram.com/p/Da1eXySx44N/', 6, true, 'Da1eXySx44N')
+  ('http://127.0.0.1:54321/storage/v1/object/public/product-images/instagram/ig-1.jpg', 'Lembrancinha artesanal tema carrinho azul - Empório LeleCute', 'https://www.instagram.com/p/DbrcC2lR8fL/', 1, true, 'DbrcC2lR8fL'),
+  ('http://127.0.0.1:54321/storage/v1/object/public/product-images/instagram/ig-2.jpg', 'Lembrancinhas personalizadas tema astronauta - Empório LeleCute', 'https://www.instagram.com/p/DbeZRsGDYZK/', 2, true, 'DbeZRsGDYZK'),
+  ('http://127.0.0.1:54321/storage/v1/object/public/product-images/instagram/ig-3.jpg', 'Detalhes de lembrancinhas artesanais - Empório LeleCute', 'https://www.instagram.com/p/DbWxuZIAUyu/', 3, true, 'DbWxuZIAUyu'),
+  ('http://127.0.0.1:54321/storage/v1/object/public/product-images/instagram/ig-4.jpg', 'Caixinhas de lembrancinhas prontas para presente - Empório LeleCute', 'https://www.instagram.com/p/DbHHszwPI0f/', 4, true, 'DbHHszwPI0f'),
+  ('http://127.0.0.1:54321/storage/v1/object/public/product-images/instagram/ig-5.jpg', 'Sabonetes artesanais tema safari para festa infantil - Empório LeleCute', 'https://www.instagram.com/p/DbCAb-emXhm/', 5, true, 'DbCAb-emXhm'),
+  ('http://127.0.0.1:54321/storage/v1/object/public/product-images/instagram/ig-6.jpg', 'Lembrancinhas de primeiro aniversário - Empório LeleCute', 'https://www.instagram.com/p/Da1eXySx44N/', 6, true, 'Da1eXySx44N')
 ) AS v(image_url, alt_text, post_url, position, is_visible, shortcode)
 WHERE NOT EXISTS (SELECT 1 FROM public.instagram_posts);

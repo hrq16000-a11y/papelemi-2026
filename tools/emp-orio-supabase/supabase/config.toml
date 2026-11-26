@@ -29,7 +29,7 @@ api_url = "http://127.0.0.1:54321"
 
 # Captura todos os e-mails locais (Auth, magic link, recuperação de senha).
 [local_smtp]
-enabled = false
+enabled = true
 port = 54324
 
 [storage]

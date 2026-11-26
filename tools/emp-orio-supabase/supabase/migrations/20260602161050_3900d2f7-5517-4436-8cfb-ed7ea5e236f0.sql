@@ -73,7 +73,7 @@ SECURITY DEFINER
 SET search_path TO 'public', 'storage', 'pg_catalog'
 AS $$
 DECLARE
-  v_base      text := 'https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/';
+  v_base      text := 'http://127.0.0.1:54321/storage/v1/object/public/';
   v_active    int;
   v_archived  int;
   v_missing   int;

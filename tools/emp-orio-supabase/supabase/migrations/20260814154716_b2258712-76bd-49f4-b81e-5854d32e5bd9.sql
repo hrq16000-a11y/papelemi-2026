@@ -19,7 +19,6 @@ BEGIN
   IF v_job_id IS NOT NULL THEN PERFORM cron.alter_job(v_job_id, schedule := '17 */6 * * *'); END IF;
 END;
 $$;
-
 -- Validação diária com gate de diff (só reenvia quando algo mudou)
 SELECT cron.schedule(
   'seo-daily-guard',
