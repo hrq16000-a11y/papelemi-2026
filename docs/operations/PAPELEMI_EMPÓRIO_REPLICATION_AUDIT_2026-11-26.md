@@ -66,3 +66,31 @@ As 199 migrations e 54 Edge Functions serão tratadas como código-fonte para re
 5. Homologar dashboard, catálogo, clientes, pedidos, pagamentos, fretes, personalizações e demais módulos antes de qualquer publicação.
 
 **Estado desta etapa:** auditoria concluída; transferência em lote do código original iniciada em branch isolada. Sem merge, sem deploy Production e sem alterações no Supabase hospedado.
+
+## 8. Reconciliação dos tipos e divergência do schema
+
+A leitura dos tipos gerados em src/integrations/supabase/types.ts acrescenta uma verificação importante:
+
+- Empório: 150 definições de tabelas no tipo público gerado.
+- PapeLemi: 15 definições de tabelas no tipo público gerado.
+- 12 nomes de tabelas coincidem; 138 nomes do snapshot Empório não aparecem no tipo PapeLemi.
+- PapeLemi possui três tabelas próprias no snapshot de tipos: curated_phrases, shipping_quote_rate_limits e stores.
+- O inventário/documentação anterior da Empório informa 155 tabelas, cinco a mais que as 150 presentes no arquivo types.ts. Essa diferença precisa ser reconciliada com o schema hospedado quando houver acesso de leitura ao projeto de origem.
+
+As 12 tabelas com nomes coincidentes são categories, coupons, customers, order_items, orders, product_personalizations, products, shipping_carrier_services, shipping_providers, shipping_rate_rules, shipping_zones e user_roles. Seus contratos não são iguais: products, orders, categories, coupons e order_items apresentam diferenças relevantes de colunas. Portanto, não se pode substituir o types.ts ou as tabelas atuais por cópia direta.
+
+A migration Order 360 da PR #15 já adiciona parte das tabelas de histórico e pagamento que ainda não aparecem no types.ts gerado. A etapa de schema deverá atualizar os tipos após a reconciliação, sem perder essas contribuições.
+
+## 9. Aplicação administrativa original — adaptação iniciada
+
+Foi criada a aplicação isolada em apps/emporio-admin/adapter, reutilizando as páginas originais e 119 declarações de carregamento de rotas administrativas extraídas do App.tsx da Empório.
+
+- React 18, React Router 7 e Vite 5 permanecem isolados do storefront TanStack Start.
+- O HashRouter preserva as rotas administrativas originais dentro do bundle estático.
+- A prévia privada está disponível na rota /admin-original.
+- A autenticação aponta para as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY da PapeLemi.
+- A checagem administrativa foi adaptada para has_store_role com store_key=papelemi.
+- Logo, nome, paleta e tipografia foram adaptados para PapeLemi.
+- Dados de contato e redes sociais padrão da Empório foram retirados da página de configurações; o e-mail padrão foi substituído pelo e-mail administrativo informado para PapeLemi.
+
+O build isolado está sendo homologado no GitHub Actions. O painel ainda depende da reconciliação do schema, das Edge Functions e dos serviços para operar integralmente.

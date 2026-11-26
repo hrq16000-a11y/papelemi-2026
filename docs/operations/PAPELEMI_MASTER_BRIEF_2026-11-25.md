@@ -503,3 +503,12 @@ A estratégia passa de reconstrução funcional pontual para transferência em l
 A fonte de código está fixada no repositório hrq16000-a11y/emporiolelecute-2026, branch main, commit d01d843c266b5a32d03af22eeaac6eda4a7fcf0f. A primeira transferência vendorizada inclui páginas administrativas, componentes, hooks, bibliotecas, migrations Supabase/Drizzle e Edge Functions, sem dados, mídia, seeds, configurações de projeto ou segredos da Empório. O manifesto registra SHA-256 por arquivo.
 
 A integração será feita em aplicação administrativa isolada, preservando o storefront SSR da PapeLemi. A base Supabase PapeLemi continua como destino exclusivo; as 199 migrations históricas não serão reproduzidas cegamente. Toda mudança de schema será aditiva, reconciliada e homologada antes de aplicação hospedada.
+
+
+## 2026-11-26 — Snapshot e adaptador do painel original
+
+A transferência em lote foi concluída na branch feat/emporio-admin-replica-01-20261126. O manifesto em apps/emporio-admin/source/source-manifest.json registra os arquivos e seus SHA-256, com origem fixada no commit d01d843c266b5a32d03af22eeaac6eda4a7fcf0f. Foram excluídos segredos, configurações de projeto, seeds, dados comerciais e mídia da Empório.
+
+O adaptador de painel original foi criado em apps/emporio-admin/adapter. Ele mantém o storefront SSR TanStack Start independente e prepara a aplicação administrativa original para ser servida sob o mesmo domínio. A prévia está isolada em /admin-original; a rota /admin atual não foi substituída nesta etapa.
+
+A comparação dos tipos gerados encontrou 150 tabelas públicas no snapshot Empório e 15 no PapeLemi, com 12 nomes coincidentes e diferenças importantes de colunas. A documentação anterior informa 155 tabelas na Empório; a diferença de cinco precisa ser reconciliada com o banco de origem. Nenhuma migration foi aplicada ao Supabase Production.
