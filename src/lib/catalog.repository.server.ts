@@ -17,7 +17,8 @@ const personalizationOptionSchema = z.discriminatedUnion("type", [
     key: z.string().trim().min(1).max(40),
     label: z.string().trim().min(1).max(120),
     maxLength: z.number().int().min(1).max(400),
-    ai: z.boolean().optional().default(false),\n    required: z.boolean().optional().default(false),
+    ai: z.boolean().optional().default(false),
+    required: z.boolean().optional().default(false),
   }),
   z.object({
     type: z.literal("choice"),
