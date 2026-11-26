@@ -132,11 +132,20 @@ Não aplicar as 199 migrations cegamente. O destino deverá receber migrations a
 
 ## 8. Próximos passos
 
-1. Gerar e inspecionar artefato schema-only com tipos, métricas por schema, tabela names e buckets.
-2. Comparar os 144 objetos reconstruídos com os 150 tipos versionados e com a estrutura hospedada atual da Empório.
+1. Gerar e inspecionar artefato schema-only com tipos, métricas por schema, nomes das tabelas e buckets.
+2. Comparar as 144 tabelas reconstruídas com os 150 tipos versionados e com a estrutura hospedada atual da Empório.
 3. Obter conexão ao Supabase remoto original ou backup legível para reconciliar drift.
 4. Criar migrations aditivas para tabelas e colunas ausentes, com isolamento por `store_key`.
 5. Portar seletivamente os avanços úteis das PRs #14 e #15.
 6. Homologar autenticação, catálogo, estoque, clientes, pedidos, personalização, pagamentos, fretes e painel.
 7. Implantar Edge Functions somente após revisão de tenant isolation e configuração de segredos próprios.
 8. Somente após todos os gates, solicitar aprovação para aplicar migrations hospedadas e publicar.
+
+
+## 9. Ajustes de continuidade — 2026-11-26
+
+- O route contract test agora verifica a correspondência da URL `/admin` sem exigir que o route ID seja literalmente `/admin`; o TanStack gera `/admin/$` para a rota-coringa.
+- O workflow de replay fixa Supabase CLI 3.4.0, evitando a consulta `latest` que sofreu rate limit.
+- O workflow agora deve publicar artefato temporário schema-only (DDL público, tipos, métricas, nomes de tabelas e buckets), sem dados comerciais.
+- Os scripts substituem URLs Supabase hospedadas por URL local por regex genérica, sem armazenar project ref da origem.
+- A validação combinada com `papelemi_legacy` permanece exclusivamente local e estrutural; não move dados nem autoriza DDL hospedado.

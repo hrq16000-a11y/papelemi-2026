@@ -8,6 +8,8 @@ on:
     paths:
       - ".github/workflows/papelemi-emp-orio-transfer.yml"
       - "scripts/emp-orio/transfer-source.mjs"
+      - "scripts/emp-orio/prepare-combined-schema.mjs"
+      - "supabase/config.toml"
       - "tools/emp-orio-supabase/supabase/config.toml"
       - "tools/emp-orio-supabase/supabase/migrations/**"
 
@@ -114,19 +116,6 @@ jobs:
             echo "Original Emporio migration replay failed:"
             tail -n 160 "$RUNNER_TEMP/emp-orio-reset.log"
             supabase stop --no-backup > /dev/null 2>&1 || true
-
-      - name: Upload schema-only reconstruction evidence
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: emp-orio-schema-reference
-          path: |
-            ${{ runner.temp }}/emp-orio-schema.sql
-            ${{ runner.temp }}/emp-orio-types.ts
-            ${{ runner.temp }}/emp-orio-schema-metrics.txt
-            ${{ runner.temp }}/emp-orio-public-tables.txt
-            ${{ runner.temp }}/emp-orio-storage-buckets.txt
-          retention-days: 7
             exit 1
           fi
           applied="$(grep -c 'Applying migration' "$RUNNER_TEMP/emp-orio-reset.log" || true)"
@@ -164,7 +153,7 @@ jobs:
 
           schema = Path(os.environ["RUNNER_TEMP"]) / "emp-orio-schema.sql"
           sql = schema.read_text()
-          sql = re.sub(r"https?://[a-z0-9]{20}\\.supabase\\.co", "https://<SUPABASE_PROJECT_REF>.supabase.co", sql)
+          sql = re.sub(r"https?://[a-z0-9]{20}\.supabase\.co", "https://<SUPABASE_PROJECT_REF>.supabase.co", sql)
           sql = sql.replace("http://127.0.0.1:54321", "<SUPABASE_URL>")
           schema.write_text(sql)
           PY
@@ -174,6 +163,19 @@ jobs:
           echo "=== Reconstructed schema metrics ==="
           cat "$RUNNER_TEMP/emp-orio-schema-metrics.txt"
           supabase stop --no-backup > /dev/null 2>&1 || true
+
+      - name: Upload schema-only reconstruction evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emp-orio-schema-reference
+          path: |
+            \${{ runner.temp }}/emp-orio-schema.sql
+            \${{ runner.temp }}/emp-orio-types.ts
+            \${{ runner.temp }}/emp-orio-schema-metrics.txt
+            \${{ runner.temp }}/emp-orio-public-tables.txt
+            \${{ runner.temp }}/emp-orio-storage-buckets.txt
+          retention-days: 7
 
       - name: Prepare combined PapeLemi and Emporio schema workspace
         run: node scripts/emp-orio/prepare-combined-schema.mjs

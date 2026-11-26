@@ -515,14 +515,14 @@ async function patchLocalMigrations() {
     ""
   ].join("\n");
   let sql = sourceSql.slice(0, start) + safeCronBlock + sourceSql.slice(end);
-  sql = sql.replaceAll("https://xfqffqxqiuqauefrrcxn.supabase.co", "http://127.0.0.1:54321");
+  sql = sql.replace(/https:\/\/[a-z0-9]{20}\.supabase\.co/g, "http://127.0.0.1:54321");
   await fs.writeFile(migrationPath, sql, "utf8");
 
   for (const entry of await fs.readdir(migrationDir, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith(".sql") || entry.name === migrationName) continue;
     const file = path.join(migrationDir, entry.name);
     const contents = await fs.readFile(file, "utf8");
-    const localized = contents.replaceAll("https://xfqffqxqiuqauefrrcxn.supabase.co", "http://127.0.0.1:54321");
+    const localized = contents.replace(/https:\/\/[a-z0-9]{20}\.supabase\.co/g, "http://127.0.0.1:54321");
     if (localized !== contents) await fs.writeFile(file, localized, "utf8");
   }
 }

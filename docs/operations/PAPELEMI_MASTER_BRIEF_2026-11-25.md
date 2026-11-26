@@ -496,3 +496,16 @@ O Supabase PapeLemi permanece com 15 tabelas públicas e 10 migrations aplicadas
 O inventário inicial de funções críticas encontrou dependências de `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `RESEND_API_KEY`, `IG_ACCESS_TOKEN`, `IG_BUSINESS_ACCOUNT_ID`, `GOOGLE_SEARCH_CONSOLE_API_KEY`, `LOVABLE_API_KEY`, `SEMRUSH_API_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT` e `STORE_NOTIFICATION_EMAIL`, além das variáveis Supabase. Nenhum valor de segredo foi lido ou copiado; as funções ainda não foram implantadas.
 
 O projeto Supabase remoto da Empório não está disponível nas conexões atuais desta sessão. A aplicação de migrations hospedadas continuará condicionada à reconciliação completa, revisão do SQL, backup/rollback confirmado e aprovação explícita do proprietário.
+
+
+---
+
+## 2026-11-26 — Correção do replay isolado e reconciliação do clone
+
+A branch de integração preserva o runtime original da Empório e as correções de compatibilidade TypeScript. O último conjunto de verificações aprovado no HEAD anterior confirmou 38 testes, lint direcionado e TypeScript; o teste adicional de rota foi ajustado para considerar o route ID gerado pelo TanStack Router (`/admin/$`), sem confundir route ID com URL pública.
+
+O replay isolado das 199 migrations já foi executado com sucesso anteriormente. O workflow foi ajustado para fixar o Supabase CLI em 3.4.0 e produzir um artefato schema-only com DDL público, tipos gerados, nomes de tabelas, métricas por schema e buckets. O artefato não inclui dados comerciais e redige referências de projetos hospedados e URLs locais.
+
+A pasta combinada `tools/papelemi-combined-supabase` é somente um teste estrutural descartável: move as 12 tabelas sobrepostas da PapeLemi para um schema legado local e aplica as migrations originais no schema público. Não representa migração de dados nem arquitetura final e não pode ser aplicada em Production.
+
+Os scripts de replay substituem URLs de projeto Supabase por endereço local via padrão genérico; nenhum project ref hospedado fica hardcoded nos scripts. Nenhuma alteração foi feita no banco original ou no Supabase hospedado da PapeLemi.

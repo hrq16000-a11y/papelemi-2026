@@ -115,7 +115,7 @@ async function main() {
     const version = (BigInt("20261127000000") + BigInt(i)).toString();
     const targetName = version + "_emp-orio_" + suffix;
     const contents = await fs.readFile(path.join(originalMigrationsDir, originalName), "utf8");
-    const localized = contents.replaceAll("https://xfqffqxqiuqauefrrcxn.supabase.co", "http://127.0.0.1:54321");
+    const localized = contents.replace(/https:\/\/[a-z0-9]{20}\.supabase\.co/g, "http://127.0.0.1:54321");
     await fs.writeFile(
       path.join(targetMigrationsDir, targetName),
       "-- Original Emporio migration: " + originalName + "\n" + localized,
