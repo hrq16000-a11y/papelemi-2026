@@ -4,7 +4,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-const ORIGIN = 'https://emporiolelecute.com.br'
+const ORIGIN = 'https://emporioPapeLemi.com.br'
 const PRODUCT_PREFIX = '/produto'
 
 interface Issue { severity: 'error' | 'warn'; code: string; detail: string }

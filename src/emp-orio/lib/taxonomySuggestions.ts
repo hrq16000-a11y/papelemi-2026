@@ -23,7 +23,7 @@ interface Rule {
   terms: string[];
 }
 
-// Regras curadas para a operação do Empório PapeLemi.
+// Regras curadas para a operação do PapeLemi.
 const RULES: Rule[] = [
   // OCASIÕES
   { kind: 'occasion', label: 'Maternidade',     slug: 'maternidade',    terms: ['maternidade', 'mae', 'mamae', 'gestante', 'gestacao'] },

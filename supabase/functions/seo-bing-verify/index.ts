@@ -18,7 +18,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ORIGIN = 'https://emporiolelecute.com.br';
+const ORIGIN = 'https://emporioPapeLemi.com.br';
 const INDEXNOW_KEY = '87296b506db34e8cb22cc31288f33f84';
 const BINGBOT =
   'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)';
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
     // 5) ping real de teste no IndexNow (uma única URL: a home)
     if (isLocalEnv()) {
-      mockIntegration('indexnow:bing-ping', { host: 'emporiolelecute.com.br' });
+      mockIntegration('indexnow:bing-ping', { host: 'emporioPapeLemi.com.br' });
       push('indexnow_ping', 'Ping de teste no IndexNow (Bing)', true,
         'Simulado (ambiente local, sem chamada externa).');
     } else {
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({
-            host: 'emporiolelecute.com.br',
+            host: 'emporioPapeLemi.com.br',
             key: INDEXNOW_KEY,
             keyLocation: `${ORIGIN}/${INDEXNOW_KEY}.txt`,
             urlList: [`${ORIGIN}/`],

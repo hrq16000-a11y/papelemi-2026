@@ -87,15 +87,15 @@ export const defaultTrustBadgesConfig: TrustBadgesConfig = {
 };
 
 const defaultSEOConfig: SEOConfig = {
-  site_title: 'Empório PapeLemi | Lembrancinhas Artesanais Personalizadas',
+  site_title: 'PapeLemi | Lembrancinhas Artesanais Personalizadas',
   site_description: 'Ateliê criativo de lembrancinhas artesanais personalizadas. Sabonetes, velas perfumadas e presentes únicos para todas as ocasiões especiais.',
   site_keywords: 'lembrancinhas personalizadas, sabonetes artesanais, velas perfumadas, maternidade, chá de bebê, batizado, casamento',
-  og_image: 'https://emporiolelecute.com.br/og-image.webp',
-  twitter_handle: '@emporiolelecute',
+  og_image: 'https://emporioPapeLemi.com.br/og-image.webp',
+  twitter_handle: '@emporioPapeLemi',
   google_verification: '',
   bing_verification: '',
   facebook_app_id: '',
-  canonical_url: 'https://emporiolelecute.com.br',
+  canonical_url: 'https://emporioPapeLemi.com.br',
   robots_txt: '',
   additional_meta_tags: '',
   structured_data_business: '',
@@ -107,8 +107,8 @@ export const defaultFooterConfig: FooterConfig = {
   useful_links: [
     { icon: 'Package', label: 'Rastrear Pedido', url: '/rastrear' },
     { icon: 'Heart', label: 'Orçamento Personalizado', url: '/orcamento' },
-    { icon: 'ExternalLink', label: 'Loja Virtual', url: 'https://emporiolelecute.com.br/loja/' },
-    { icon: 'ExternalLink', label: 'Pinterest', url: 'https://br.pinterest.com/emporiolelecute' },
+    { icon: 'ExternalLink', label: 'Loja Virtual', url: 'https://emporioPapeLemi.com.br/loja/' },
+    { icon: 'ExternalLink', label: 'Pinterest', url: 'https://br.pinterest.com/emporioPapeLemi' },
   ],
   occasions: [
     { label: 'Maternidade & Chá de Bebê', url: '/produtos?ocasiao=maternidade' },
@@ -122,10 +122,10 @@ export const defaultFooterConfig: FooterConfig = {
     address: 'São José dos Pinhais, PR\nEnviamos para todo o Brasil',
   },
   social_links: {
-    instagram: 'https://www.instagram.com/emporiolelecute',
-    facebook: 'https://www.facebook.com/emporiolelecute',
+    instagram: 'https://www.instagram.com/emporioPapeLemi',
+    facebook: 'https://www.facebook.com/emporioPapeLemi',
   },
-  footer_text: '© {year} Empório PapeLemi. Todos os direitos reservados.',
+  footer_text: '© {year} PapeLemi. Todos os direitos reservados.',
   made_with_love: 'Feito com ❤️ em São José dos Pinhais, PR',
 };
 

@@ -48,7 +48,7 @@ export function buildProductJsonLd({
   rating,
   reviewCount,
   category = 'Lembrancinhas Artesanais',
-  brand = 'Empório PapeLemi',
+  brand = 'PapeLemi',
   reviews,
   material,
   sku,

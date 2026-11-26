@@ -18,7 +18,7 @@ const DEFAULTS: Required<RobotsConfig> = {
   disallow_query_params: ["ordem", "preco_min", "preco_max", "pagina", "busca", "search"],
   blocked_category_slugs: [],
   custom_directives: "",
-  sitemap_url: "https://emporiolelecute.com.br/sitemap.xml",
+  sitemap_url: "https://emporioPapeLemi.com.br/sitemap.xml",
 };
 
 function build(cfg: Required<RobotsConfig>): string {

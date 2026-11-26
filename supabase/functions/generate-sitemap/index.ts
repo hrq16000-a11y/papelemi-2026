@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       const authorization = await authorizeOperationalRequest(req);
       if (authorization instanceof Response) return authorization;
       // Recipient is never caller-chosen: only the store's configured inbox.
-      const storeInbox = (Deno.env.get('STORE_NOTIFICATION_EMAIL') || 'emporiolelecute@gmail.com').toLowerCase()
+      const storeInbox = (Deno.env.get('STORE_NOTIFICATION_EMAIL') || 'emporioPapeLemi@gmail.com').toLowerCase()
       notificationEmail = storeInbox
     }
     
@@ -452,9 +452,9 @@ ${comboPagesXml}
               'Authorization': `Bearer ${resendKey}`,
             },
             body: JSON.stringify({
-              from: 'Empório PapeLemi <noreply@emporiolelecute.com.br>',
+              from: 'PapeLemi <noreply@emporioPapeLemi.com.br>',
               to: [notificationEmail],
-              subject: 'Sitemap Atualizado - Empório PapeLemi',
+              subject: 'Sitemap Atualizado - PapeLemi',
               html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                   <h2 style="color: #F87C6D;">Sitemap Atualizado</h2>

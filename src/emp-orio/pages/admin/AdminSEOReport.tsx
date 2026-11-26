@@ -92,7 +92,7 @@ const AdminSEOReport = () => {
         .eq('is_active', true)
         .limit(5);
 
-      const siteUrl = seoConfig?.canonical_url || 'https://emporiolelecute.com.br';
+      const siteUrl = seoConfig?.canonical_url || 'https://emporioPapeLemi.com.br';
       
       // Create sample URLs for display
       const urls: IndexationCheck[] = [

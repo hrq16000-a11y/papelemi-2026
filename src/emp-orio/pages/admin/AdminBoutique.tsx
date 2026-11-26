@@ -52,7 +52,7 @@ const AdminBoutique = () => {
         <Button disabled={saving} onClick={() => runSave(async () => {
           const { error } = await supabase.from('editorial_stories').upsert({ ...story, image_url: story.image_url || null, story_key: 'packaging' }); if (error) throw error;
           const escape = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-          const { error: pageError } = await supabase.from('pages').update({ title: story.title, status: story.is_published ? 'published' : 'draft', content: `<h2>${escape(story.title)}</h2><p>${escape(story.body).replace(/\n/g, '<br>')}</p>${story.image_url ? `<img src="${escape(story.image_url)}" alt="Embalagem Empório PapeLemi">` : ''}` }).eq('slug', 'embalagem-e-unboxing'); if (pageError) throw pageError;
+          const { error: pageError } = await supabase.from('pages').update({ title: story.title, status: story.is_published ? 'published' : 'draft', content: `<h2>${escape(story.title)}</h2><p>${escape(story.body).replace(/\n/g, '<br>')}</p>${story.image_url ? `<img src="${escape(story.image_url)}" alt="Embalagem PapeLemi">` : ''}` }).eq('slug', 'embalagem-e-unboxing'); if (pageError) throw pageError;
           await qc.invalidateQueries({ queryKey: ['editorial-story'] }); await qc.invalidateQueries({ queryKey: ['page'] });
         })}><Save />Salvar embalagem</Button>
         <section className="border-t border-border pt-6"><h2 className="font-display text-2xl">{story.title}</h2><p className="mt-3 whitespace-pre-line text-muted-foreground">{story.body}</p></section>

@@ -8,7 +8,7 @@
  *  - shouldAppearInSitemap retorna false por padrão (nesta fase).
  */
 
-export const SITE_ORIGIN = "https://emporiolelecute.com.br";
+export const SITE_ORIGIN = "https://emporioPapeLemi.com.br";
 
 export type CombinationKey = {
   primaryType: "segment" | "category" | "tag";
@@ -130,8 +130,8 @@ export function buildCombinationCanonicalPath(
 }
 
 export function buildCombinationTitle(segmentName: string, occasionName: string): string {
-  // Ex.: "Lembrancinhas para Casamento | Empório PapeLemi"
-  return `${segmentName} para ${occasionName} | Empório PapeLemi`;
+  // Ex.: "Lembrancinhas para Casamento | PapeLemi"
+  return `${segmentName} para ${occasionName} | PapeLemi`;
 }
 
 export function buildCombinationDescription(
@@ -141,8 +141,8 @@ export function buildCombinationDescription(
 ): string {
   const base = `Explore nossa seleção de ${segmentName.toLowerCase()} ideais para ${occasionName.toLowerCase()}.`;
   const tail = productsCount > 0
-    ? ` ${productsCount} opções artesanais personalizadas, feitas com carinho pelo Empório PapeLemi.`
-    : " Produtos artesanais personalizados feitos com carinho pelo Empório PapeLemi.";
+    ? ` ${productsCount} opções artesanais personalizadas, feitas com carinho pelo PapeLemi.`
+    : " Produtos artesanais personalizados feitos com carinho pelo PapeLemi.";
   return (base + tail).slice(0, 160);
 }
 

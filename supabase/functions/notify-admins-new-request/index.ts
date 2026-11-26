@@ -19,7 +19,7 @@ const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
 // Resend allows up to 100 recipients per batch entry and up to 100 entries
 // per /emails/batch call. We keep it well under that to be safe.
 const BATCH_SIZE = 50;
-const FROM_ADDRESS = "Empório PapeLemi <onboarding@resend.dev>";
+const FROM_ADDRESS = "PapeLemi <onboarding@resend.dev>";
 
 interface Payload {
   user_id?: string;
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const reviewUrl = "https://emporiolelecute.com.br/admin/usuarios/solicitacoes";
+    const reviewUrl = "https://emporioPapeLemi.com.br/admin/usuarios/solicitacoes";
     const subject = "[ALERTA] Nova solicitação de acesso administrativo";
     const html = `
       <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:auto;padding:24px;color:#111">
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
           </a>
         </p>
         <p style="font-size:12px;color:#666;margin-top:28px">
-          Você está recebendo esta mensagem porque é administrador do Empório PapeLemi.
+          Você está recebendo esta mensagem porque é administrador do PapeLemi.
         </p>
       </div>
     `;

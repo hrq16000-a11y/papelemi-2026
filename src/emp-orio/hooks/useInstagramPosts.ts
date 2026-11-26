@@ -58,7 +58,7 @@ export const useSaveInstagramPost = () => {
       } else {
         const { error } = await supabase.from("instagram_posts").insert({
           image_url: post.image_url!,
-          alt_text: post.alt_text || "Empório PapeLemi - Instagram",
+          alt_text: post.alt_text || "PapeLemi - Instagram",
           post_url: post.post_url || null,
           position: post.position ?? 0,
           is_visible: post.is_visible ?? true,

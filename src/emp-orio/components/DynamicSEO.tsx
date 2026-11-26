@@ -20,7 +20,7 @@ interface DynamicSEOProps {
   };
 }
 
-const SITE_ORIGIN = 'https://emporiolelecute.com.br';
+const SITE_ORIGIN = 'https://emporioPapeLemi.com.br';
 
 const buildCanonical = (pathname: string) => {
   // Strip trailing slash (except root) to enforce single preferred URL — no query/hash
@@ -58,7 +58,7 @@ const DynamicSEO = ({ title, description, image, url, type = 'website', product 
       <meta property="og:description" content={pageDescription} />
       <meta property="og:image" content={pageImage} />
       <meta property="og:locale" content="pt_BR" />
-      <meta property="og:site_name" content="Empório PapeLemi" />
+      <meta property="og:site_name" content="PapeLemi" />
       
       {seoConfig.facebook_app_id && (
         <meta property="fb:app_id" content={seoConfig.facebook_app_id} />

@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
     }
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    const FROM = Deno.env.get('NOTIFY_FROM_EMAIL') ?? 'Empório PapeLemi <noreply@emporiolelecute.com.br>';
+    const FROM = Deno.env.get('NOTIFY_FROM_EMAIL') ?? 'PapeLemi <noreply@emporioPapeLemi.com.br>';
 
     const subject = role ? `Sua conta agora tem permissão: ${role}` : 'Atualização de acesso';
     const safeRole = (role ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
@@ -131,8 +131,8 @@ Deno.serve(async (req) => {
       <div style="font-family: system-ui, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
         <h2 style="color:#c2956b;">Acesso liberado</h2>
         <p>Olá,</p>
-        <p>Sua conta <strong>${canonicalEmail}</strong> recebeu a permissão <strong>${safeRole}</strong> no painel administrativo do Empório PapeLemi.</p>
-        <p><a href="https://emporiolelecute.com.br/admin" style="background:#c2956b;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Abrir painel</a></p>
+        <p>Sua conta <strong>${canonicalEmail}</strong> recebeu a permissão <strong>${safeRole}</strong> no painel administrativo do PapeLemi.</p>
+        <p><a href="https://emporioPapeLemi.com.br/admin" style="background:#c2956b;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Abrir painel</a></p>
         <p style="font-size:12px;color:#888;">Evento: ${safeEvent} · ref: ${request_id.replace(/[^A-Za-z0-9-]/g, '')}</p>
       </div>
     `;

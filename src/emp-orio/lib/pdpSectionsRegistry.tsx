@@ -109,7 +109,7 @@ export const pdpSectionRegistry: Record<string, Renderer> = {
               headline: `Sobre ${product.name}`,
               articleBody: dbProduct.editorial_content.slice(0, 4000),
               mainEntityOfPage: canonicalUrl,
-              author: { "@type": "Organization", name: "Empório PapeLemi" },
+              author: { "@type": "Organization", name: "PapeLemi" },
             })
               .replace(/</g, "\\u003c")
               .replace(/>/g, "\\u003e")

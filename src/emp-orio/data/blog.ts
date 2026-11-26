@@ -28,7 +28,7 @@ export interface BlogPost {
   published: boolean;
 }
 
-const AUTHOR = "Empório PapeLemi";
+const AUTHOR = "PapeLemi";
 
 export const BLOG_POSTS: BlogPost[] = [];
 export const getPublishedPosts = () =>

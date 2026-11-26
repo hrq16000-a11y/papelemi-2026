@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 const SITE_URL = CANONICAL_ORIGIN
-const BRAND = 'Empório PapeLemi'
+const BRAND = 'PapeLemi'
 
 // Default Google Product Category for handmade/artisan products
 const DEFAULT_GOOGLE_CATEGORY = 'Arts & Entertainment > Party & Celebration > Gift Giving > Party Favors'

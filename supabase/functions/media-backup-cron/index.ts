@@ -18,7 +18,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
-const FROM_ADDRESS = "Empório PapeLemi <onboarding@resend.dev>";
+const FROM_ADDRESS = "PapeLemi <onboarding@resend.dev>";
 const BATCH_SIZE = 50;
 
 interface MissingAsset {
@@ -157,7 +157,7 @@ async function sendMissingAlert(
     )
     .join("");
 
-  const subject = `[ALERTA] ${missing.length} imagem(ns) ausente(s) — Empório PapeLemi`;
+  const subject = `[ALERTA] ${missing.length} imagem(ns) ausente(s) — PapeLemi`;
   const html = `
     <div style="font-family:system-ui,Arial,sans-serif;max-width:600px;margin:auto;padding:24px;color:#111">
       <h2 style="margin:0 0 12px 0;font-size:18px">Imagens ausentes detectadas</h2>
@@ -171,7 +171,7 @@ async function sendMissingAlert(
       <ul style="margin:12px 0 16px 16px;padding:0;font-size:13px">${rows}</ul>
       <p style="margin:0 0 20px 0">Revise e restaure no painel:</p>
       <p style="margin:0 0 24px 0">
-        <a href="https://emporiolelecute.com.br/admin/media-backup"
+        <a href="https://emporioPapeLemi.com.br/admin/media-backup"
            style="background:#e85d3a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600">
           Abrir Backup de Mídia
         </a>

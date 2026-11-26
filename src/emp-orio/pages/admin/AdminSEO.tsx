@@ -27,16 +27,16 @@ interface SEOSettings {
 }
 
 const defaultSEOSettings: SEOSettings = {
-  site_title: 'Empório PapeLemi | Lembrancinhas Artesanais Personalizadas',
+  site_title: 'PapeLemi | Lembrancinhas Artesanais Personalizadas',
   site_description: 'Ateliê criativo de lembrancinhas artesanais personalizadas. Sabonetes, velas perfumadas e presentes únicos para todas as ocasiões especiais.',
   site_keywords: 'lembrancinhas personalizadas, sabonetes artesanais, velas perfumadas, maternidade, chá de bebê, batizado, casamento',
-  og_image: 'https://emporiolelecute.com.br/og-image.webp',
-  twitter_handle: '@emporiolelecute',
+  og_image: 'https://emporioPapeLemi.com.br/og-image.webp',
+  twitter_handle: '@emporioPapeLemi',
   google_verification: '',
   bing_verification: '',
   facebook_app_id: '',
-  canonical_url: 'https://emporiolelecute.com.br',
-  robots_txt: 'User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: https://emporiolelecute.com.br/sitemap.xml',
+  canonical_url: 'https://emporioPapeLemi.com.br',
+  robots_txt: 'User-agent: *\nAllow: /\nDisallow: /admin/\nSitemap: https://emporioPapeLemi.com.br/sitemap.xml',
   additional_meta_tags: '',
   structured_data_business: '',
   sitemap_notification_email: '',

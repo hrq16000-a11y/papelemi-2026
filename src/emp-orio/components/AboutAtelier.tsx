@@ -14,7 +14,7 @@ interface Props {
  */
 const AboutAtelier = ({
   title = 'Sobre o ateliê',
-  text = 'O Empório PapeLemi nasceu de uma mesa de trabalho cheia de papéis, fitas e sabonetes artesanais. Cada lembrancinha é montada à mão, no nosso ritmo, pensando na história que ela vai contar. Se você chegou até aqui, é porque também acredita que detalhe pequeno é o que emociona.',
+  text = 'O PapeLemi nasceu de uma mesa de trabalho cheia de papéis, fitas e sabonetes artesanais. Cada lembrancinha é montada à mão, no nosso ritmo, pensando na história que ela vai contar. Se você chegou até aqui, é porque também acredita que detalhe pequeno é o que emociona.',
 }: Props) => {
   const { instagram, facebook } = useContactInfo();
 
@@ -47,7 +47,7 @@ const AboutAtelier = ({
             href={instagram}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Instagram do Empório PapeLemi"
+            aria-label="Instagram do PapeLemi"
             className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-border transition-colors hover:bg-muted"
           >
             <Instagram className="h-4 w-4" strokeWidth={1.5} />
@@ -56,7 +56,7 @@ const AboutAtelier = ({
             href={facebook}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Facebook do Empório PapeLemi"
+            aria-label="Facebook do PapeLemi"
             className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-border transition-colors hover:bg-muted"
           >
             <Facebook className="h-4 w-4" strokeWidth={1.5} />

@@ -113,7 +113,7 @@ const BestSellers = ({ eyebrow }: BestSellersProps = {}) => {
     return {
       "@context": "https://schema.org",
       "@type": "ItemList",
-      name: "Mais vendidos — Empório PapeLemi",
+      name: "Mais vendidos — PapeLemi",
       itemListOrder: "https://schema.org/ItemListOrderAscending",
       numberOfItems: products.length,
       itemListElement: products.map((p, i) => ({

@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
     const posts = items.map((m: any, idx: number) => ({
       image_url: m.media_type === 'VIDEO' ? (m.thumbnail_url || m.media_url) : m.media_url,
       post_url: m.permalink,
-      alt_text: (m.caption || 'Empório PapeLemi - Instagram').slice(0, 200),
+      alt_text: (m.caption || 'PapeLemi - Instagram').slice(0, 200),
       position: idx,
       is_visible: true,
     }));

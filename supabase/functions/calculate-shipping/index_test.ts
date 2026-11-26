@@ -21,9 +21,9 @@ Deno.test("rejects invalid CEP", async () => {
 });
 
 Deno.test("local delivery when destination matches origin (skipped if origin not set)", async () => {
-  const origin = Deno.env.get("LELECUTE_ORIGIN_CEP");
+  const origin = Deno.env.get("PapeLemi_ORIGIN_CEP");
   if (!origin) {
-    console.log("[skip] LELECUTE_ORIGIN_CEP not configured");
+    console.log("[skip] PapeLemi_ORIGIN_CEP not configured");
     return;
   }
   const r = await post({

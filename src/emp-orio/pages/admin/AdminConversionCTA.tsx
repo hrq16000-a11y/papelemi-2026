@@ -43,7 +43,7 @@ const FALLBACK_VARS = {
   quantity: 30,
   personalization: "Nome: Maria · Cor da fita: rosa",
   price: "R$ 12,90",
-  imageUrl: "https://emporiolelecute.com.br/img/sabonete.jpg",
+  imageUrl: "https://emporioPapeLemi.com.br/img/sabonete.jpg",
   category: "Sabonetes",
   occasion: "Casamento",
   segment: "Lembrancinhas",
@@ -307,7 +307,7 @@ function ConfigTab({
           <Separator />
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Pré-visualização (dados de exemplo) — exatamente como o cliente vê no WhatsApp</Label>
-            <WhatsAppPreview message={previewMessage} contactName="Empório PapeLemi" />
+            <WhatsAppPreview message={previewMessage} contactName="PapeLemi" />
           </div>
         </CardContent>
       </Card>
@@ -517,7 +517,7 @@ function PreviewTab({ template }: { template: string }) {
         </div>
         <div className="space-y-3">
           <Label className="text-xs text-muted-foreground">Mensagem final do WhatsApp — exatamente como o cliente recebe</Label>
-          <WhatsAppPreview message={rendered} contactName="Empório PapeLemi" />
+          <WhatsAppPreview message={rendered} contactName="PapeLemi" />
           <Button
             variant="outline"
             className="w-full"

@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
       return json({
         local_delivery: true,
         options: applyRules([
-          { provider: 'Empório PapeLemi', service_name: 'Retirada / Entrega local', price: 0, estimated_delivery_days: '1-2' },
+          { provider: 'PapeLemi', service_name: 'Retirada / Entrega local', price: 0, estimated_delivery_days: '1-2' },
         ], { subtotal, state, destino }, rules ?? []),
       });
     }
@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
     // Retirada no local (se habilitada no admin) — aparece como opção adicional, sempre R$ 0
     if (settings.pickup_enabled) {
       options.push({
-        provider: 'Empório PapeLemi',
+        provider: 'PapeLemi',
         service_name: settings.pickup_label || 'Retirada no ateliê',
         price: 0,
         estimated_delivery_days: '0',
@@ -349,7 +349,7 @@ async function quoteMelhorEnvio(p: any, ctx: any): Promise<ShippingOption[]> {
       Accept: 'application/json',
       'Content-Type': 'application/json',
       Authorization: `Bearer ${p.api_key}`,
-      'User-Agent': 'EmporioPapeLemi (contato@emporiolelecute.com.br)',
+      'User-Agent': 'EmporioPapeLemi (contato@emporioPapeLemi.com.br)',
     },
     body: JSON.stringify(payload),
   });

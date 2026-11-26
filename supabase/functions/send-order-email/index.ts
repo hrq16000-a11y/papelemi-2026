@@ -143,7 +143,7 @@ function generateOrderEmailHtml(order: OrderRequest): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🌸 Empório PapeLemi</h1>
+          <h1>🌸 PapeLemi</h1>
           <p>Novo Pedido Recebido!</p>
         </div>
         
@@ -235,8 +235,8 @@ function generateOrderEmailHtml(order: OrderRequest): string {
         </div>
         
         <div class="footer">
-          <p>Este email foi enviado automaticamente pelo site Empório PapeLemi</p>
-          <p>© ${new Date().getFullYear()} Empório PapeLemi - Ateliê Criativo</p>
+          <p>Este email foi enviado automaticamente pelo site PapeLemi</p>
+          <p>© ${new Date().getFullYear()} PapeLemi - Ateliê Criativo</p>
         </div>
       </div>
     </body>
@@ -289,7 +289,7 @@ function generateCustomerEmailHtml(order: OrderRequest): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🌸 Empório PapeLemi</h1>
+          <h1>🌸 PapeLemi</h1>
           <p>Recebemos seu pedido!</p>
         </div>
         
@@ -358,7 +358,7 @@ function generateCustomerEmailHtml(order: OrderRequest): string {
         
         <div class="footer">
           <p>Dúvidas? Entre em contato pelo WhatsApp (41) 99221-4299</p>
-          <p>© ${new Date().getFullYear()} Empório PapeLemi - Ateliê Criativo</p>
+          <p>© ${new Date().getFullYear()} PapeLemi - Ateliê Criativo</p>
         </div>
       </div>
     </body>
@@ -390,7 +390,7 @@ function generateQuoteEmailHtml(data: QuoteRequest): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🌸 Empório PapeLemi</h1>
+          <h1>🌸 PapeLemi</h1>
           <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">${data.type === 'product' ? 'Novo Pedido de Produto' : 'Nova Solicitação de Orçamento'}</p>
         </div>
         <div class="content">
@@ -435,8 +435,8 @@ function generateQuoteEmailHtml(data: QuoteRequest): string {
           </center>
         </div>
         <div class="footer">
-          <p>Este email foi enviado automaticamente pelo site Empório PapeLemi</p>
-          <p>© ${new Date().getFullYear()} Empório PapeLemi - Ateliê Criativo</p>
+          <p>Este email foi enviado automaticamente pelo site PapeLemi</p>
+          <p>© ${new Date().getFullYear()} PapeLemi - Ateliê Criativo</p>
         </div>
       </div>
     </body>
@@ -500,7 +500,7 @@ function generateStatusUpdateEmailHtml(data: StatusUpdateRequest): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🌸 Empório PapeLemi</h1>
+          <h1>🌸 PapeLemi</h1>
         </div>
         
         <div class="content">
@@ -522,7 +522,7 @@ function generateStatusUpdateEmailHtml(data: StatusUpdateRequest): string {
           </div>
           ` : ''}
           
-          <a href="https://emporiolelecute.lovable.app/rastrear?code=${escapeHtml(data.orderCode)}" class="cta">📦 Acompanhar Pedido</a>
+          <a href="https://emporioPapeLemi.lovable.app/rastrear?code=${escapeHtml(data.orderCode)}" class="cta">📦 Acompanhar Pedido</a>
           
           <p style="color: #999; font-size: 12px; margin-top: 30px;">
             Dúvidas? Entre em contato pelo WhatsApp (41) 99221-4299
@@ -530,7 +530,7 @@ function generateStatusUpdateEmailHtml(data: StatusUpdateRequest): string {
         </div>
         
         <div class="footer">
-          <p>© ${new Date().getFullYear()} Empório PapeLemi - Ateliê Criativo</p>
+          <p>© ${new Date().getFullYear()} PapeLemi - Ateliê Criativo</p>
         </div>
       </div>
     </body>
@@ -538,7 +538,7 @@ function generateStatusUpdateEmailHtml(data: StatusUpdateRequest): string {
   `;
 }
 
-const STORE_INBOX = "emporiolelecute@gmail.com";
+const STORE_INBOX = "emporioPapeLemi@gmail.com";
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -607,7 +607,7 @@ const handler = async (req: Request): Promise<Response> => {
       const statusData = buildStatusEmailData(order);
       const statusEmailHtml = generateStatusUpdateEmailHtml(statusData);
       const { error: deliveryError } = await resend.emails.send({
-        from: "Empório PapeLemi <onboarding@resend.dev>",
+        from: "PapeLemi <onboarding@resend.dev>",
         to: [statusData.customerEmail],
         subject: `📦 Atualização do Pedido ${orderCode} - ${escapeHtml(statusData.statusLabel || "")}`,
         html: statusEmailHtml,
@@ -680,7 +680,7 @@ const handler = async (req: Request): Promise<Response> => {
       };
       const storeEmailHtml = generateOrderEmailHtml(order);
       await resend.emails.send({
-        from: "Empório PapeLemi <onboarding@resend.dev>",
+        from: "PapeLemi <onboarding@resend.dev>",
         to: [STORE_INBOX],
         subject: `🛒 Novo Pedido ${orderCode} - ${escapeHtml(order.customer?.name || "")}`,
         html: storeEmailHtml,
@@ -691,9 +691,9 @@ const handler = async (req: Request): Promise<Response> => {
       if (isValidEmail(recipient) && verifiedCustomerEmail === recipient.trim().toLowerCase()) {
         const customerEmailHtml = generateCustomerEmailHtml(order);
         await resend.emails.send({
-          from: "Empório PapeLemi <onboarding@resend.dev>",
+          from: "PapeLemi <onboarding@resend.dev>",
           to: [recipient],
-          subject: `✨ Pedido ${orderCode} recebido - Empório PapeLemi`,
+          subject: `✨ Pedido ${orderCode} recebido - PapeLemi`,
           html: customerEmailHtml,
         });
       }
@@ -733,7 +733,7 @@ const handler = async (req: Request): Promise<Response> => {
       : `💬 Nova Solicitação de Orçamento - ${escapeHtml(cleanQuote.occasion || "Geral")}`;
 
     await resend.emails.send({
-      from: "Empório PapeLemi <onboarding@resend.dev>",
+      from: "PapeLemi <onboarding@resend.dev>",
       to: [STORE_INBOX], // Always to store inbox — never to client-supplied address
       subject,
       html: generateQuoteEmailHtml(cleanQuote),

@@ -11,7 +11,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ORIGIN = 'https://emporiolelecute.com.br';
+const ORIGIN = 'https://emporioPapeLemi.com.br';
 const INDEXNOW_KEY = '87296b506db34e8cb22cc31288f33f84';
 
 const AGENTS: Record<string, string> = {
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json; charset=utf-8', 'User-Agent': AGENTS.browser },
         body: JSON.stringify({
-          host: 'emporiolelecute.com.br',
+          host: 'emporioPapeLemi.com.br',
           key: INDEXNOW_KEY,
           keyLocation: `${ORIGIN}/${INDEXNOW_KEY}.txt`,
           urlList: [`${ORIGIN}/`],

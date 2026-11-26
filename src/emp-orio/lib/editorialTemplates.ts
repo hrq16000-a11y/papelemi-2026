@@ -34,7 +34,7 @@ const CATEGORY_TEMPLATES: EditorialTemplateGroup[] = [
         label: 'Introdução sensorial',
         hint: 'Texto inicial sensorial + apresentação.',
         body: block(
-          `Cada {{produto}} é feito à mão na cozinha do Empório PapeLemi, com {{ingrediente_principal}} e essências cuidadosamente escolhidas.`,
+          `Cada {{produto}} é feito à mão na cozinha do PapeLemi, com {{ingrediente_principal}} e essências cuidadosamente escolhidas.`,
           `Textura cremosa, perfume suave e aparência delicada — pensado para encantar logo no primeiro contato.`,
         ),
       },

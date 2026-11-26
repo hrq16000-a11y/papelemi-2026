@@ -19,8 +19,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ORIGIN = 'https://emporiolelecute.com.br';
-const BRAND = 'Empório PapeLemi';
+const ORIGIN = 'https://emporioPapeLemi.com.br';
+const BRAND = 'PapeLemi';
 
 const clean = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 const stripHtml = (v: unknown) => clean(v).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();

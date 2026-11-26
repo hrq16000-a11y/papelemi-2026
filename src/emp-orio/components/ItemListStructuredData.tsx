@@ -46,7 +46,7 @@ export function buildItemListJsonLd(
           "image": product.image,
           "url": urls.productCanonical(product.slug),
           "sku": product.slug,
-          "brand": { "@type": "Brand", "name": "Empório PapeLemi" },
+          "brand": { "@type": "Brand", "name": "PapeLemi" },
           "offers": {
             "@type": "Offer",
             "url": urls.productCanonical(product.slug),
@@ -55,7 +55,7 @@ export function buildItemListJsonLd(
             "priceValidUntil": priceValidUntilStr,
             "availability": "https://schema.org/InStock",
             "itemCondition": "https://schema.org/NewCondition",
-            "seller": { "@type": "Organization", "name": "Empório PapeLemi" },
+            "seller": { "@type": "Organization", "name": "PapeLemi" },
           },
         },
       };

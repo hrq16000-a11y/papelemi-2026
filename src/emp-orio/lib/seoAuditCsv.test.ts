@@ -13,12 +13,12 @@ const products = {
   products: [
     {
       slug: 'kit-baby-shower',
-      url: 'https://emporiolelecute.com.br/produto/kit-baby-shower',
+      url: 'https://emporioPapeLemi.com.br/produto/kit-baby-shower',
       issues: [{ severity: 'error' as const, code: 'image_missing', detail: 'Sem imagem — og:image quebra.' }],
     },
     {
       slug: 'difusor-lavanda',
-      url: 'https://emporiolelecute.com.br/produto/difusor-lavanda',
+      url: 'https://emporioPapeLemi.com.br/produto/difusor-lavanda',
       issues: [],
     },
   ],
@@ -29,7 +29,7 @@ const feed = {
     {
       id: 'SKU-9',
       title: 'Difusor',
-      link: 'https://emporiolelecute.com.br/produto/difusor-lavanda',
+      link: 'https://emporioPapeLemi.com.br/produto/difusor-lavanda',
       issues: [{ severity: 'warn' as const, code: 'title_short', detail: 'Título curto (12 caracteres).' }],
     },
   ],
@@ -40,27 +40,27 @@ const index = {
     {
       kind: 'theme_hub',
       path: '/ocasioes/baby-shower',
-      url: 'https://emporiolelecute.com.br/ocasioes/baby-shower',
+      url: 'https://emporioPapeLemi.com.br/ocasioes/baby-shower',
       status: 200,
-      canonical: 'https://emporiolelecute.com.br/ocasioes/baby-shower-2',
+      canonical: 'https://emporioPapeLemi.com.br/ocasioes/baby-shower-2',
       indexable: true,
-      issues: ['Canonical divergente: https://emporiolelecute.com.br/ocasioes/baby-shower-2'],
+      issues: ['Canonical divergente: https://emporioPapeLemi.com.br/ocasioes/baby-shower-2'],
     },
     {
       kind: 'core',
       path: '/loja',
-      url: 'https://emporiolelecute.com.br/loja',
+      url: 'https://emporioPapeLemi.com.br/loja',
       status: 200,
-      canonical: 'https://emporiolelecute.com.br/loja',
+      canonical: 'https://emporioPapeLemi.com.br/loja',
       indexable: true,
       issues: [],
     },
     {
       kind: 'core',
       path: '/',
-      url: 'https://emporiolelecute.com.br/',
+      url: 'https://emporioPapeLemi.com.br/',
       status: 200,
-      canonical: 'https://emporiolelecute.com.br/',
+      canonical: 'https://emporioPapeLemi.com.br/',
       indexable: true,
       issues: [],
     },
@@ -70,7 +70,7 @@ const index = {
 
 describe('slugFromUrl', () => {
   it('takes the last path segment without query, hash or trailing slash', () => {
-    expect(slugFromUrl('https://emporiolelecute.com.br/produto/kit-baby?utm=1#x')).toBe('kit-baby');
+    expect(slugFromUrl('https://emporioPapeLemi.com.br/produto/kit-baby?utm=1#x')).toBe('kit-baby');
     expect(slugFromUrl('/ocasioes/baby-shower/')).toBe('baby-shower');
     expect(slugFromUrl(null)).toBe('');
   });
@@ -108,7 +108,7 @@ describe('buildAuditCsvRows', () => {
     expect(drift).toMatchObject({
       status: 'aviso',
       codigo: 'canonical_divergente',
-      motivo: 'Canonical divergente: https://emporiolelecute.com.br/ocasioes/baby-shower-2',
+      motivo: 'Canonical divergente: https://emporioPapeLemi.com.br/ocasioes/baby-shower-2',
     });
   });
 

@@ -98,8 +98,8 @@ const Header = () => {
   }, [isMobileSearchOpen]);
 
   const socialLinks = [
-    { href: "https://www.instagram.com/emporiolelecute", icon: Instagram, label: "Instagram" },
-    { href: "https://www.facebook.com/emporiolelecute", icon: Facebook, label: "Facebook" },
+    { href: "https://www.instagram.com/emporioPapeLemi", icon: Instagram, label: "Instagram" },
+    { href: "https://www.facebook.com/emporioPapeLemi", icon: Facebook, label: "Facebook" },
   ];
 
   return (
@@ -115,11 +115,11 @@ const Header = () => {
           <Link
             to="/"
             className="flex items-center gap-2 group"
-            aria-label="Empório PapeLemi - Página inicial"
+            aria-label="PapeLemi - Página inicial"
           >
             <img
               src={logo}
-              alt="Logo Empório PapeLemi - Ateliê Criativo de Lembrancinhas Artesanais"
+              alt="Logo PapeLemi - Ateliê Criativo de Lembrancinhas Artesanais"
               /* width/height intrínsecos reais (1206x701) → browser reserva a aspect-ratio
                  antes da imagem baixar, eliminando CLS no mobile. */
               width={1206}

@@ -13,7 +13,7 @@ const corsHeaders = {
 };
 
 const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
-const FROM_ADDRESS = "Empório PapeLemi <onboarding@resend.dev>";
+const FROM_ADDRESS = "PapeLemi <onboarding@resend.dev>";
 const WINDOW_MINUTES = 15;
 const THRESHOLD = 10; // errors per window
 const COOLDOWN_MINUTES = 60;
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
   } catch (_) { /* fall through */ }
 
   if (recipients.length === 0) {
-    recipients = ["emporiolelecute@gmail.com"];
+    recipients = ["emporioPapeLemi@gmail.com"];
   }
 
   // Build sample list (top distinct messages)
@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     )
     .join("");
 
-  const reviewUrl = "https://emporiolelecute.com.br/admin/telemetria";
+  const reviewUrl = "https://emporioPapeLemi.com.br/admin/telemetria";
   const subject = `[ALERTA] Pico de erros na loja: ${count} eventos em ${WINDOW_MINUTES} min`;
   const html = `
     <div style="font-family:system-ui,Arial,sans-serif;max-width:600px;margin:auto;padding:24px;color:#111">

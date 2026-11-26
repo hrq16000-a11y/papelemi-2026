@@ -89,7 +89,7 @@ export default function SearchInsights({ onCreateSynonym, onCreateBoost }: Props
         th{background:#f9fafb;text-transform:uppercase;font-size:10px;color:#6b7280}
         td.n{text-align:right;font-variant-numeric:tabular-nums}
       </style></head><body>
-      <h1>Insights de busca — Empório PapeLemi</h1>
+      <h1>Insights de busca — PapeLemi</h1>
       <p class="meta">${periodLabel} · ${totals.uniqueTerms} termos · ${totals.total} buscas · ${totals.zero} sem resultado · gerado em ${new Date().toLocaleString("pt-BR")}</p>
       <table><thead><tr><th>Termo</th><th>Buscas</th><th>Zero</th><th>Taxa zero</th><th>Última busca</th><th>Sugestão</th></tr></thead>
       <tbody></tbody></table>

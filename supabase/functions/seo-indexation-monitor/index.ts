@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     const { data: seoData } = await supabase
       .from('store_settings').select('value').eq('key', 'seo_config').maybeSingle()
     const seoConfig = (seoData?.value ?? {}) as { canonical_url?: string; gsc_property?: string; sitemap_notification_email?: string }
-    const configuredSite = safeIndexationUrl(seoConfig.canonical_url || 'https://emporiolelecute.com.br');
+    const configuredSite = safeIndexationUrl(seoConfig.canonical_url || 'https://emporioPapeLemi.com.br');
     if (!configuredSite) throw new Error('Store URL is not allowed');
     const siteUrl = new URL(configuredSite).origin
     const property = seoConfig.gsc_property || `sc-domain:${siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
     }
 
     // 5) Email alerta
-    const notificationEmail = seoConfig.sitemap_notification_email || 'emporiolelecute@gmail.com'
+    const notificationEmail = seoConfig.sitemap_notification_email || 'emporioPapeLemi@gmail.com'
     if (newIssues.length > 0) {
       const resendKey = Deno.env.get('RESEND_API_KEY')
       if (resendKey) {
@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
             body: JSON.stringify({
-              from: 'Empório PapeLemi <noreply@emporiolelecute.com.br>',
+              from: 'PapeLemi <noreply@emporioPapeLemi.com.br>',
               to: [notificationEmail],
               subject: `[SEO] ${newIssues.length} URL(s) com problema de indexação`,
               html: `<div style="font-family:sans-serif;max-width:640px;margin:0 auto">

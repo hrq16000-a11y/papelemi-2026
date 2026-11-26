@@ -38,7 +38,7 @@ const Footer = () => {
         {/* Microcopy editorial — assinatura acima dos grupos de links */}
         <div className="max-w-2xl mb-14">
           <p className="text-base md:text-lg text-primary-foreground/85 font-light leading-relaxed">
-            Empório PapeLemi — perfumaria artesanal, feita em pequena escala.
+            PapeLemi — perfumaria artesanal, feita em pequena escala.
           </p>
           <p className="mt-2 text-sm text-primary-foreground/55 font-light">
             Do nosso ateliê, em Curitiba, para a sua casa.
@@ -48,7 +48,7 @@ const Footer = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-14 mb-14">
           {/* Brand */}
           <div>
-            <img src={logo} alt="Logo Empório PapeLemi" className="h-14 w-auto mb-5 rounded-lg bg-white p-2" />
+            <img src={logo} alt="Logo PapeLemi" className="h-14 w-auto mb-5 rounded-lg bg-white p-2" />
             <p className="text-primary-foreground/65 text-sm leading-relaxed mb-5 font-light">
               {config.brand_description}
             </p>

@@ -59,7 +59,7 @@ const InstagramFeed = () => {
         <div className="text-center mb-12">
           <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-light rounded-full text-primary text-sm font-medium mb-4">
             <Instagram className="h-4 w-4" />
-            @emporiolelecute
+            @emporioPapeLemi
           </span>
           <h2 id="instagram-heading" className="font-display text-4xl md:text-5xl text-foreground mb-4">
             Siga-nos no <span className="text-primary">Instagram</span>
@@ -111,7 +111,7 @@ const InstagramFeed = () => {
 
         <div className="text-center mt-8">
           <a
-            href="https://www.instagram.com/emporiolelecute"
+            href="https://www.instagram.com/emporioPapeLemi"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white px-8 py-4 rounded-full font-semibold shadow-medium hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
@@ -174,10 +174,10 @@ const InstagramFeed = () => {
 
               <div className="flex items-center justify-between gap-4 p-4">
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                  {active.alt_text || "@emporiolelecute"}
+                  {active.alt_text || "@emporioPapeLemi"}
                 </p>
                 <a
-                  href={active.post_url || "https://www.instagram.com/emporiolelecute"}
+                  href={active.post_url || "https://www.instagram.com/emporioPapeLemi"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-primary hover:underline"

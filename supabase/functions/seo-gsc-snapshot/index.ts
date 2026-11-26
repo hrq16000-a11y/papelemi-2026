@@ -21,7 +21,7 @@ const corsHeaders = {
 };
 
 const GATEWAY = 'https://connector-gateway.lovable.dev/google_search_console';
-const ORIGIN = 'https://emporiolelecute.com.br';
+const ORIGIN = 'https://emporioPapeLemi.com.br';
 
 interface SiteEntry { siteUrl: string; permissionLevel?: string }
 interface Row { keys?: string[]; clicks?: number; impressions?: number; ctr?: number; position?: number }

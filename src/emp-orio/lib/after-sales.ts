@@ -10,7 +10,7 @@ export interface AfterSalesRule {
 }
 export const defaultAfterSalesRule: AfterSalesRule = {
   enabled: false, trigger_event: 'delivered', delay_days: 3,
-  subject: 'Seu pedido chegou bem? — Empório PapeLemi',
+  subject: 'Seu pedido chegou bem? — PapeLemi',
   message: 'Olá, {nome}! Seu pedido {pedido} chegou bem? Responda e me conte como foi receber sua encomenda.',
   repurchase_enabled: false, repurchase_text: '',
 };

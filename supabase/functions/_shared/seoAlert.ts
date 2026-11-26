@@ -94,7 +94,7 @@ export async function sendSeoFailureAlert(supabase: Client, failure: SeoFailure)
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
       body: JSON.stringify({
-        from: 'Empório PapeLemi <noreply@emporiolelecute.com.br>',
+        from: 'PapeLemi <noreply@emporioPapeLemi.com.br>',
         to: [to],
         subject: `[SEO] Falha em ${LABEL[failure.channel]}`,
         html: `<div style="font-family:sans-serif;max-width:640px;margin:0 auto">

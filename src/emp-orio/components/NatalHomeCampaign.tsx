@@ -5,7 +5,7 @@ import { ArrowRight, Gift, Heart, Sparkles, X } from "lucide-react-v462";
 const PRESEPIO_IMAGE = "https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/products/1794003037869-dgml8q.webp";
 const MINI_VELA_IMAGE = "https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/products/1794158842992-pambq.webp";
 const PAPAI_NOEL_IMAGE = "https://xfqffqxqiuqauefrrcxn.supabase.co/storage/v1/object/public/product-images/products/1794002953612-487og.webp";
-const INVITE_SEEN_KEY = "lelecute_natal_2026_invite_seen";
+const INVITE_SEEN_KEY = "PapeLemi_natal_2026_invite_seen";
 
 /**
  * Destaque editorial de Natal: a loja continua gerenciando o hero e os demais
@@ -45,7 +45,7 @@ export function NatalHomeSpotlight() {
               <Heart className="h-4 w-4 text-[#b25d64]" aria-hidden="true" /> Personalização e carinho em cada detalhe
             </p>
           </div>
-          <div className="relative grid h-[295px] grid-cols-[1.15fr_.85fr] gap-3 sm:h-[390px] sm:gap-4" aria-label="Produtos natalinos artesanais do Empório PapeLemi">
+          <div className="relative grid h-[295px] grid-cols-[1.15fr_.85fr] gap-3 sm:h-[390px] sm:gap-4" aria-label="Produtos natalinos artesanais do PapeLemi">
             <Link to="/natal" aria-label="Conhecer a coleção de Natal com presépios artesanais" className="group relative row-span-2 overflow-hidden rounded-3xl bg-[#ecdfd3] shadow-xl">
               <img src={PRESEPIO_IMAGE} loading="lazy" alt="Lembrancinha de Natal com presépio da Sagrada Família" className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105" />
             </Link>

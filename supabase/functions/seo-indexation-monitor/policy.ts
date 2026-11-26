@@ -1,7 +1,7 @@
 const allowedOrigins = new Set([
-  'https://emporiolelecute.com.br',
-  'https://www.emporiolelecute.com.br',
-  'https://emporiolelecute.lovable.app',
+  'https://emporioPapeLemi.com.br',
+  'https://www.emporioPapeLemi.com.br',
+  'https://emporioPapeLemi.lovable.app',
 ]);
 
 export const safeIndexationUrl = (value: unknown): string | null => {

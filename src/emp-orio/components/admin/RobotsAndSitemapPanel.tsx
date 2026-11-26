@@ -6,7 +6,7 @@ import { RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, ListTree } from '
 import { supabase } from '@/emp-orio/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const SITE = (import.meta.env.VITE_SITE_URL as string) || 'https://emporiolelecute.com.br';
+const SITE = (import.meta.env.VITE_SITE_URL as string) || 'https://emporioPapeLemi.com.br';
 
 export default function RobotsAndSitemapPanel() {
   const [loading, setLoading] = useState(false);

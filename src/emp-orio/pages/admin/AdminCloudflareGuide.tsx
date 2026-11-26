@@ -31,7 +31,7 @@ export default {
   },
 };`;
 
-const ROUTES = ['emporiolelecute.com.br/robots.txt', 'www.emporiolelecute.com.br/robots.txt'];
+const ROUTES = ['emporioPapeLemi.com.br/robots.txt', 'www.emporioPapeLemi.com.br/robots.txt'];
 
 export default function AdminCloudflareGuide() {
   const [copied, setCopied] = useState(false);
@@ -49,7 +49,7 @@ export default function AdminCloudflareGuide() {
     setValidating(true);
     setResult(null);
     try {
-      const r = await fetch('https://emporiolelecute.com.br/robots.txt', { cache: 'no-store' });
+      const r = await fetch('https://emporioPapeLemi.com.br/robots.txt', { cache: 'no-store' });
       const body = await r.text();
       setResult({ ok: r.ok, status: r.status, source: r.headers.get('x-robots-source') ?? undefined, body });
     } catch (e) {
@@ -69,7 +69,7 @@ export default function AdminCloudflareGuide() {
       <Card>
         <CardHeader><CardTitle>1. Confirmar Cloudflare como proxy</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-2">
-          <p>No DNS Cloudflare, os registros A de <code>emporiolelecute.com.br</code> e <code>www</code> precisam estar com a <strong>nuvem laranja</strong> (proxied).</p>
+          <p>No DNS Cloudflare, os registros A de <code>emporioPapeLemi.com.br</code> e <code>www</code> precisam estar com a <strong>nuvem laranja</strong> (proxied).</p>
           <p>No painel Lovable de domínio, marque <em>"Domain uses Cloudflare or a similar proxy"</em>.</p>
         </CardContent>
       </Card>
@@ -109,7 +109,7 @@ export default function AdminCloudflareGuide() {
           <CardTitle className="flex items-center justify-between">4. Validar
             <Button size="sm" onClick={validate} disabled={validating}>{validating ? 'Validando...' : 'Validar agora'}</Button>
           </CardTitle>
-          <CardDescription>Faz fetch de <code>https://emporiolelecute.com.br/robots.txt</code> e confere o header <code>x-robots-source</code>.</CardDescription>
+          <CardDescription>Faz fetch de <code>https://emporioPapeLemi.com.br/robots.txt</code> e confere o header <code>x-robots-source</code>.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {result && (

@@ -47,7 +47,7 @@ const empty: Partial<DbBlogPost> = {
   is_published: false,
   featured: false,
   reading_time: 5,
-  author: "Empório PapeLemi",
+  author: "PapeLemi",
   faqs: [],
   related_products: [],
   related_categories: [],

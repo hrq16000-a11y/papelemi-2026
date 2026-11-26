@@ -2,7 +2,7 @@ export const buildBusinessSchema = (input: { origin: string; logo: string; descr
   '@context': 'https://schema.org',
   '@type': 'Organization',
   '@id': `${input.origin}/#organization`,
-  name: 'Empório PapeLemi',
+  name: 'PapeLemi',
   url: input.origin,
   logo: { '@type': 'ImageObject', url: new URL(input.logo, input.origin).href },
   ...(input.description ? { description: input.description } : {}),

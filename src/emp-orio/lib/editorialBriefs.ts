@@ -128,7 +128,7 @@ export function buildFaqSuggestions(e: BriefEntityInput): FaqSuggestion[] {
     },
     {
       question: `Posso personalizar ${name.toLowerCase()}?`,
-      rationale: "Reforça USP do Empório PapeLemi.",
+      rationale: "Reforça USP do PapeLemi.",
       impact: "high",
     },
     {

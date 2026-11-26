@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
   const status = order.status as string;
   const label = STATUS_LABEL[status] || status;
   const message = STATUS_MESSAGE[status] || "O status do seu pedido foi atualizado.";
-  const trackUrl = `https://emporiolelecute.com.br/rastrear?code=${encodeURIComponent(order.order_code)}`;
+  const trackUrl = `https://emporioPapeLemi.com.br/rastrear?code=${encodeURIComponent(order.order_code)}`;
 
   // Idempotência: não reenviar o mesmo status para o mesmo pedido.
   const { data: already } = await admin
@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
 
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") || "";
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") || "";
-  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:emporiolelecute@gmail.com";
+  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:emporioPapeLemi@gmail.com";
 
   const { data: prefs } = customerEmail
     ? await admin
@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
 
   const html = `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#3f3a38">
-      <h1 style="font-size:20px;color:#e08a7b">Empório PapeLemi</h1>
+      <h1 style="font-size:20px;color:#e08a7b">PapeLemi</h1>
       <p>Olá, ${escapeEmailHtml(String(order.customer_name || "").slice(0, 80))}!</p>
       <p>${message}</p>
       <p style="background:#faf6f4;padding:16px;border-radius:12px">
@@ -194,14 +194,14 @@ Deno.serve(async (req: Request) => {
         </a>
       </p>
       ${safeEmailLink(order.tracking_url) ? `<p><a href="${safeEmailLink(order.tracking_url)}">Rastrear na transportadora</a></p>` : ""}
-      <p style="font-size:12px;color:#8c8481">Você recebeu este e-mail porque fez um pedido no Empório PapeLemi.</p>
+      <p style="font-size:12px;color:#8c8481">Você recebeu este e-mail porque fez um pedido no PapeLemi.</p>
     </div>
   `;
 
   try {
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
     const { error } = await resend.emails.send({
-      from: "Empório PapeLemi <onboarding@resend.dev>",
+      from: "PapeLemi <onboarding@resend.dev>",
       to: [order.customer_email as string],
       subject: `Pedido ${order.order_code}: ${label}`,
       html,

@@ -12,7 +12,7 @@ interface Props {
   pathPrefix?: string;
 }
 
-const HOST = 'emporiolelecute.com.br';
+const HOST = 'emporioPapeLemi.com.br';
 const TITLE_MAX = 60;
 const DESC_MAX = 160;
 

@@ -3,7 +3,7 @@ import { Check, CheckCheck } from "lucide-react-v462";
 interface WhatsAppPreviewProps {
   /** Texto da mensagem (\n é convertido em quebra de linha). */
   message: string;
-  /** Nome do contato que receberia a mensagem. Default: "Empório PapeLemi". */
+  /** Nome do contato que receberia a mensagem. Default: "PapeLemi". */
   contactName?: string;
   /** Mostra cabeçalho estilo WhatsApp. Default: true. */
   showHeader?: boolean;
@@ -19,7 +19,7 @@ interface WhatsAppPreviewProps {
  */
 export function WhatsAppPreview({
   message,
-  contactName = "Empório PapeLemi",
+  contactName = "PapeLemi",
   showHeader = true,
   time,
   direction = "outgoing",

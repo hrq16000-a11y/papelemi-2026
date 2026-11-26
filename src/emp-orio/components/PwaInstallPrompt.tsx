@@ -78,7 +78,7 @@ export default function PwaInstallPrompt() {
         <div className="flex-1">
           <h3 className="font-semibold text-sm text-foreground">Instalar app</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Adicione o Empório Lelecute à sua tela inicial para acesso rápido.
+            Adicione o PapeLemi à sua tela inicial para acesso rápido.
           </p>
           <div className="flex gap-2 mt-3">
             <Button size="sm" onClick={onInstall} className="gap-1">

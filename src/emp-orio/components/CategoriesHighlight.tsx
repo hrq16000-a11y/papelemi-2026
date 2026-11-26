@@ -30,7 +30,7 @@ const CategoriesHighlight = () => {
     return (
       <section className="py-12 bg-background">
         <div className="container mx-auto px-4">
-          <h1 className="sr-only">Empório PapeLemi - Lembrancinhas Artesanais Personalizadas</h1>
+          <h1 className="sr-only">PapeLemi - Lembrancinhas Artesanais Personalizadas</h1>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {[1, 2, 3, 4].map(i => (
               <Skeleton key={i} className="aspect-square rounded-2xl" />
@@ -45,7 +45,7 @@ const CategoriesHighlight = () => {
     <section className="py-12 bg-background">
       <div className="container mx-auto px-4">
         {/* SEO H1 - visually hidden but present for search engines */}
-        <h1 className="sr-only">Empório PapeLemi - Lembrancinhas Artesanais Personalizadas</h1>
+        <h1 className="sr-only">PapeLemi - Lembrancinhas Artesanais Personalizadas</h1>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {categories.map((category, index) => (

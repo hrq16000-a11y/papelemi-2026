@@ -46,7 +46,7 @@ const CategoriesScroll = () => {
   return (
     <section ref={sectionRef} className="py-5 md:py-16 bg-background" aria-label="Categorias">
       <div className="container mx-auto px-4">
-        <h1 className="sr-only">Empório PapeLemi - Lembrancinhas Artesanais Personalizadas</h1>
+        <h1 className="sr-only">PapeLemi - Lembrancinhas Artesanais Personalizadas</h1>
 
         <div className="sr-only" aria-live="polite" aria-atomic="true">
           {activeName ? `Categoria em foco: ${activeName}. Item ${activeIdx + 1} de ${total}.` : ""}

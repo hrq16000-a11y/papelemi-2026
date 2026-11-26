@@ -8,7 +8,7 @@
  *  - shouldThemeAppearInSitemap() retorna false nesta fase.
  */
 
-export const SITE_ORIGIN = "https://emporiolelecute.com.br";
+export const SITE_ORIGIN = "https://emporioPapeLemi.com.br";
 
 export const MIN_PRODUCTS_THEME = 8;
 export const MIN_AUTHORITY_INDEX = 70;
@@ -166,7 +166,7 @@ export function shouldThemeAppearInSitemap(_hub: ThemeHub | null): boolean {
 }
 
 export function buildThemeTitle(title: string): string {
-  return `Lembrancinhas Tema ${title} | Empório PapeLemi`;
+  return `Lembrancinhas Tema ${title} | PapeLemi`;
 }
 
 export function buildThemeDescription(params: {

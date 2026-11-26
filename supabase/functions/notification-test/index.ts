@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
   // --- 1. Configuração VAPID ---
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") || "";
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") || "";
-  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:emporiolelecute@gmail.com";
+  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:emporioPapeLemi@gmail.com";
   const vapidReady = Boolean(vapidPublic && vapidPrivate);
   steps.push({
     step: "Chaves VAPID",
@@ -151,12 +151,12 @@ Deno.serve(async (req: Request) => {
     try {
       const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
       const { error } = await resend.emails.send({
-        from: "Empório PapeLemi <onboarding@resend.dev>",
+        from: "PapeLemi <onboarding@resend.dev>",
         to: [email],
         subject: `Teste de notificação · Pedido ${orderCode}`,
         html: `
           <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#3f3a38">
-            <h1 style="font-size:20px;color:#e08a7b">Empório PapeLemi</h1>
+            <h1 style="font-size:20px;color:#e08a7b">PapeLemi</h1>
             <p>Este é um <strong>teste</strong> do aviso de mudança de status de pedido.</p>
             <p style="background:#faf6f4;padding:16px;border-radius:12px">
               <strong>Pedido:</strong> ${orderCode}<br/>

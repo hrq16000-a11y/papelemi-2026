@@ -2,7 +2,7 @@ import { authorizeOperationalRequest } from '../_shared/operational-auth.ts';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-const ORIGIN = 'https://emporiolelecute.com.br'
+const ORIGIN = 'https://emporioPapeLemi.com.br'
 const ROBOTS_UPSTREAM = `${Deno.env.get('SUPABASE_URL')}/functions/v1/robots-txt`
 
 interface Check { name: string; ok: boolean; detail: string; severity: 'info'|'warn'|'error' }
@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: 'SEO Alerts <onboarding@resend.dev>',
             to: [config.email],
-            subject: `[SEO] ${failed.length} ${failed.length === 1 ? 'ocorrência' : 'ocorrências'} em emporiolelecute.com.br`,
+            subject: `[SEO] ${failed.length} ${failed.length === 1 ? 'ocorrência' : 'ocorrências'} em emporioPapeLemi.com.br`,
             html,
           }),
         })

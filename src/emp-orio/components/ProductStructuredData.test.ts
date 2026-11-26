@@ -6,8 +6,8 @@ const base = {
   description: 'Artesanal',
   images: ['https://x/img.jpg'],
   slug: 'sabonete-lavanda',
-  baseUrl: 'https://emporiolelecute.com.br',
-  productUrl: 'https://emporiolelecute.com.br/produto/sabonete-lavanda',
+  baseUrl: 'https://emporioPapeLemi.com.br',
+  productUrl: 'https://emporioPapeLemi.com.br/produto/sabonete-lavanda',
   priceValidUntilStr: '2027-01-01',
 };
 

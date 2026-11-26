@@ -461,7 +461,7 @@ const AdminUsers = () => {
                       <Button size="sm" variant="outline" asChild>
                         <a
                           href={buildWhatsappUrl(
-                            `Olá ${selected.full_name?.split(" ")[0] || ""}! Aqui é do Empório Lele Cute.`
+                            `Olá ${selected.full_name?.split(" ")[0] || ""}! Aqui é do PapeLemi.`
                           )}
                           target="_blank" rel="noopener noreferrer"
                         >

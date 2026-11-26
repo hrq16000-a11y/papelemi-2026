@@ -73,7 +73,7 @@ const ProductCard = ({ product, priority = false }: ProductCardProps) => {
           src={optimizeImage(product.image, { width: 600, resize: "contain" })}
           srcSet={buildSrcSet(product.image, [300, 450, 600, 800], 75, "contain")}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
-          alt={`${product.name} - Lembrancinha artesanal personalizada Empório PapeLemi`}
+          alt={`${product.name} - Lembrancinha artesanal personalizada PapeLemi`}
           className="w-full h-full object-contain opacity-0 [&.loaded]:opacity-100"
           loading={priority ? "eager" : "lazy"}
           decoding="async"

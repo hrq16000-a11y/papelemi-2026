@@ -24,7 +24,7 @@ const fallbackSlides: HeroSlide[] = [
     image_url: sabonetesImg,
     image_mobile_url: null,
     image_desktop_url: null,
-    image_alt: "Sabonetes artesanais personalizados Empório PapeLemi",
+    image_alt: "Sabonetes artesanais personalizados PapeLemi",
     cta_label: null,
     cta_url: null,
     position: 0,
@@ -39,7 +39,7 @@ const fallbackSlides: HeroSlide[] = [
     image_url: lembrancinhasImg,
     image_mobile_url: null,
     image_desktop_url: null,
-    image_alt: "Lembrancinhas artesanais personalizadas Empório PapeLemi",
+    image_alt: "Lembrancinhas artesanais personalizadas PapeLemi",
     cta_label: null,
     cta_url: null,
     position: 1,
@@ -54,7 +54,7 @@ const fallbackSlides: HeroSlide[] = [
     image_url: kitsImg,
     image_mobile_url: null,
     image_desktop_url: null,
-    image_alt: "Kits de lembrancinhas personalizados Empório PapeLemi",
+    image_alt: "Kits de lembrancinhas personalizados PapeLemi",
     cta_label: null,
     cta_url: null,
     position: 2,
@@ -391,7 +391,7 @@ const HeroSlider = () => {
     <section
       id="inicio"
       className="hero-shell relative flex flex-col overflow-hidden bg-background"
-      aria-label="Seção principal - Empório PapeLemi"
+      aria-label="Seção principal - PapeLemi"
     >
       {/* Preload da imagem LCP do primeiro slide — descoberta antecipada pelo browser.
           Slides com index > 0 permanecem em lazy loading (loading="lazy"). */}

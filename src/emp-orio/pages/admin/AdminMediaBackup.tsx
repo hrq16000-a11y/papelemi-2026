@@ -153,7 +153,7 @@ const AdminMediaBackup = () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const today = new Date().toLocaleString("pt-BR");
     doc.setFontSize(14);
-    doc.text("Empório PapeLemi — Imagens ausentes", 40, 40);
+    doc.text("PapeLemi — Imagens ausentes", 40, 40);
     doc.setFontSize(9);
     doc.setTextColor(120);
     doc.text(

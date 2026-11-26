@@ -42,7 +42,7 @@ export interface TaxonomyEntity {
 // Fase 6 — Fallbacks automáticos de SEO (runtime, não persistem)
 // ============================================================
 
-const SITE_NAME = 'Empório PapeLemi';
+const SITE_NAME = 'PapeLemi';
 
 export function metaTitleFallback(kind: TaxonomyKind, name: string): string {
   if (!name) return SITE_NAME;
@@ -180,7 +180,7 @@ export function scoreSeo(e: TaxonomyEntity, opts?: { productCount?: number }): S
 
 export interface Crumb { name: string; url: string }
 
-const SITE_ORIGIN = 'https://emporiolelecute.com.br';
+const SITE_ORIGIN = 'https://emporioPapeLemi.com.br';
 
 export interface BuildBreadcrumbsInput {
   kind: TaxonomyKind | 'produto' | 'produtos' | 'home';

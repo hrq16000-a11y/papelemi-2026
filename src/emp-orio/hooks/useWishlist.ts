@@ -40,7 +40,7 @@ export const useWishlistStore = create<WishlistState>()(
         set((s) => ({ items: s.items.filter((i) => i.product_id !== productId) })),
     }),
     {
-      name: 'lelecute_wishlist_v1',
+      name: 'PapeLemi_wishlist_v1',
       partialize: (s) => ({ items: s.items }) as WishlistState,
       onRehydrateStorage: () => (state) => {
         if (state) state.hydrated = true;

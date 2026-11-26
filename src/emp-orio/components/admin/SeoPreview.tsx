@@ -9,7 +9,7 @@ interface Props {
 }
 
 const SeoPreview = ({ kind, name, slug, metaTitle, metaDescription }: Props) => {
-  const host = 'emporiolelecute.com.br';
+  const host = 'emporioPapeLemi.com.br';
   const prefix = TAXONOMY_LABELS[kind].urlPrefix;
   const title = (metaTitle || name || `${TAXONOMY_LABELS[kind].singular}`).slice(0, 60);
   const desc = (metaDescription || 'Defina uma meta description para aparecer aqui.').slice(0, 160);
