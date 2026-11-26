@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           git fetch origin "${{ github.base_ref }}" --depth=1
-          mapfile -t files < <(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- 'src/**/*.ts' 'src/**/*.tsx')
+          mapfile -t files < <(git diff --diff-filter=ACMR --name-only "origin/${{ github.base_ref }}...HEAD" -- 'src/**/*.ts' 'src/**/*.tsx')
           if (("${#files[@]}" > 0)); then
             bunx eslint "${files[@]}" --rule 'prettier/prettier: off'
           else
