@@ -17,7 +17,7 @@ export const img = (id: string, _width = 900) =>
 
 export type Category = { slug: string; name: string; description: string; image: string };
 export type PersonalizationOption =
-  | { type: "text"; key: string; label: string; maxLength: number; ai?: boolean }
+  | { type: "text"; key: string; label: string; maxLength: number; ai?: boolean | undefined }
   | { type: "choice"; key: string; label: string; options: string[] }
   | { type: "notes"; key: string; label: string };
 
