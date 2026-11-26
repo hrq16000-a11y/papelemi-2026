@@ -12,7 +12,7 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  public: {
+  papelemi_engine: {
     Tables: {
       access_request_notifications: {
         Row: {
@@ -8429,7 +8429,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  papelemi_engine: {
     Enums: {
       app_role: ["admin", "user", "editor", "customer"],
       kit_bundle_type: ["suggested", "curated", "premium"],
