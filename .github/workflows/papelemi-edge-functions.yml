@@ -1,0 +1,49 @@
+name: PapeLemi Edge Functions
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/papelemi-edge-functions.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/papelemi-edge-functions.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: papelemi-edge-functions-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deno-check:
+    name: Type-check all 54 Edge Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Verify function inventory
+        run: |
+          count=$(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts | wc -l)
+          test "$count" -eq 54
+
+      - name: Type-check Edge Functions against PapeLemi engine schema adapter
+        run: |
+          mapfile -t files < <(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -print | sort)
+          deno check --no-lock --config supabase/functions/deno.json "${files[@]}"
