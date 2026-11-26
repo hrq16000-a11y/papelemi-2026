@@ -7,7 +7,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import type { OrderLifecycleDatabase } from "@/lib/order-lifecycle.types";
 import type { CatalogLifecycleDatabase } from "@/lib/catalog-lifecycle.types";
 import { categoryAdminSchema, productAdminSchema } from "@/lib/catalog-validation";
-import { calculateOrderTotals, isSameOrderRequest, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
+import { calculateOrderTotals, prepareOrderItems, roundMoney, type OrderLineInput } from "@/lib/order-integrity";
 import { engineAdmin } from "@/lib/engine.server";
 import type { PapeLemiEngineProductRow } from "@/lib/catalog.repository.server";
 
@@ -81,7 +81,9 @@ export const validateCoupon = createServerFn({ method: "GET" })
 const orderLineInput = z.object({
   slug: z.string().trim().min(1).max(80),
   qty: z.number().int().min(1).max(999),
-  options: z.record(z.string().max(60), z.string().max(500)).refine((options) => Object.keys(options).length <= 23, "Número de opções inválido."),
+  options: z.record(z.string().max(60), z.string().max(500))
+    .refine((options) => Object.keys(options).length <= 23, "Número de opções inválido.")
+    .refine((options) => Object.entries(options).reduce((total, [key, value]) => total + key.length + value.length + 3, 0) <= 1000, "A personalização excede o limite de 1.000 caracteres."),
 });
 
 const quoteInput = z.object({
@@ -178,8 +180,13 @@ async function buildOrderQuote(input: QuoteInput) {
     subtotal: baseTotals.subtotal,
     ...(input.shippingOptionId ? { selectedOptionId: input.shippingOptionId } : {}),
   });
+  const productImages = Object.fromEntries(eligibleRows.map((row) => [
+    row.slug,
+    Array.isArray(row.images) && typeof row.images[0] === "string" ? row.images[0] : null,
+  ])) as Record<string, string | null>;
   return {
     items,
+    productImages,
     couponCode,
     subtotal: baseTotals.subtotal,
     discount,
@@ -244,172 +251,204 @@ function safeOrigin(origin?: string) {
 export const createOrder = createServerFn({ method: "POST" })
   .validator(orderInput)
   .handler(async ({ data: input }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
     const quote = await buildOrderQuote(input);
     if (!quote.selectedShippingOption) {
-      throw new Error("SHIPPING_CHANGED: Selecione novamente uma opção de frete antes de registrar a encomenda.");
+      throw new Error("Selecione uma opção de entrega antes de continuar.");
     }
-    if (await createQuoteToken(quote) !== input.quoteToken) {
-      throw new Error("PRICE_CHANGED: Os valores ou condições mudaram. O resumo foi atualizado; confira antes de enviar novamente.");
+    if (quote.shippingSelectionChanged || quote.selectedShippingOption.id !== input.shippingOptionId) {
+      throw new Error("A opção de entrega mudou. Atualize a cotação antes de confirmar.");
     }
-    const orderValues = {
-      customer_name: input.customer.name,
-      customer_email: input.customer.email,
-      customer_phone: input.customer.phone,
-      address: {
-        cep: input.address.cep.replace(/\D/g, ""),
-        street: input.address.street,
-        number: input.address.number,
-        complement: input.address.complement,
-        district: input.address.district,
-        city: input.address.city,
-        state: input.address.state,
-        shipping: quote.selectedShippingOption ? {
-          option_id: quote.selectedShippingOption.id,
-          provider: quote.selectedShippingOption.provider,
-          service_name: quote.selectedShippingOption.service_name,
-          estimated_delivery_days: quote.selectedShippingOption.estimated_delivery_days,
-          estimated: quote.selectedShippingOption.estimated,
-          requires_confirmation: quote.selectedShippingOption.requiresConfirmation,
-          pickup_address: quote.selectedShippingOption.pickupAddress ?? "",
-          pickup_instructions: quote.selectedShippingOption.pickupInstructions ?? "",
-        } : null,
+    const quoteToken = await createQuoteToken(quote);
+    if (quoteToken !== input.quoteToken) {
+      throw new Error("O orçamento expirou. Atualize o carrinho e tente novamente.");
+    }
+
+    const { createHash } = await import("node:crypto");
+    const normalizedAddress = {
+      ...input.address,
+      cep: input.address.cep.replace(/[^0-9]/g, ""),
+    };
+    const requestHash = createHash("sha256").update(JSON.stringify({
+      requestId: input.requestId,
+      customer: {
+        name: input.customer.name,
+        email: input.customer.email.toLowerCase(),
+        phone: input.customer.phone,
       },
-      items: quote.items,
+      address: normalizedAddress,
+      items: quote.items.map((item) => ({
+        slug: item.slug,
+        qty: item.qty,
+        unit_price: item.unit_price,
+        options: item.options,
+      })),
+      couponCode: quote.couponCode,
       subtotal: quote.subtotal,
-      shipping: quote.shipping,
       discount: quote.discount,
-      coupon_code: quote.couponCode,
+      shipping: quote.shipping,
       total: quote.total,
-      store_key: "papelemi",
-      customer_notes: input.customerNotes,
-      accepted_privacy: input.acceptedPrivacy,
-      privacy_consent_at: new Date().toISOString(),
-      source: "storefront",
+      selectedShippingOption: quote.selectedShippingOption,
+      customerNotes: input.customerNotes,
+      acceptedPrivacy: input.acceptedPrivacy,
+      quoteToken,
+    })).digest("hex");
+
+    const orderCode = "PL-" + input.requestId.replace(/-/g, "").slice(0, 24).toUpperCase();
+    const paymentReady = mpConfigured() && !quote.selectedShippingOption.requiresConfirmation;
+    const privacyConsentAt = new Date().toISOString();
+    const shippingSnapshot = {
+      option: quote.selectedShippingOption,
+      destinationZip: quote.destinationZip,
+      destinationState: quote.destinationState,
+      quotedShipping: quote.shipping,
+      quoteToken,
     };
 
-    // The existing orders.id primary key is the idempotency key; no schema change is needed.
-    const { data: inserted, error: insertError } = await admin
-      .from("orders")
-      .upsert(
-        { id: input.requestId, ...orderValues },
-        { onConflict: "id", ignoreDuplicates: true },
-      )
-      .select("id")
-      .maybeSingle();
-
-    if (insertError) throw new Error("Não foi possível registrar a encomenda. Tente novamente.");
-
-    let orderId = inserted?.id as string | undefined;
-    if (!orderId) {
-      const { data: existing, error: lookupError } = await admin
-        .from("orders")
-        .select("*")
-        .eq("id", input.requestId)
-        .eq("store_key", "papelemi")
-        .maybeSingle();
-
-      if (lookupError) throw new Error("Não foi possível confirmar a solicitação anterior.");
-      if (!existing || !isSameOrderRequest(existing, orderValues)) {
-        throw new Error("ORDER_REQUEST_CONFLICT: Esta tentativa já foi usada com outros dados. Gere uma nova tentativa e envie novamente.");
+    const itemsPayload = quote.items.map((item) => {
+      const personalization = Object.entries(item.options)
+        .filter(([, value]) => value.trim().length > 0)
+        .map(([key, value]) => key + ": " + value.trim())
+        .join("\n");
+      if (personalization.length > 1000) {
+        throw new Error("A personalização de um produto excede o limite permitido.");
       }
-      orderId = existing.id as string;
+      return {
+        product_slug: item.slug,
+        quantity: item.qty,
+        unit_price: item.unit_price,
+        product_image: quote.productImages[item.slug] ?? null,
+        personalization,
+        personalization_data: item.options,
+      };
+    });
+
+    const engine = engineAdmin();
+    const { data: created, error: createError } = await engine.rpc("create_order_with_items", {
+      _order: {
+        order_code: orderCode,
+        request_id: input.requestId,
+        request_hash: requestHash,
+        customer_name: input.customer.name,
+        customer_email: input.customer.email.toLowerCase(),
+        customer_phone: input.customer.phone,
+        address_cep: normalizedAddress.cep,
+        address_street: input.address.street,
+        address_number: input.address.number,
+        address_complement: input.address.complement,
+        address_neighborhood: input.address.district,
+        address_city: input.address.city,
+        address_state: input.address.state,
+        shipping_method: quote.selectedShippingOption.service_name,
+        shipping_company: quote.selectedShippingOption.provider ?? null,
+        shipping_days: quote.selectedShippingOption.estimated_delivery_days ?? null,
+        shipping_price: quote.shipping,
+        subtotal: quote.subtotal,
+        expected_subtotal: quote.subtotal,
+        expected_discount: quote.discount,
+        expected_shipping: quote.shipping,
+        expected_total: quote.total,
+        coupon_code: quote.couponCode,
+        customer_notes: input.customerNotes,
+        accepted_privacy: input.acceptedPrivacy,
+        privacy_consent_at: privacyConsentAt,
+        source: "storefront",
+        shipping_snapshot: shippingSnapshot,
+        payment_method: paymentReady ? "mercadopago" : null,
+      } as Json,
+      _items: itemsPayload as unknown as Json,
+    });
+
+    if (createError) {
+      if (createError.message.includes("PRICE_CHANGED")) {
+        throw new Error("O preço, o cupom ou o frete mudou. Atualize o orçamento antes de pagar.");
+      }
+      if (createError.message.includes("ORDER_REQUEST_CONFLICT")) {
+        throw new Error("Este identificador de pedido já foi utilizado com dados diferentes. Atualize o carrinho.");
+      }
+      console.error("PapeLemi engine order creation failed", {
+        code: createError.code,
+        message: createError.message.slice(0, 180),
+      });
+      throw new Error("Não foi possível registrar o pedido. Atualize a página e tente novamente.");
     }
 
-    // Persist normalized CRM and order lines while retaining the original JSONB order snapshot.
-    const normalizedEmail = input.customer.email.trim().toLowerCase();
-    const { data: customer, error: customerError } = await admin.from("customers").upsert({
-      store_key: "papelemi",
-      name: input.customer.name,
-      email: input.customer.email,
-      email_normalized: normalizedEmail,
-      phone: input.customer.phone,
-      whatsapp: input.customer.phone,
-      city: input.address.city,
-      state: input.address.state,
-      source: "storefront",
-      status: "active",
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "store_key,email_normalized" }).select("id").single();
-    if (customerError || !customer?.id) throw new Error("Não foi possível atualizar o cadastro do cliente.");
-
-    const { error: customerLinkError } = await admin.from("orders")
-      .update({ customer_id: customer.id }).eq("id", orderId).eq("store_key", "papelemi");
-    if (customerLinkError) throw new Error("Não foi possível vincular o pedido ao cadastro do cliente.");
-
-    const orderItemRows = quote.items.map((item, index) => ({
-      store_key: "papelemi",
-      order_id: orderId,
-      line_number: index + 1,
-      product_slug: item.slug,
-      product_name: item.name,
-      quantity: item.qty,
-      unit_price: item.unit_price,
-      line_total: roundMoney(item.unit_price * item.qty),
-      personalization: item.options,
-    }));
-    const { error: orderItemsError } = await admin.from("order_items").upsert(orderItemRows, {
-      onConflict: "store_key,order_id,line_number",
-      ignoreDuplicates: true,
-    });
-    if (orderItemsError) throw new Error("Não foi possível registrar os itens do pedido.");
+    const createdOrder = created && typeof created === "object" && !Array.isArray(created)
+      ? created as Record<string, Json>
+      : {};
+    const orderId = typeof createdOrder["id"] === "string" ? createdOrder["id"] : "";
+    const orderTotal = Number(createdOrder["total"]);
+    if (!orderId || !Number.isFinite(orderTotal)) {
+      throw new Error("O banco não confirmou o registro do pedido. Consulte o atendimento antes de reenviar.");
+    }
+    if (Math.abs(orderTotal - quote.total) > 0.01) {
+      throw new Error("O total confirmado pelo banco diverge do orçamento. Nenhuma cobrança foi iniciada.");
+    }
 
     let initPoint: string | null = null;
-    const paymentReady = mpConfigured() && !quote.selectedShippingOption.requiresConfirmation;
     if (paymentReady) {
       const origin = safeOrigin(input.origin);
-      const pref = (await mpRequest("checkout/preferences", {
+      const preference = await mpRequest<{ init_point?: string; sandbox_init_point?: string }>("/checkout/preferences", {
         method: "POST",
-        idempotencyKey: `pref-${orderId}-1`,
-        body: {
-          items: [{ title: `Pedido PapeLemi ${orderId.slice(0, 8)}`, quantity: 1, unit_price: quote.total, currency_id: "BRL" }],
+        idempotencyKey: "pref-" + orderId + "-1",
+        body: JSON.stringify({
           external_reference: orderId,
+          items: [{
+            id: orderCode,
+            title: "Pedido PapeLemi",
+            quantity: 1,
+            unit_price: orderTotal,
+            currency_id: "BRL",
+          }],
+          notification_url: origin + "/api/public/mercadopago-webhook",
           back_urls: {
-            success: `${origin}/pedido/${orderId}`,
-            pending: `${origin}/pedido/${orderId}`,
-            failure: `${origin}/pedido/${orderId}`,
+            success: origin + "/pedido/" + orderId + "?payment=success",
+            pending: origin + "/pedido/" + orderId + "?payment=pending",
+            failure: origin + "/pedido/" + orderId + "?payment=failure",
           },
           auto_return: "approved",
-          notification_url: `${PUBLISHED_ORIGIN}/api/public/mercadopago-webhook`,
-        },
-      })) as { init_point?: string };
-      initPoint = pref.init_point ?? null;
+        }),
+      });
+      initPoint = preference.init_point ?? preference.sandbox_init_point ?? null;
+      if (!initPoint) throw new Error("O pedido foi registrado, mas o link de pagamento não foi retornado. Tente novamente pelo atendimento.");
     }
-    return { orderId, initPoint, total: quote.total, paymentReady, shippingRequiresConfirmation: quote.selectedShippingOption.requiresConfirmation };
+
+    return {
+      orderId,
+      orderCode,
+      initPoint,
+      total: orderTotal,
+      paymentReady,
+    };
   });
 
 export const getOrderStatus = createServerFn({ method: "GET" })
   .validator(z.object({ orderId: z.string().uuid() }))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin as unknown as SupabaseClient<Database>;
-    const readOrder = () => admin
+    const engine = engineAdmin();
+    const readOrder = () => engine
       .from("orders")
-      .select("status,total")
+      .select("status,total,payment_status")
       .eq("id", data.orderId)
-      .eq("store_key", "papelemi")
       .maybeSingle();
 
-    const { data: initial, error: initialError } = await readOrder();
-    if (initialError || !initial) throw new Error("Pedido não encontrado");
+    const { data: initial, error } = await readOrder();
+    if (error || !initial) throw new Error("Pedido não encontrado.");
 
-    if (mpConfigured() && initial.status === "pending") {
-      try { await confirmOrderByReference(data.orderId); } catch { /* segue com o status atual */ }
+    if (mpConfigured() && initial.payment_status === "pending") {
+      await confirmOrderByReference(data.orderId);
     }
 
-    const { data: order, error } = await readOrder();
-    if (error || !order) throw new Error("Pedido não encontrado");
-    return { status: !mpConfigured() && order.status === "pending" ? "received" : order.status, total: Number(order.total) };
+    const { data: order, error: refreshError } = await readOrder();
+    if (refreshError || !order) throw new Error("Não foi possível atualizar o status do pedido.");
+
+    const status = order.payment_status === "approved"
+      ? "paid"
+      : !mpConfigured() && order.status === "pending"
+        ? "received"
+        : order.status;
+
+    return { status, total: Number(order.total) };
   });
-
-// ===== Administração (exige papel de admin) =====
-
-type AdminCtx = { supabase: ReturnType<typeof publicClient>; userId: string };
-async function requireAdmin(context: AdminCtx) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (!data) throw new Error("Acesso restrito ao administrador da loja");
-}
 
 export const getMyRole = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

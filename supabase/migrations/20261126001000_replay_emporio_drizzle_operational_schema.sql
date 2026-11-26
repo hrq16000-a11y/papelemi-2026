@@ -390,35 +390,63 @@ REVOKE ALL ON FUNCTION "papelemi_engine"."preview_search_boost"(jsonb)
 GRANT EXECUTE ON FUNCTION "papelemi_engine"."preview_search_boost"(jsonb)
   TO authenticated;
 
--- Reproduce the latest Drizzle 0014 checkout function. It derives every item price
--- from the engine catalog (including legacy product slugs) and calculates totals
--- and discounts server-side. It never trusts client-supplied unit_price/subtotal.
+-- PapeLemi checkout uses the Emporio engine as its single order source of truth.
+-- Prices and discounts are recomputed from the engine catalog; expected totals from
+-- the server quote are compared before any customer/order/item/coupon rows are written.
 CREATE OR REPLACE FUNCTION "papelemi_engine"."create_order_with_items"(_order jsonb, _items jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET "search_path" TO 'papelemi_engine', 'pg_catalog', 'public', 'pg_temp'
 AS $function$
 DECLARE
   new_order_id uuid;
   new_order_code text;
-  item_count int;
+  v_request_id uuid;
+  v_request_hash text;
+  v_existing record;
+  item_count integer;
   v_coupon_code text;
-  v_subtotal numeric;
-  v_discount numeric;
-  v_total numeric;
-  v_shipping numeric;
+  v_coupon record;
+  v_subtotal numeric := 0;
+  v_discount numeric := 0;
+  v_shipping numeric := 0;
+  v_total numeric := 0;
+  v_expected_subtotal numeric;
+  v_expected_discount numeric;
+  v_expected_shipping numeric;
+  v_expected_total numeric;
   v_email text;
+  v_customer_name text;
+  v_phone text;
+  v_address_cep text;
+  v_address_street text;
+  v_address_number text;
+  v_address_complement text;
+  v_address_neighborhood text;
+  v_address_city text;
+  v_address_state text;
+  v_shipping_method text;
+  v_shipping_company text;
+  v_shipping_days text;
+  v_customer_notes text;
+  v_shipping_snapshot jsonb;
+  v_privacy_at timestamptz;
+  v_customer_id uuid;
   v_item jsonb;
-  v_qty int;
+  v_qty integer;
   v_price numeric;
+  v_expected_unit_price numeric;
   v_product_id uuid;
-  v_name text;
+  v_product_name text;
+  v_product_image text;
+  v_personalization text;
+  v_personalization_data jsonb;
+  v_slug text;
   v_items jsonb := '[]'::jsonb;
-  c record;
 BEGIN
-  IF _order IS NULL OR _items IS NULL THEN
-    RAISE EXCEPTION 'Missing order or items';
+  IF _order IS NULL OR _items IS NULL OR COALESCE(jsonb_typeof(_items), '') <> 'array' THEN
+    RAISE EXCEPTION 'Missing order or invalid items';
   END IF;
 
   item_count := jsonb_array_length(_items);
@@ -426,167 +454,307 @@ BEGIN
     RAISE EXCEPTION 'Invalid items count';
   END IF;
 
-  IF coalesce(length(_order->>'customer_name'),0) = 0
-     OR coalesce(length(_order->>'customer_email'),0) = 0
-     OR coalesce(length(_order->>'order_code'),0) = 0 THEN
-    RAISE EXCEPTION 'Missing required customer fields';
+  v_request_id := NULLIF(_order->>'request_id', '')::uuid;
+  v_request_hash := NULLIF(lower(_order->>'request_hash'), '');
+  v_privacy_at := NULLIF(_order->>'privacy_consent_at', '')::timestamptz;
+
+  IF v_request_id IS NOT NULL THEN
+    IF v_request_hash IS NULL OR v_request_hash !~ '^[0-9a-f]{64}
+ THEN
+      RAISE EXCEPTION 'Invalid request hash';
+    END IF;
+    IF COALESCE((_order->>'accepted_privacy')::boolean, false) IS NOT TRUE OR v_privacy_at IS NULL THEN
+      RAISE EXCEPTION 'Privacy consent is required';
+    END IF;
+
+    PERFORM pg_advisory_xact_lock(hashtextextended(v_request_id::text, 0));
+    SELECT * INTO v_existing
+      FROM "papelemi_engine"."orders"
+     WHERE request_id = v_request_id
+     FOR UPDATE;
+
+    IF FOUND THEN
+      IF v_existing.request_hash IS DISTINCT FROM v_request_hash THEN
+        RAISE EXCEPTION 'ORDER_REQUEST_CONFLICT';
+      END IF;
+      RETURN jsonb_build_object(
+        'id', v_existing.id,
+        'order_code', v_existing.order_code,
+        'subtotal', v_existing.subtotal,
+        'discount_amount', v_existing.discount_amount,
+        'shipping_price', v_existing.shipping_price,
+        'total', v_existing.total,
+        'duplicate', true
+      );
+    END IF;
   END IF;
 
-  IF length(_order->>'customer_name') > 200
-     OR length(_order->>'customer_email') > 320
-     OR length(coalesce(_order->>'customer_phone','')) > 40
-     OR length(_order->>'order_code') > 32 THEN
-    RAISE EXCEPTION 'Field too long';
+  v_customer_name := trim(COALESCE(_order->>'customer_name', ''));
+  v_email := lower(trim(COALESCE(_order->>'customer_email', '')));
+  v_phone := NULLIF(trim(COALESCE(_order->>'customer_phone', '')), '');
+  v_address_cep := regexp_replace(COALESCE(_order->>'address_cep', ''), '\D', '', 'g');
+  v_address_street := trim(COALESCE(_order->>'address_street', ''));
+  v_address_number := trim(COALESCE(_order->>'address_number', ''));
+  v_address_complement := NULLIF(trim(COALESCE(_order->>'address_complement', '')), '');
+  v_address_neighborhood := trim(COALESCE(_order->>'address_neighborhood', ''));
+  v_address_city := trim(COALESCE(_order->>'address_city', ''));
+  v_address_state := upper(trim(COALESCE(_order->>'address_state', '')));
+  v_shipping_method := NULLIF(trim(COALESCE(_order->>'shipping_method', '')), '');
+  v_shipping_company := NULLIF(trim(COALESCE(_order->>'shipping_company', '')), '');
+  v_shipping_days := NULLIF(trim(COALESCE(_order->>'shipping_days', '')), '');
+  v_customer_notes := left(COALESCE(_order->>'customer_notes', ''), 1000);
+  v_shipping_snapshot := CASE
+    WHEN jsonb_typeof(_order->'shipping_snapshot') = 'object' THEN _order->'shipping_snapshot'
+    ELSE '{}'::jsonb
+  END;
+  v_coupon_code := NULLIF(upper(trim(COALESCE(_order->>'coupon_code', ''))), '');
+  v_shipping := round(COALESCE(NULLIF(_order->>'shipping_price', '')::numeric, 0), 2);
+  v_expected_subtotal := NULLIF(_order->>'expected_subtotal', '')::numeric;
+  v_expected_discount := NULLIF(_order->>'expected_discount', '')::numeric;
+  v_expected_shipping := NULLIF(_order->>'expected_shipping', '')::numeric;
+  v_expected_total := NULLIF(_order->>'expected_total', '')::numeric;
+  new_order_code := NULLIF(trim(COALESCE(_order->>'order_code', '')), '');
+
+  IF length(v_customer_name) < 2 OR length(v_customer_name) > 200
+     OR v_email !~ '^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}
+
+     OR length(v_email) > 320
+     OR length(COALESCE(v_phone, '')) > 40 THEN
+    RAISE EXCEPTION 'Invalid customer fields';
   END IF;
 
-  v_email := lower(trim(_order->>'customer_email'));
-  IF v_email !~ '^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$' THEN
-    RAISE EXCEPTION 'Invalid email format';
+  IF length(v_address_cep) <> 8
+     OR length(v_address_street) < 2
+     OR length(v_address_street) > 120
+     OR length(v_address_number) = 0
+     OR length(v_address_number) > 20
+     OR length(v_address_complement) > 80
+     OR length(v_address_neighborhood) < 2
+     OR length(v_address_neighborhood) > 80
+     OR length(v_address_city) < 2
+     OR length(v_address_city) > 80
+     OR v_address_state !~ '^[A-Z]{2}
+ THEN
+    RAISE EXCEPTION 'Invalid delivery address';
   END IF;
 
-  IF (_order->>'order_code') !~ '^[A-Za-z0-9-]{4,32}$' THEN
+  IF v_shipping_method IS NULL OR length(v_shipping_method) > 120
+     OR length(COALESCE(v_shipping_company, '')) > 120
+     OR length(COALESCE(v_shipping_days, '')) > 120
+     OR v_shipping < 0 THEN
+    RAISE EXCEPTION 'Invalid shipping details';
+  END IF;
+
+  IF new_order_code IS NULL THEN
+    new_order_code := 'PL-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 24));
+  END IF;
+  IF length(new_order_code) > 32 OR new_order_code !~ '^[A-Za-z0-9-]{4,32}
+ THEN
     RAISE EXCEPTION 'Invalid order_code format';
   END IF;
 
-  v_coupon_code := NULLIF(_order->>'coupon_code','');
-  v_subtotal := 0;
-  v_shipping := 0;
+  FOR v_item IN SELECT value FROM jsonb_array_elements(_items) AS e(value) LOOP
+    v_qty := COALESCE(NULLIF(v_item->>'quantity', '')::integer, 0);
+    v_slug := trim(COALESCE(v_item->>'product_slug', ''));
+    v_personalization := COALESCE(v_item->>'personalization', '');
+    v_personalization_data := CASE
+      WHEN jsonb_typeof(v_item->'personalization_data') = 'object' THEN v_item->'personalization_data'
+      ELSE '{}'::jsonb
+    END;
+    v_expected_unit_price := NULLIF(v_item->>'unit_price', '')::numeric;
 
-  FOR v_item IN SELECT * FROM jsonb_array_elements(_items) LOOP
-    v_qty := coalesce((v_item->>'quantity')::int, 0);
     IF v_qty <= 0 OR v_qty > 10000 THEN
       RAISE EXCEPTION 'Invalid item quantity';
     END IF;
-    IF coalesce(length(v_item->>'personalization'),0) > 1000 THEN
+    IF length(v_personalization) > 1000 THEN
       RAISE EXCEPTION 'Personalization too long';
     END IF;
-    IF coalesce(length(v_item->>'product_slug'),0) = 0 OR length(v_item->>'product_slug') > 300 THEN
+    IF length(v_slug) = 0 OR length(v_slug) > 300 THEN
       RAISE EXCEPTION 'Invalid product on item';
     END IF;
 
-    SELECT p.id, p.price, p.name
-      INTO v_product_id, v_price, v_name
-      FROM "papelemi_engine"."products" p
-     WHERE p.slug = v_item->>'product_slug'
-     LIMIT 1;
+    v_product_id := NULL;
+    v_price := NULL;
+    v_product_name := NULL;
 
-    IF v_product_id IS NULL THEN
+    SELECT p.id, p.price, p.name
+      INTO v_product_id, v_price, v_product_name
+      FROM "papelemi_engine"."products" p
+      JOIN "papelemi_engine"."categories" c ON c.id = p.category_id
+     WHERE p.slug = v_slug
+       AND p.is_active IS TRUE
+       AND c.is_draft IS FALSE
+       AND c.is_indexed IS TRUE
+     LIMIT 1
+     FOR SHARE OF p;
+
+    IF NOT FOUND THEN
       SELECT p.id, p.price, p.name
-        INTO v_product_id, v_price, v_name
+        INTO v_product_id, v_price, v_product_name
         FROM "papelemi_engine"."product_slugs" s
         JOIN "papelemi_engine"."products" p ON p.id = s.product_id
-       WHERE s.slug = lower(v_item->>'product_slug')
-       LIMIT 1;
+        JOIN "papelemi_engine"."categories" c ON c.id = p.category_id
+       WHERE lower(s.slug) = lower(v_slug)
+         AND p.is_active IS TRUE
+         AND c.is_draft IS FALSE
+         AND c.is_indexed IS TRUE
+       LIMIT 1
+       FOR SHARE OF p;
     END IF;
 
     IF v_product_id IS NULL OR v_price IS NULL OR v_price < 0 THEN
       RAISE EXCEPTION 'Produto indisponível no catálogo';
     END IF;
+    IF v_expected_unit_price IS NOT NULL AND abs(v_price - v_expected_unit_price) > 0.01 THEN
+      RAISE EXCEPTION 'PRICE_CHANGED: item price changed';
+    END IF;
 
-    v_subtotal := v_subtotal + v_price * v_qty;
+    v_product_image := NULLIF(left(COALESCE(v_item->>'product_image', ''), 1000), '');
+    v_subtotal := v_subtotal + (v_price * v_qty);
     v_items := v_items || jsonb_build_array(jsonb_build_object(
-      'product_name', v_name,
-      'product_slug', v_item->>'product_slug',
-      'product_image', left(v_item->>'product_image', 1000),
+      'product_name', v_product_name,
+      'product_slug', v_slug,
+      'product_image', v_product_image,
       'quantity', v_qty,
       'unit_price', v_price,
-      'personalization', v_item->>'personalization'
+      'line_total', round(v_price * v_qty, 2),
+      'personalization', v_personalization,
+      'personalization_data', v_personalization_data
     ));
-
-    v_product_id := NULL;
-    v_price := NULL;
-    v_name := NULL;
   END LOOP;
 
+  v_subtotal := round(v_subtotal, 2);
   IF v_subtotal > 1000000 THEN
     RAISE EXCEPTION 'Unrealistic order total';
   END IF;
 
   v_discount := 0;
   IF v_coupon_code IS NOT NULL THEN
-    SELECT * INTO c
+    SELECT * INTO v_coupon
       FROM "papelemi_engine"."coupons"
-     WHERE upper(code) = upper(v_coupon_code)
+     WHERE upper(code) = v_coupon_code
      FOR UPDATE;
 
-    IF NOT FOUND OR NOT c.is_active THEN
+    IF NOT FOUND OR NOT v_coupon.is_active THEN
       RAISE EXCEPTION 'Cupom inválido ou inativo';
     END IF;
-    IF c.valid_from IS NOT NULL AND now() < c.valid_from THEN
+    IF v_coupon.valid_from IS NOT NULL AND now() < v_coupon.valid_from THEN
       RAISE EXCEPTION 'Cupom ainda não disponível';
     END IF;
-    IF c.valid_until IS NOT NULL AND now() > c.valid_until THEN
+    IF v_coupon.valid_until IS NOT NULL AND now() > v_coupon.valid_until THEN
       RAISE EXCEPTION 'Cupom expirado';
     END IF;
-    IF c.max_uses IS NOT NULL AND c.used_count >= c.max_uses THEN
+    IF v_coupon.max_uses IS NOT NULL AND COALESCE(v_coupon.used_count, 0) >= v_coupon.max_uses THEN
       RAISE EXCEPTION 'Cupom esgotado';
     END IF;
-    IF v_subtotal < c.min_subtotal THEN
+    IF v_subtotal < COALESCE(v_coupon.min_subtotal, 0) THEN
       RAISE EXCEPTION 'Valor mínimo não atingido para o cupom';
     END IF;
 
-    IF c.discount_type = 'percent' THEN
-      v_discount := round((v_subtotal * c.discount_value / 100)::numeric, 2);
+    IF v_coupon.discount_type = 'percent' THEN
+      v_discount := round((v_subtotal * v_coupon.discount_value / 100)::numeric, 2);
     ELSE
-      v_discount := least(c.discount_value, v_subtotal);
+      v_discount := LEAST(v_coupon.discount_value, v_subtotal);
     END IF;
-    IF v_discount < 0 THEN v_discount := 0; END IF;
-    IF v_discount > v_subtotal THEN v_discount := v_subtotal; END IF;
+    v_discount := GREATEST(0, LEAST(v_discount, v_subtotal));
   END IF;
 
-  v_total := v_subtotal - v_discount + v_shipping;
-  IF v_total < 0 THEN v_total := 0; END IF;
+  v_total := GREATEST(0, round(v_subtotal - v_discount + v_shipping, 2));
+
+  IF v_expected_subtotal IS NOT NULL AND abs(v_subtotal - v_expected_subtotal) > 0.01 THEN
+    RAISE EXCEPTION 'PRICE_CHANGED: subtotal changed';
+  END IF;
+  IF v_expected_discount IS NOT NULL AND abs(v_discount - v_expected_discount) > 0.01 THEN
+    RAISE EXCEPTION 'PRICE_CHANGED: discount changed';
+  END IF;
+  IF v_expected_shipping IS NOT NULL AND abs(v_shipping - v_expected_shipping) > 0.01 THEN
+    RAISE EXCEPTION 'PRICE_CHANGED: shipping changed';
+  END IF;
+  IF v_expected_total IS NOT NULL AND abs(v_total - v_expected_total) > 0.01 THEN
+    RAISE EXCEPTION 'PRICE_CHANGED: total changed';
+  END IF;
+
+  INSERT INTO "papelemi_engine"."customers" (
+    name, email, email_normalized, phone, whatsapp, city, state, source, status, updated_at
+  ) VALUES (
+    v_customer_name, v_email, v_email, v_phone, v_phone, v_address_city, v_address_state, 'storefront', 'active', now()
+  )
+  ON CONFLICT (email_normalized) WHERE email_normalized IS NOT NULL
+  DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    phone = EXCLUDED.phone,
+    whatsapp = EXCLUDED.whatsapp,
+    city = EXCLUDED.city,
+    state = EXCLUDED.state,
+    source = 'storefront',
+    status = 'active',
+    updated_at = now()
+  RETURNING id INTO v_customer_id;
 
   INSERT INTO "papelemi_engine"."orders" (
-    order_code, customer_name, customer_email, customer_phone,
+    order_code, customer_id, customer_name, customer_email, customer_phone,
     address_cep, address_street, address_number, address_complement,
     address_neighborhood, address_city, address_state,
     shipping_method, shipping_company, shipping_days, shipping_price,
-    subtotal, total, status, coupon_code, discount_amount
+    subtotal, total, status, coupon_code, discount_amount,
+    request_id, request_hash, accepted_privacy, privacy_consent_at,
+    source, customer_notes, shipping_snapshot, payment_method
   ) VALUES (
-    _order->>'order_code',
-    _order->>'customer_name',
-    v_email,
-    _order->>'customer_phone',
-    _order->>'address_cep',
-    _order->>'address_street',
-    _order->>'address_number',
-    _order->>'address_complement',
-    _order->>'address_neighborhood',
-    _order->>'address_city',
-    _order->>'address_state',
-    'A calcular via WhatsApp',
-    NULL,
-    NULL,
-    v_shipping,
-    v_subtotal,
-    v_total,
-    'pending',
-    v_coupon_code,
-    v_discount
+    new_order_code, v_customer_id, v_customer_name, v_email, v_phone,
+    v_address_cep, v_address_street, v_address_number, v_address_complement,
+    v_address_neighborhood, v_address_city, v_address_state,
+    v_shipping_method, v_shipping_company, v_shipping_days, v_shipping,
+    v_subtotal, v_total, 'pending', v_coupon_code, v_discount,
+    v_request_id, v_request_hash, COALESCE((_order->>'accepted_privacy')::boolean, false), v_privacy_at,
+    COALESCE(NULLIF(_order->>'source', ''), 'storefront'), v_customer_notes, v_shipping_snapshot,
+    NULLIF(_order->>'payment_method', '')
   )
+  ON CONFLICT (request_id) WHERE request_id IS NOT NULL DO NOTHING
   RETURNING id, order_code INTO new_order_id, new_order_code;
 
+  IF new_order_id IS NULL THEN
+    SELECT * INTO v_existing
+      FROM "papelemi_engine"."orders"
+     WHERE request_id = v_request_id
+     FOR UPDATE;
+    IF NOT FOUND OR v_existing.request_hash IS DISTINCT FROM v_request_hash THEN
+      RAISE EXCEPTION 'ORDER_REQUEST_CONFLICT';
+    END IF;
+    RETURN jsonb_build_object(
+      'id', v_existing.id,
+      'order_code', v_existing.order_code,
+      'subtotal', v_existing.subtotal,
+      'discount_amount', v_existing.discount_amount,
+      'shipping_price', v_existing.shipping_price,
+      'total', v_existing.total,
+      'duplicate', true
+    );
+  END IF;
+
   INSERT INTO "papelemi_engine"."order_items" (
-    order_id, product_name, product_slug, product_image, quantity, unit_price, personalization
+    order_id, product_name, product_slug, product_image, quantity, unit_price,
+    personalization, line_total, personalization_data
   )
   SELECT
     new_order_id,
     item->>'product_name',
     item->>'product_slug',
     item->>'product_image',
-    (item->>'quantity')::int,
+    (item->>'quantity')::integer,
     (item->>'unit_price')::numeric,
-    item->>'personalization'
+    item->>'personalization',
+    (item->>'line_total')::numeric,
+    COALESCE(item->'personalization_data', '{}'::jsonb)
   FROM jsonb_array_elements(v_items) AS item;
 
   IF v_coupon_code IS NOT NULL THEN
     INSERT INTO "papelemi_engine"."coupon_uses" (coupon_id, order_id, subtotal, discount_applied)
-    VALUES (c.id, new_order_id, v_subtotal, v_discount);
+    VALUES (v_coupon.id, new_order_id, v_subtotal, v_discount);
 
     UPDATE "papelemi_engine"."coupons"
        SET used_count = used_count + 1, updated_at = now()
-     WHERE id = c.id;
+     WHERE id = v_coupon.id;
   END IF;
 
   RETURN jsonb_build_object(
@@ -594,18 +762,14 @@ BEGIN
     'order_code', new_order_code,
     'subtotal', v_subtotal,
     'discount_amount', v_discount,
+    'shipping_price', v_shipping,
     'total', v_total,
-    'items', (
-      SELECT coalesce(
-        jsonb_agg(jsonb_build_object(
-          'product_slug', e->>'product_slug',
-          'quantity', (e->>'quantity')::int,
-          'unit_price', (e->>'unit_price')::numeric
-        )),
-        '[]'::jsonb
-      )
-      FROM jsonb_array_elements(v_items) e
-    )
+    'duplicate', false,
+    'items', v_items
   );
 END;
 $function$;
+
+REVOKE ALL ON FUNCTION "papelemi_engine"."create_order_with_items"(jsonb, jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION "papelemi_engine"."create_order_with_items"(jsonb, jsonb) TO service_role;
+

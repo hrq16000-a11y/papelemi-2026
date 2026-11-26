@@ -1,86 +1,170 @@
-// Mercado Pago via conector Lovable — somente código de servidor pode importar este módulo.
-import type { SupabaseClient } from "@supabase/supabase-js";
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/mercadopago";
+import { engineAdmin } from "@/lib/engine.server";
 
-export function mpConfigured() {
-  return Boolean(process.env["LOVABLE_API_KEY"] && process.env["MERCADOPAGO_CONNECTION_KEY"]);
-}
-
-export async function mpRequest(
-  path: string,
-  init: { method?: string; body?: unknown; idempotencyKey?: string } = {},
-) {
-  const LOVABLE_API_KEY = process.env["LOVABLE_API_KEY"];
-  const MERCADOPAGO_CONNECTION_KEY = process.env["MERCADOPAGO_CONNECTION_KEY"];
-  if (!LOVABLE_API_KEY || !MERCADOPAGO_CONNECTION_KEY) {
-    throw new Error("Mercado Pago não está conectado");
-  }
-  const response = await fetch(`${GATEWAY_URL}/${path}`, {
-    method: init.method ?? "GET",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "X-Connection-Api-Key": MERCADOPAGO_CONNECTION_KEY,
-      "Content-Type": "application/json",
-      ...(init.idempotencyKey ? { "X-Idempotency-Key": init.idempotencyKey } : {}),
-    },
-    ...(init.body ? { body: JSON.stringify(init.body) } : {}),
-  });
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`Mercado Pago ${path} falhou [${response.status}]: ${errorBody}`);
-    throw new Error(`Mercado Pago ${path} falhou [${response.status}]: ${errorBody}`);
-  }
-  return response.json();
-}
+const MP_API_BASE = "https://api.mercadopago.com";
 
 type MpPayment = {
   id: number;
   status: string;
-  external_reference?: string;
-  transaction_amount?: number;
+  external_reference: string | null;
+  transaction_amount: number;
+  currency_id?: string | null;
 };
 
-// Confirmação única: só marca pago quando aprovado e o valor bate com o pedido;
-// a atualização é protegida (status pending) para rodar várias vezes sem duplicar efeitos.
-async function confirmApprovedPayment(orderId: string, payment: MpPayment) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const admin = supabaseAdmin as unknown as SupabaseClient;
-  const { data: order } = await admin
+export function mpConfigured() {
+  return Boolean(process.env["MP_ACCESS_TOKEN"]);
+}
+
+export async function mpRequest<T>(path: string, options: { method?: string; body?: string; idempotencyKey?: string } = {}) {
+  const token = process.env["MP_ACCESS_TOKEN"];
+  if (!token) throw new Error("Mercado Pago não configurado");
+  const headers = new Headers({
+    Authorization: "Bearer " + token,
+    "Content-Type": "application/json",
+  });
+  if (options.idempotencyKey) headers.set("X-Idempotency-Key", options.idempotencyKey);
+  const response = await fetch(MP_API_BASE + path, {
+    method: options.method ?? "GET",
+    headers,
+    ...(options.body ? { body: options.body } : {}),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    console.error("Mercado Pago request failed", response.status, payload);
+    throw new Error("Não foi possível consultar o pagamento");
+  }
+  return payload as T;
+}
+
+async function recordPaymentEvent(
+  admin: ReturnType<typeof engineAdmin>,
+  payment: MpPayment,
+  orderCode: string | null,
+  result: string,
+  appliedStatus: string | null,
+  errorMessage: string | null = null,
+) {
+  const { error } = await admin.from("payment_events").insert({
+    provider: "mercadopago",
+    payment_id: String(payment.id),
+    event_id: String(payment.id),
+    order_code: orderCode,
+    provider_status: payment.status,
+    applied_status: appliedStatus,
+    result,
+    error_message: errorMessage,
+    raw: {
+      id: payment.id,
+      status: payment.status,
+      external_reference: payment.external_reference,
+      transaction_amount: payment.transaction_amount,
+      currency_id: payment.currency_id ?? null,
+    },
+  });
+  if (error && error.code !== "23505") {
+    console.error("Could not persist Mercado Pago event", { code: error.code, message: error.message.slice(0, 160) });
+  }
+}
+
+async function confirmApprovedPayment(payment: MpPayment) {
+  const admin = engineAdmin();
+  const orderId = payment.external_reference?.trim();
+  if (!orderId) {
+    await recordPaymentEvent(admin, payment, null, "unknown_order", null, "Pagamento sem external_reference.");
+    return { status: "unknown" };
+  }
+
+  const { data: order, error: orderError } = await admin
     .from("orders")
-    .select("id,total,status")
+    .select("id,order_code,total,status,payment_status,payment_id")
     .eq("id", orderId)
-    .eq("store_key", "papelemi")
     .maybeSingle();
-  if (!order) return { status: "unknown" as const };
-  if (Math.abs(Number(payment.transaction_amount) - Number(order.total)) > 0.01) {
-    console.error(`Pagamento ${payment.id} com valor divergente para o pedido ${orderId}`);
+
+  if (orderError || !order) {
+    await recordPaymentEvent(admin, payment, null, "unknown_order", null, "Pedido não encontrado no motor PapeLemi.");
+    return { status: "unknown" };
+  }
+
+  const paymentId = String(payment.id);
+  const paymentAmount = Number(payment.transaction_amount);
+  const orderTotal = Number(order.total);
+  if (!Number.isFinite(paymentAmount) || Math.abs(paymentAmount - orderTotal) > 0.01) {
+    await recordPaymentEvent(admin, payment, order.order_code, "amount_mismatch", order.payment_status, "Valor pago diverge do total do pedido.");
+    return { status: order.payment_status === "approved" ? "approved" : order.status };
+  }
+
+  if (order.payment_status === "approved") {
+    const samePayment = order.payment_id === paymentId;
+    await recordPaymentEvent(
+      admin,
+      payment,
+      order.order_code,
+      samePayment ? "already_applied" : "duplicate_payment_conflict",
+      "approved",
+      samePayment ? null : "O pedido já possui outro pagamento aprovado.",
+    );
+    return { status: samePayment ? "approved" : order.status };
+  }
+
+  if (order.status === "cancelled" || order.payment_status !== "pending") {
+    await recordPaymentEvent(admin, payment, order.order_code, "ignored_status", order.payment_status, "Pedido não está aguardando pagamento.");
     return { status: order.status };
   }
-  const { data: updated } = await admin
+
+  const now = new Date().toISOString();
+  const { data: updated, error: updateError } = await admin
     .from("orders")
-    .update({ status: "paid", mp_payment_id: String(payment.id) })
+    .update({
+      status: order.status === "pending" ? "confirmed" : order.status,
+      payment_status: "approved",
+      payment_id: paymentId,
+      payment_method: "mercadopago",
+      paid_at: now,
+      updated_at: now,
+    })
     .eq("id", orderId)
-    .eq("store_key", "papelemi")
-    .eq("status", "pending")
+    .eq("payment_status", "pending")
     .select("id");
-  return { status: updated?.length ? ("paid" as const) : order.status };
+
+  if (updateError) {
+    await recordPaymentEvent(admin, payment, order.order_code, "update_error", order.payment_status, updateError.message.slice(0, 300));
+    throw new Error("Não foi possível confirmar o pagamento no motor PapeLemi.");
+  }
+
+  const { data: latest, error: latestError } = await admin
+    .from("orders")
+    .select("status,payment_status")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (latestError || !latest) {
+    await recordPaymentEvent(admin, payment, order.order_code, "update_error", null, "Não foi possível reler o pedido após a confirmação.");
+    throw new Error("Não foi possível verificar a confirmação do pagamento.");
+  }
+
+  const applied = latest.payment_status === "approved";
+  await recordPaymentEvent(
+    admin,
+    payment,
+    order.order_code,
+    applied ? (updated?.length ? "applied" : "already_applied") : "update_error",
+    latest.payment_status,
+    applied ? null : "A confirmação não foi aplicada ao pedido.",
+  );
+
+  return { status: applied ? "approved" : latest.status };
 }
 
-// Caminho da notificação (webhook): recebe o id do pagamento.
-export async function confirmPaymentById(paymentId: string) {
-  const payment = (await mpRequest(`v1/payments/${paymentId}`)) as MpPayment;
-  const orderId = payment.external_reference;
-  if (!orderId) return { status: "ignored" as const };
-  if (payment.status !== "approved") return { status: payment.status };
-  return confirmApprovedPayment(orderId, payment);
-}
-
-// Caminho do retorno da compra: busca pelo pedido (external_reference).
 export async function confirmOrderByReference(orderId: string) {
-  const res = (await mpRequest(
-    `v1/payments/search?external_reference=${orderId}&sort=date_created&criteria=desc`,
-  )) as { results?: MpPayment[] };
-  const approved = (res.results ?? []).find((p) => p.status === "approved");
-  if (!approved) return { status: "pending" as const };
-  return confirmApprovedPayment(orderId, approved);
+  const search = await mpRequest<{ results?: MpPayment[] }>(
+    "/v1/payments/search?external_reference=" + encodeURIComponent(orderId) + "&sort=date_created&criteria=desc&limit=10",
+  );
+  const approved = (search.results ?? []).find((payment) => payment.status === "approved");
+  if (!approved) return { status: search.results?.[0]?.status ?? "pending" };
+  return confirmApprovedPayment(approved);
+}
+
+export async function confirmPaymentById(paymentId: string) {
+  const payment = await mpRequest<MpPayment>("/v1/payments/" + encodeURIComponent(paymentId));
+  if (payment.status !== "approved") return { status: payment.status };
+  return confirmApprovedPayment(payment);
 }

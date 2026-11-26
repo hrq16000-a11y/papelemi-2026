@@ -80,7 +80,16 @@ check("schema remains isolated and private", migration.includes("GRANT USAGE ON 
 check("admin client routes data/RPC through engine", client.includes('.schema("papelemi_engine")') && client.includes('property === "from"') && client.includes('property === "rpc"'));
 check("generated admin types use engine schema", (types.match(/\n  papelemi_engine: \{/g) || []).length === 2 && (types.match(/\n  public: \{/g) || []).length === 0 && !types.includes('["public"]') && !types.includes("['public']"));
 check("generated type references use engine enums", !/Database\[(["'])public\1\]/.test(types) && types.includes('Database["papelemi_engine"]'));
-check("database contract test plan remains 41", /SELECT plan\(41\);/.test(tests));
+check("database contract test plan remains 42", /SELECT plan\\(42\\);/.test(tests));
+const checkoutFunctionStart = drizzleMigration.indexOf('CREATE OR REPLACE FUNCTION "papelemi_engine"."create_order_with_items"');
+const checkoutFunctionBlock = checkoutFunctionStart >= 0 ? drizzleMigration.slice(checkoutFunctionStart) : "";
+check(
+  "checkout RPC is invoker and service-role only",
+  checkoutFunctionBlock.includes("SECURITY INVOKER")
+    && drizzleMigration.includes('REVOKE ALL ON FUNCTION "papelemi_engine"."create_order_with_items"(jsonb, jsonb) FROM PUBLIC, anon, authenticated;')
+    && drizzleMigration.includes('GRANT EXECUTE ON FUNCTION "papelemi_engine"."create_order_with_items"(jsonb, jsonb) TO service_role;'),
+  "The browser cannot call the privileged checkout RPC directly."
+);
 
 const sourceReferences = [];
 const directSupabaseClientImports = [];

@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(41);
+SELECT plan(42);
 SELECT ok(to_regnamespace('papelemi_engine') IS NOT NULL, 'isolated Emporio engine schema exists');
 SELECT is((SELECT count(*)::int FROM pg_tables WHERE schemaname='papelemi_engine' AND tablename <> 'shipping_quote_rate_limits'), 150, 'all 150 Supabase + Drizzle source tables are present, excluding the PapeLemi rate-limit table');
 SELECT is((SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='papelemi_engine' AND p.prokind='f' AND p.proname NOT IN ('sync_papelemi_admin_roles', 'consume_shipping_quote_rate_limit')), 88, 'all 88 source functions are present, excluding PapeLemi bootstrap and rate-limit helpers');
@@ -84,6 +84,13 @@ SELECT ok(
     OR pg_get_functiondef('papelemi_engine.create_order_with_items(jsonb,jsonb)'::regprocedure) LIKE '%FROM "papelemi_engine"."products" p%'
   ),
   'checkout returns subtotal and items while keeping server-side catalog price calculation'
+);
+SELECT ok(
+  NOT (SELECT prosecdef FROM pg_proc WHERE oid = to_regprocedure('papelemi_engine.create_order_with_items(jsonb,jsonb)'))
+  AND has_function_privilege('service_role','papelemi_engine.create_order_with_items(jsonb,jsonb)','EXECUTE')
+  AND NOT has_function_privilege('authenticated','papelemi_engine.create_order_with_items(jsonb,jsonb)','EXECUTE')
+  AND NOT has_function_privilege('anon','papelemi_engine.create_order_with_items(jsonb,jsonb)','EXECUTE'),
+  'checkout RPC runs as invoker and is restricted to the server service role'
 );
 SELECT * FROM finish();
 ROLLBACK;
