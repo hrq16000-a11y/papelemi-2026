@@ -64,7 +64,7 @@ jobs:
       - name: SSR smoke test for original admin entry route
         shell: bash
         run: |
-          bun run preview --host 127.0.0.1 > "$RUNNER_TEMP/papelemi-preview.log" 2>&1 &
+          HOST=127.0.0.1 PORT=4173 node .output/server/index.mjs > "$RUNNER_TEMP/papelemi-preview.log" 2>&1 &
           preview_pid=$!
           trap 'kill "$preview_pid" >/dev/null 2>&1 || true' EXIT
           for attempt in $(seq 1 30); do
