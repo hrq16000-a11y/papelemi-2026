@@ -41,7 +41,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 3.4.0
 
       - name: Transfer original source modules in batch
         run: node scripts/emp-orio/transfer-source.mjs
@@ -88,9 +88,9 @@ jobs:
           echo "SSR /admin/login PASS — PapeLemi shell responds without loading Emporio runtime on the server."
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v3
         with:
-          version: latest
+          version: 3.4.0
 
       - name: Diagnose isolated local Supabase prerequisites
         shell: bash
