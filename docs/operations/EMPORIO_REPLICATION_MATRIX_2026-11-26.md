@@ -232,3 +232,18 @@ Os oito produtos atuais não têm peso cadastrado. O seed usa 0,150 kg como padr
 5. Somente após homologação autenticada e gates completos, integrar e publicar.
 
 **Limite desta rodada:** código e migrations passaram no ambiente local isolado. Não houve DDL hospedado, alteração no banco original, merge, deploy Production ou implantação de Edge Functions.
+
+
+## 13. PR #15 — preservação e port seletivo para o Admin original
+
+A PR #15 foi revisada contra o motor copiado. Ela deve permanecer aberta e em Draft, mas não pode ser mesclada integralmente sobre a PR #13:
+
+- `src/routes/admin.tsx` da #15 é a interface administrativa legada da PapeLemi. Mesclá-la por cima substituiria a montagem do aplicativo original da Empório em `/admin`.
+- Os handlers e a migration `20261125220000_add_order_360_operations.sql` usam o schema `public` e `store_key = 'papelemi'`; não devem ser aplicados diretamente ao motor `papelemi_engine`.
+- O motor original já contém `payment_events`, `tracking_email_log`, `order_status_notifications` e `check_resend_email_cooldown`.
+- As peças realmente ausentes no motor são principalmente `order_status_history` e `admin_update_order`; devem ser adaptadas ao schema `papelemi_engine`, às permissões do papel admin do motor e à execução privilegiada no servidor.
+- A validação, os testes e os conceitos de interface da #15 devem ser preservados e portados para o `src/emp-orio/pages/admin/AdminOrders.tsx` original.
+
+Comentário de revisão registrado na [PR #15](https://github.com/hrq16000-a11y/papelemi-2026/pull/15#issuecomment-7183807569).
+
+**Decisão:** preservar #15 e #16, mas portar apenas o que ainda falta no motor original. Não criar uma segunda fonte de pedidos no schema público e não substituir a rota administrativa original.

@@ -542,3 +542,12 @@ Persistem dois pontos que impedem declarar paridade integral do banco: o Supabas
 A cadeia #8 → #12 → #13 permanece aberta e em Draft. #15 e #16 foram preservadas para reconciliação após a estabilização da #13. A branch experimental divergente permanece sem merge.
 
 Referência operacional atualizada: [EMPORIO_REPLICATION_MATRIX_2026-11-26.md](./EMPORIO_REPLICATION_MATRIX_2026-11-26.md).
+
+
+### PR #15 — port seletivo, sem sobrescrever o Admin original
+
+A revisão da PR #15 identificou conflito de estratégia: seu `src/routes/admin.tsx` é a interface legada da PapeLemi e substituiria o runtime original da Empório que a PR #13 agora monta em `/admin`. Além disso, seus handlers e sua migration operam em `public` com `store_key`, enquanto o motor copiado opera em `papelemi_engine`. Portanto, a PR #15 permanece preservada em Draft, mas não deve ser mesclada integralmente.
+
+O motor original já contém `payment_events`, `tracking_email_log`, `order_status_notifications` e `check_resend_email_cooldown`. O que falta portar é principalmente `order_status_history` e `admin_update_order`, adaptados ao schema do motor e às permissões administrativas existentes, além dos painéis de histórico/eventos na página original `src/emp-orio/pages/admin/AdminOrders.tsx`. A validação e os testes da PR #15 permanecem úteis. A PR #16 deve ser reconciliada depois, sem duplicar a fonte pública de pedidos.
+
+Comentário registrado na [PR #15](https://github.com/hrq16000-a11y/papelemi-2026/pull/15#issuecomment-7183807569).
