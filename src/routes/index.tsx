@@ -34,11 +34,11 @@ export const Route = createFileRoute("/")({
 
 function SectionHeading({ eyebrow, title, description, link }: { eyebrow: string; title: string; description?: string; link?: React.ReactNode }) {
   return (
-    <div className="mb-7 flex flex-wrap items-end justify-between gap-4 md:mb-9">
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-4 md:mb-10">
       <div>
-        <p className="text-[9px] uppercase tracking-[0.22em] text-primary md:text-[10px]">{eyebrow}</p>
+        <p className="papel-kicker">{eyebrow}</p>
         <h2 className="mt-1 font-display text-3xl leading-tight tracking-tight text-foreground md:text-[2.65rem]">{title}</h2>
-        {description && <p className="mt-2 max-w-xl text-xs leading-6 text-muted-foreground md:text-sm">{description}</p>}
+        {description && <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground md:text-base">{description}</p>}
       </div>
       {link}
     </div>
@@ -52,47 +52,50 @@ function Home() {
 
   return (
     <>
-      <section className="grid min-h-[440px] grid-cols-1 md:min-h-[500px] md:grid-cols-2">
-        <div className="flex items-center bg-secondary px-6 py-14 sm:px-10 md:px-12 lg:px-16 xl:px-[max(4rem,calc((100vw-1280px)/2))]">
+      <section className="papel-hero" aria-labelledby="papel-hero-title">
+        <div className="papel-hero-copy">
           <div className="mx-auto w-full max-w-xl">
-            <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-primary md:text-[10px]">Papelaria personalizada com afeto</p>
-            <h1 className="mt-4 max-w-[560px] font-display text-[2.8rem] font-semibold leading-[0.98] tracking-tight text-foreground sm:text-5xl lg:text-[4.35rem]">
+            <p className="papel-kicker">Papelaria personalizada com afeto</p>
+            <h1 id="papel-hero-title" className="papel-hero-title">
               Detalhes que viram <em className="font-medium text-primary">memórias.</em>
             </h1>
-            <p className="mt-5 max-w-md text-xs leading-6 text-muted-foreground md:text-[13px]">
+            <p className="mt-6 max-w-md text-sm leading-7 text-muted-foreground md:text-base">
               Cadernetas, planners, mimos e brindes feitos para contar a sua história, celebrar pessoas e dar vida às suas ideias.
             </p>
-            <Link to="/loja" className="mt-7 inline-flex items-center gap-2 bg-foreground px-5 py-3 text-[10px] font-medium text-background transition-colors hover:bg-primary">
+            <Link to="/loja" className="papel-cta mt-7">
               Descobrir a coleção <ArrowRight className="size-3" />
             </Link>
+            <a href="#como-encomendar" className="papel-secondary mt-2 inline-flex min-h-11 items-center gap-2">Como encomendar <ArrowRight className="size-4" aria-hidden="true" /></a>
           </div>
         </div>
-        <div className="relative min-h-[340px] overflow-hidden bg-cream md:min-h-[500px]">
-          <img src={hero} alt="Caderneta de Saúde Ursinho Clean da PapeLemi" className="absolute inset-0 size-full object-cover" fetchPriority="high" />
-          <div className="absolute bottom-6 right-6 grid size-[76px] place-items-center rounded-full border border-white/70 bg-background/90 text-center font-display text-sm italic leading-tight text-primary shadow-soft">feito<br />pra você</div>
-        </div>
+        <figure className="papel-hero-figure">
+          <div className="papel-hero-photo">
+            <img src={hero} alt="Caderneta de Saúde Ursinho Clean da PapeLemi" className="size-full object-cover" fetchPriority="high" />
+            <span className="papel-seal" aria-hidden="true">feito<br />pra você</span>
+          </div>
+          <figcaption className="papel-caption"><span>Personalizado com afeto</span><span>Caderneta Ursinho Clean</span></figcaption>
+        </figure>
       </section>
 
       <section className="mx-auto grid max-w-6xl grid-cols-1 border-b border-border/70 px-5 py-5 sm:grid-cols-3 md:px-8">
         <div className="flex items-center gap-3 border-b border-border/60 py-3 sm:border-b-0 sm:border-r sm:py-1 sm:pr-5">
-          <Heart className="size-4 shrink-0 text-primary" /><div><p className="text-[10px] font-semibold text-foreground">Feito com carinho</p><p className="mt-0.5 text-[9px] text-muted-foreground">Peças que acompanham a sua história</p></div>
+          <Heart className="size-4 shrink-0 text-primary" /><div><p className="text-xs font-semibold text-foreground">Feito com carinho</p><p className="mt-0.5 text-xs text-muted-foreground">Peças que acompanham a sua história</p></div>
         </div>
         <div className="flex items-center gap-3 border-b border-border/60 py-3 sm:border-b-0 sm:border-r sm:px-5 sm:py-1">
-          <PenLine className="size-4 shrink-0 text-primary" /><div><p className="text-[10px] font-semibold text-foreground">Seu toque pessoal</p><p className="mt-0.5 text-[9px] text-muted-foreground">Escolha detalhes no seu pedido</p></div>
+          <PenLine className="size-4 shrink-0 text-primary" /><div><p className="text-xs font-semibold text-foreground">Seu toque pessoal</p><p className="mt-0.5 text-xs text-muted-foreground">Escolha detalhes no seu pedido</p></div>
         </div>
         <div className="flex items-center gap-3 py-3 sm:pl-5 sm:py-1">
-          <Package className="size-4 shrink-0 text-primary" /><div><p className="text-[10px] font-semibold text-foreground">Para todo o Brasil</p><p className="mt-0.5 text-[9px] text-muted-foreground">Consulte prazo e entrega no pedido</p></div>
+          <Package className="size-4 shrink-0 text-primary" /><div><p className="text-xs font-semibold text-foreground">Para todo o Brasil</p><p className="mt-0.5 text-xs text-muted-foreground">Consulte prazo e entrega no pedido</p></div>
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-16">
         <SectionHeading eyebrow="Encontre o seu detalhe" title="Escolha por coleção" link={<Link to="/loja" className="inline-flex items-center gap-1 text-[10px] text-foreground hover:text-primary">Ver todos os produtos <ArrowRight className="size-3" /></Link>} />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <div className="papel-collections">
           {collections.map((c) => (
-            <Link key={c.slug} to="/categoria/$slug" params={{ slug: c.slug }} className="group relative aspect-[4/4.5] overflow-hidden bg-muted">
-              <img src={c.image} alt="" loading="lazy" className="size-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-foreground/5 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-3 text-background md:p-4"><p className="text-[8px] uppercase tracking-[0.15em] text-background/80 md:text-[9px]">{c.subtitle}</p><h3 className="mt-1 font-display text-lg font-semibold leading-tight md:text-2xl">{c.title}</h3></div>
+            <Link key={c.slug} to="/categoria/$slug" params={{ slug: c.slug }} className="papel-collection group">
+              <img src={c.image} alt="" loading="lazy" className="papel-collection-photo size-full object-cover" />
+              <div className="papel-collection-label"><p className="text-xs leading-snug text-muted-foreground">{c.subtitle}</p><h3 className="mt-1 flex items-center justify-between gap-2 font-display text-lg leading-tight text-foreground md:text-2xl">{c.title}<ArrowRight className="papel-collection-arrow size-4 shrink-0" aria-hidden="true" /></h3></div>
             </Link>
           ))}
         </div>
@@ -127,7 +130,7 @@ function Home() {
               { n: "01", title: "Encontre uma ideia", text: "Navegue por cadernetas, planners, mimos e brindes." },
               { n: "02", title: "Confira os detalhes", text: "Informe os detalhes da peça e a quantidade desejada." },
               { n: "03", title: "Solicite sua encomenda", text: "Registre a solicitação. A PapeLemi confirma frete, prazo e pagamento antes da produção." },
-            ].map((step) => <div key={step.n} className="border-t border-border pt-4"><p className="font-display text-2xl italic text-primary">{step.n}</p><h3 className="mt-2 font-display text-xl font-semibold text-foreground">{step.title}</h3><p className="mt-2 text-[11px] leading-5 text-muted-foreground">{step.text}</p></div>)}
+            ].map((step) => <div key={step.n} className="border-t border-border pt-4"><p className="font-display text-2xl italic text-primary">{step.n}</p><h3 className="mt-2 font-display text-xl font-semibold text-foreground">{step.title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{step.text}</p></div>)}
           </div>
         </div>
       </section>
@@ -149,9 +152,9 @@ function Home() {
         <p className="text-[9px] uppercase tracking-[0.22em] text-primary">Antes de encomendar</p>
         <h2 className="mt-2 font-display text-3xl font-semibold text-foreground md:text-4xl">Dúvidas frequentes</h2>
         <div className="mt-6 divide-y divide-border border-y border-border">
-          <details className="group py-4"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-xs font-medium text-foreground">Os produtos são personalizados?<span className="text-primary transition-transform group-open:rotate-45">+</span></summary><p className="mt-3 max-w-3xl text-[11px] leading-5 text-muted-foreground">Muitos produtos permitem inserir nome ou escolher detalhes. Informe o que deseja na encomenda; a PapeLemi confirmará as possibilidades.</p></details>
-          <details className="group py-4"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-xs font-medium text-foreground">Qual é o prazo de produção?<span className="text-primary transition-transform group-open:rotate-45">+</span></summary><p className="mt-3 max-w-3xl text-[11px] leading-5 text-muted-foreground">O prazo varia conforme o produto e a agenda de produção. Os itens desta vitrine têm prazos de referência; o prazo e a entrega serão confirmados na resposta à encomenda.</p></details>
-          <details className="group py-4"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-xs font-medium text-foreground">Como funciona a compra?<span className="text-primary transition-transform group-open:rotate-45">+</span></summary><p className="mt-3 max-w-3xl text-[11px] leading-5 text-muted-foreground">Escolha os produtos e registre uma solicitação nesta loja. A PapeLemi confirmará disponibilidade, personalização, frete e pagamento antes da produção.</p></details>
+          <details className="group py-4"><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-foreground">Os produtos são personalizados?<span className="text-primary transition-transform group-open:rotate-45">+</span></summary><p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">Muitos produtos permitem inserir nome ou escolher detalhes. Informe o que deseja na encomenda; a PapeLemi confirmará as possibilidades.</p></details>
+          <details className="group py-4"><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-foreground">Qual é o prazo de produção?<span className="text-primary transition-transform group-open:rotate-45">+</span></summary><p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">O prazo varia conforme o produto e a agenda de produção. Os itens desta vitrine têm prazos de referência; o prazo e a entrega serão confirmados na resposta à encomenda.</p></details>
+          <details className="group py-4"><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-foreground">Como funciona a compra?<span className="text-primary transition-transform group-open:rotate-45">+</span></summary><p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">Escolha os produtos e registre uma solicitação nesta loja. A PapeLemi confirmará disponibilidade, personalização, frete e pagamento antes da produção.</p></details>
         </div>
       </section>
     </>
