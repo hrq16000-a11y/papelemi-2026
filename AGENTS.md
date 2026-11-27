@@ -34,3 +34,6 @@ use the editor.
 - AI phrase suggestions run only in the `suggestPhrases` server function (`src/lib/ai.functions.ts`) via the Lovable AI Gateway SDK; never call models from browser code.
 - Cart is client-side (localStorage) for round one; no real payments until a gateway is approved.
 - AI writing context (styles, occasions, per-category/product profiles) lives in `src/data/ai-config.ts`; the server resolves the product and field limit from the catalog by slug, so clients cannot inject product context or exceed field limits.
+
+## Padrão anti-site genérico — R8/10
+- Para trabalho visual autorizado, ler `docs/skills/ANTI_GENERIC_EXPERIENCE.md` antes do código. TasteSkill, Transitions.dev, React Bits e Emil Kowalski são referências de princípios; as regras específicas do projeto prevalecem.
