@@ -1,3 +1,4 @@
+import { publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCatalog } from "@/lib/catalog-store";
 import { ProductGrid } from "@/components/store/ProductCard";
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/presentes")({
   head: () => ({ meta: [
     { title: "Ideias de presentes — PapeLemi" }, { name: "description", content: "Presentes personalizados com afeto por faixa de preço e ocasião, com dedicatória criada pela nossa assistente." },
     { property: "og:title", content: "Ideias de presentes — PapeLemi" }, { property: "og:description", content: "Presentes personalizados com afeto." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
+      ...publicSocialMeta("Ideias de presentes — PapeLemi", "Presentes personalizados com afeto."),
   ] }),
   component: function PresentesPage() {
     const { publishedProducts } = useCatalog();

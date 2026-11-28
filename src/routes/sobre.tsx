@@ -1,3 +1,4 @@
+import { publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { img } from "@/data/catalog";
 
@@ -5,6 +6,7 @@ export const Route = createFileRoute("/sobre")({
   head: () => ({ meta: [
     { title: "Nossa história — PapeLemi" }, { name: "description", content: "Conheça a PapeLemi, papelaria afetiva que transforma papel em memórias." },
     { property: "og:title", content: "Nossa história — PapeLemi" }, { property: "og:description", content: "Papelaria com afeto, feita à mão." },
+      ...publicSocialMeta("Nossa história — PapeLemi", "Papelaria com afeto, feita à mão."),
   ] }),
   component: () => (
     <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 md:grid-cols-2 md:px-8">

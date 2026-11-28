@@ -1,3 +1,4 @@
+import { publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCatalog } from "@/lib/catalog-store";
 import { ProductGrid } from "@/components/store/ProductCard";
@@ -6,6 +7,7 @@ export const Route = createFileRoute("/kits")({
   head: () => ({ meta: [
     { title: "Kits presenteáveis — PapeLemi" }, { name: "description", content: "Kits de papelaria afetiva prontos para presentear: professoras, bebês, empresas e datas especiais." },
     { property: "og:title", content: "Kits presenteáveis — PapeLemi" }, { property: "og:description", content: "Kits de papelaria personalizados, montados com carinho." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
+      ...publicSocialMeta("Kits presenteáveis — PapeLemi", "Kits de papelaria personalizados, montados com carinho."),
   ] }),
   component: function KitsPage() {
     const { publishedProducts } = useCatalog();
