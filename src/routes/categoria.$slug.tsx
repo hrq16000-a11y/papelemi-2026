@@ -1,4 +1,4 @@
-import { publicSocialMeta } from "@/lib/social-preview";
+import { publicCanonical, publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getCategory } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
@@ -6,10 +6,10 @@ import { ProductGrid } from "@/components/store/ProductCard";
 
 export const Route = createFileRoute("/categoria/$slug")({
   loader: ({ params }) => getCategory(params.slug) ?? null,
-  head: ({ loaderData }) => ({ meta: loaderData ? [
+  head: ({ loaderData }) => ({ links: loaderData ? [publicCanonical(`/categoria/${encodeURIComponent(loaderData.slug)}`)] : [], meta: loaderData ? [
     { title: `${loaderData.name} — PapeLemi` }, { name: "description", content: loaderData.description },
     { property: "og:title", content: `${loaderData.name} — PapeLemi` }, { property: "og:description", content: loaderData.description },
-    ...publicSocialMeta(`${loaderData.name} — PapeLemi`, loaderData.description, loaderData.image),
+    ...publicSocialMeta(`/categoria/${encodeURIComponent(loaderData.slug)}`, `${loaderData.name} — PapeLemi`, loaderData.description, loaderData.image),
   ] : [{ title: "Categoria — PapeLemi" }, { name: "robots", content: "noindex" }] }),
   component: CategoryPage,
 });

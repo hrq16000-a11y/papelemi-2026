@@ -3,7 +3,11 @@ const SITE = "https://www.papelemi.com.br";
 const BRAND_IMAGE = SITE + "/social-preview.png";
 const BRAND_ALT = "PapeLemi — papelaria personalizada, cadernetas, planners e presentes";
 
-export function publicSocialMeta(title: string, description: string, image?: string) {
+export function publicCanonical(path: `/${string}`) {
+  return { rel: "canonical", href: SITE + path };
+}
+
+export function publicSocialMeta(path: `/${string}`, title: string, description: string, image?: string) {
   let url = BRAND_IMAGE;
   if (image && (/^https:\/\//i.test(image) || (image.startsWith("/") && !image.startsWith("//")))) {
     try {
@@ -18,6 +22,7 @@ export function publicSocialMeta(title: string, description: string, image?: str
   const brand = url === BRAND_IMAGE;
   const alt = brand ? BRAND_ALT : title;
   return [
+    { property: "og:url", content: publicCanonical(path).href },
     { property: "og:image", content: url },
     { property: "og:image:alt", content: alt },
     ...(brand ? [

@@ -1,12 +1,12 @@
-import { publicSocialMeta } from "@/lib/social-preview";
+import { publicCanonical, publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/store/LegalPage";
 
 export const Route = createFileRoute("/termos-de-uso")({
-  head: () => ({ meta: [
+  head: () => ({ links: [publicCanonical("/termos-de-uso")], meta: [
     { title: "Termos de uso — PapeLemi" }, { name: "description", content: "Condições de compra, personalização, produção, trocas e uso da loja PapeLemi." },
     { property: "og:title", content: "Termos de uso — PapeLemi" }, { property: "og:description", content: "Condições de compra da PapeLemi." }, { property: "og:type", content: "article" }, { name: "twitter:card", content: "summary" },
-      ...publicSocialMeta("Termos de uso — PapeLemi", "Condições de compra da PapeLemi."),
+      ...publicSocialMeta("/termos-de-uso", "Termos de uso — PapeLemi", "Condições de compra da PapeLemi."),
   ] }),
   component: () => (
     <LegalPage title="Termos de uso" updated="25/11/2026">

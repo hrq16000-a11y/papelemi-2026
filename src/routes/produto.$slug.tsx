@@ -1,4 +1,4 @@
-import { publicSocialMeta } from "@/lib/social-preview";
+import { publicCanonical, publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clock, Minus, Plus, Sparkles } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
@@ -15,10 +15,11 @@ export const Route = createFileRoute("/produto/$slug")({
   validateSearch: (s: Record<string, unknown>): { frase?: string | undefined } => ({ frase: typeof s["frase"] === "string" ? s["frase"].slice(0, 400) : undefined }),
   loader: ({ params }) => getProduct(params.slug) ?? null,
   head: ({ loaderData: p }) => ({
+    links: p ? [publicCanonical(`/produto/${encodeURIComponent(p.slug)}`)] : [],
     meta: p ? [
       { title: `${p.name} — PapeLemi` }, { name: "description", content: p.description },
       { property: "og:title", content: `${p.name} — PapeLemi` }, { property: "og:description", content: p.description },
-      { property: "og:type", content: "product" }, ...publicSocialMeta(`${p.name} — PapeLemi`, p.description, p.images[0]),
+      { property: "og:type", content: "product" }, ...publicSocialMeta(`/produto/${encodeURIComponent(p.slug)}`, `${p.name} — PapeLemi`, p.description, p.images[0]),
     ] : [{ title: "Produto indisponível — PapeLemi" }, { name: "robots", content: "noindex" }],
     scripts: p ? [{ type: "application/ld+json", children: JSON.stringify({ "@context": "https://schema.org", "@type": "Product", name: p.name, description: p.description, image: p.images, offers: { "@type": "Offer", priceCurrency: "BRL", price: p.promoPrice ?? p.price } }) }] : [],
   }),

@@ -1,4 +1,4 @@
-import { publicSocialMeta } from "@/lib/social-preview";
+import { publicCanonical, publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { categories as staticCategories, finalPrice, type Product } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
@@ -11,12 +11,12 @@ export const Route = createFileRoute("/loja")({
     cat: typeof s["cat"] === "string" ? s["cat"] : undefined,
     sort: s["sort"] === "menor" || s["sort"] === "maior" ? s["sort"] : undefined,
   }),
-  head: () => ({ meta: [
+  head: () => ({ links: [publicCanonical("/loja")], meta: [
     { title: "Todos os produtos — PapeLemi" },
     { name: "description", content: "Cadernetas, planners, blocos, mimos e brindes personalizados da PapeLemi." },
     { property: "og:title", content: "Todos os produtos — PapeLemi" },
     { property: "og:description", content: "Papelaria personalizada com afeto." },
-      ...publicSocialMeta("Todos os produtos — PapeLemi", "Papelaria personalizada com afeto."),
+      ...publicSocialMeta("/loja", "Todos os produtos — PapeLemi", "Papelaria personalizada com afeto."),
   ] }),
   component: Shop,
 });
