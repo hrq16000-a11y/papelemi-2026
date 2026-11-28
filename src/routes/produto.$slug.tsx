@@ -1,3 +1,4 @@
+import { publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clock, Minus, Plus, Sparkles } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/produto/$slug")({
     meta: p ? [
       { title: `${p.name} — PapeLemi` }, { name: "description", content: p.description },
       { property: "og:title", content: `${p.name} — PapeLemi` }, { property: "og:description", content: p.description },
-      { property: "og:type", content: "product" }, { property: "og:image", content: p.images[0] ?? "" }, { name: "twitter:image", content: p.images[0] ?? "" },
+      { property: "og:type", content: "product" }, ...publicSocialMeta(`${p.name} — PapeLemi`, p.description, p.images[0]),
     ] : [{ title: "Produto indisponível — PapeLemi" }, { name: "robots", content: "noindex" }],
     scripts: p ? [{ type: "application/ld+json", children: JSON.stringify({ "@context": "https://schema.org", "@type": "Product", name: p.name, description: p.description, image: p.images, offers: { "@type": "Offer", priceCurrency: "BRL", price: p.promoPrice ?? p.price } }) }] : [],
   }),

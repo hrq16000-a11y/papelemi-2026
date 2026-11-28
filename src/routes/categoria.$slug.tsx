@@ -1,3 +1,4 @@
+import { publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getCategory } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-store";
@@ -8,7 +9,7 @@ export const Route = createFileRoute("/categoria/$slug")({
   head: ({ loaderData }) => ({ meta: loaderData ? [
     { title: `${loaderData.name} — PapeLemi` }, { name: "description", content: loaderData.description },
     { property: "og:title", content: `${loaderData.name} — PapeLemi` }, { property: "og:description", content: loaderData.description },
-    { property: "og:image", content: loaderData.image }, { name: "twitter:image", content: loaderData.image },
+    ...publicSocialMeta(`${loaderData.name} — PapeLemi`, loaderData.description, loaderData.image),
   ] : [{ title: "Categoria — PapeLemi" }, { name: "robots", content: "noindex" }] }),
   component: CategoryPage,
 });

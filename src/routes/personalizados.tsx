@@ -1,3 +1,4 @@
+import { publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/personalizados")({
   head: () => ({ meta: [
     { title: "Personalizados e gerador de dedicatórias — PapeLemi" }, { name: "description", content: "Crie frases e dedicatórias com afeto em 7 etapas e aplique no seu produto personalizado PapeLemi." },
     { property: "og:title", content: "Personalizados — PapeLemi" }, { property: "og:description", content: "Gerador de dedicatórias com IA para produtos personalizados." },
+      ...publicSocialMeta("Personalizados — PapeLemi", "Gerador de dedicatórias com IA para produtos personalizados."),
   ] }),
   component: Personalizados,
 });

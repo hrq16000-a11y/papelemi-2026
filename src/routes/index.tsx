@@ -1,3 +1,4 @@
+import { publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Heart, Package, PenLine } from "lucide-react";
 import { img, sortProducts } from "@/data/catalog";
@@ -14,8 +15,7 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Cadernetas, planners, mimos e brindes feitos para contar a sua história." },
       { property: "og:title", content: "PapeLemi — Papelaria personalizada com afeto" },
       { property: "og:description", content: "Detalhes que viram memórias. Papelaria personalizada para celebrar pessoas e dar vida às suas ideias." },
-      { property: "og:image", content: "https://www.papelemi.com.br/images/papelemi/caderneta-ursinho-clean.jpg" },
-      { name: "twitter:image", content: "https://www.papelemi.com.br/images/papelemi/caderneta-ursinho-clean.jpg" },
+      ...publicSocialMeta("PapeLemi — Papelaria personalizada com afeto", "Detalhes que viram memórias. Papelaria personalizada para celebrar pessoas e dar vida às suas ideias."),
     ],
     scripts: [{
       type: "application/ld+json",
