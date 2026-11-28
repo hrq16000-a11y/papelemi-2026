@@ -1,12 +1,12 @@
-import { publicSocialMeta } from "@/lib/social-preview";
+import { publicCanonical, publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/store/LegalPage";
 
 export const Route = createFileRoute("/politica-de-privacidade")({
-  head: () => ({ meta: [
+  head: () => ({ links: [publicCanonical("/politica-de-privacidade")], meta: [
     { title: "Política de privacidade — PapeLemi" }, { name: "description", content: "Como a PapeLemi trata seus dados pessoais, conforme a LGPD." },
     { property: "og:title", content: "Política de privacidade — PapeLemi" }, { property: "og:description", content: "Como tratamos seus dados." }, { property: "og:type", content: "article" }, { name: "twitter:card", content: "summary" },
-      ...publicSocialMeta("Política de privacidade — PapeLemi", "Como tratamos seus dados."),
+      ...publicSocialMeta("/politica-de-privacidade", "Política de privacidade — PapeLemi", "Como tratamos seus dados."),
   ] }),
   component: () => (
     <LegalPage title="Política de privacidade" updated="25/11/2026">

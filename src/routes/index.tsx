@@ -1,4 +1,4 @@
-import { publicSocialMeta } from "@/lib/social-preview";
+import { publicCanonical, publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Heart, Package, PenLine } from "lucide-react";
 import { img, sortProducts } from "@/data/catalog";
@@ -9,13 +9,12 @@ const hero = img("1519337265831-281ec6cc8514", 1600);
 const storyImage = img("1527239441953-caffd968d952", 1400);
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
+  head: () => ({ links: [publicCanonical("/")], meta: [
       { title: "PapeLemi — Papelaria personalizada com afeto" },
       { name: "description", content: "Cadernetas, planners, mimos e brindes feitos para contar a sua história." },
       { property: "og:title", content: "PapeLemi — Papelaria personalizada com afeto" },
       { property: "og:description", content: "Detalhes que viram memórias. Papelaria personalizada para celebrar pessoas e dar vida às suas ideias." },
-      ...publicSocialMeta("PapeLemi — Papelaria personalizada com afeto", "Detalhes que viram memórias. Papelaria personalizada para celebrar pessoas e dar vida às suas ideias."),
+      ...publicSocialMeta("/", "PapeLemi — Papelaria personalizada com afeto", "Detalhes que viram memórias. Papelaria personalizada para celebrar pessoas e dar vida às suas ideias."),
     ],
     scripts: [{
       type: "application/ld+json",

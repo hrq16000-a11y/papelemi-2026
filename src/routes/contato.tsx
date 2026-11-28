@@ -1,14 +1,14 @@
-import { publicSocialMeta } from "@/lib/social-preview";
+import { publicCanonical, publicSocialMeta } from "@/lib/social-preview";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Instagram } from "lucide-react";
 
 export const Route = createFileRoute("/contato")({
-  head: () => ({ meta: [
+  head: () => ({ links: [publicCanonical("/contato")], meta: [
     { title: "Atendimento — PapeLemi" },
     { name: "description", content: "Fale com a PapeLemi para encomendas, orçamentos e dúvidas." },
     { property: "og:title", content: "Atendimento — PapeLemi" },
     { property: "og:description", content: "Atendimento direto da PapeLemi." },
-      ...publicSocialMeta("Atendimento — PapeLemi", "Atendimento direto da PapeLemi."),
+      ...publicSocialMeta("/contato", "Atendimento — PapeLemi", "Atendimento direto da PapeLemi."),
   ] }),
   component: Contact,
 });
